@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -902,6 +903,127 @@ const SCOPES = [
   'https://www.googleapis.com/auth/classroom.student-submissions.me.readonly'
 ].join(' ');
 
+
+// ===== SUPABASE =====
+const SUPABASE_URL = 'https://oevvwezbsquxlmgnfydb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ldnZ3ZXpic3F1eGxtZ25meWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODc3OTAsImV4cCI6MjA4ODk2Mzc5MH0.REume7XGJrUFwH69NwKIwLYUuqNFreT7aI2MHx80amA';
+let sb = null;
+
+function initSupabase(){
+  if(sb) return;
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+// Supabase JWT token set et (Google access token ile değil, email ile RLS yapıyoruz)
+// Materyaller için email'i parametre olarak kullanıyoruz
+
+async function sbLoadMaterials(email){
+  if(!sb || !email) return null;
+  try{
+    const { data, error } = await sb.from('materials').select('*').eq('user_email', email).order('created_at', { ascending: false });
+    if(error) throw error;
+    return data.map(r => ({
+      id: r.id,
+      title: r.title,
+      course: r.course,
+      type: r.type,
+      note: r.description,
+      url: r.url,
+      fileName: r.file_name,
+      addedAt: r.created_at,
+      _sbId: r.id
+    }));
+  }catch(e){ console.warn('Supabase materyal yükleme hatası:', e); return null; }
+}
+
+async function sbSaveMaterial(email, mat){
+  if(!sb || !email) return null;
+  try{
+    const { data, error } = await sb.from('materials').insert({
+      user_email: email,
+      title: mat.title,
+      course: mat.course || '',
+      type: mat.type || 'other',
+      description: mat.note || '',
+      url: mat.url || '',
+      file_name: mat.fileName || ''
+    }).select().single();
+    if(error) throw error;
+    return data.id;
+  }catch(e){ console.warn('Supabase materyal kaydetme hatası:', e); return null; }
+}
+
+async function sbDeleteMaterial(sbId){
+  if(!sb || !sbId) return;
+  try{
+    await sb.from('materials').delete().eq('id', sbId);
+  }catch(e){ console.warn('Supabase materyal silme hatası:', e); }
+}
+
+async function sbLoadNotes(email, courseCode){
+  if(!sb || !email) return null;
+  try{
+    const { data, error } = await sb.from('notes').select('*')
+      .eq('user_email', email).eq('course', courseCode)
+      .order('created_at', { ascending: false });
+    if(error) throw error;
+    return data.map(r => ({ id: r.id, title: r.title, body: r.body, _sbId: r.id }));
+  }catch(e){ console.warn('Supabase not yükleme hatası:', e); return null; }
+}
+
+async function sbSaveNote(email, courseCode, note){
+  if(!sb || !email) return null;
+  try{
+    if(note._sbId){
+      const { error } = await sb.from('notes').update({ title: note.title, body: note.body }).eq('id', note._sbId);
+      if(error) throw error;
+      return note._sbId;
+    } else {
+      const { data, error } = await sb.from('notes').insert({
+        user_email: email, course: courseCode, title: note.title || '', body: note.body || ''
+      }).select().single();
+      if(error) throw error;
+      return data.id;
+    }
+  }catch(e){ console.warn('Supabase not kaydetme hatası:', e); return null; }
+}
+
+async function sbDeleteNote(sbId){
+  if(!sb || !sbId) return;
+  try{ await sb.from('notes').delete().eq('id', sbId); }
+  catch(e){ console.warn('Supabase not silme hatası:', e); }
+}
+
+async function sbLoadSummaries(email){
+  if(!sb || !email) return null;
+  try{
+    const { data, error } = await sb.from('summaries').select('*').eq('user_email', email).order('created_at', { ascending: false });
+    if(error) throw error;
+    return data.map(r => ({
+      id: r.id, _sbId: r.id,
+      title: r.mat_title, course: r.course, html: r.html,
+      date: new Date(r.created_at).toLocaleDateString('tr-TR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    }));
+  }catch(e){ console.warn('Supabase özet yükleme hatası:', e); return null; }
+}
+
+async function sbSaveSummary(email, summary){
+  if(!sb || !email) return null;
+  try{
+    const { data, error } = await sb.from('summaries').insert({
+      user_email: email, mat_title: summary.title, course: summary.course, html: summary.html
+    }).select().single();
+    if(error) throw error;
+    return data.id;
+  }catch(e){ console.warn('Supabase özet kaydetme hatası:', e); return null; }
+}
+
+async function sbDeleteSummary(sbId){
+  if(!sb || !sbId) return;
+  try{ await sb.from('summaries').delete().eq('id', sbId); }
+  catch(e){ console.warn('Supabase özet silme hatası:', e); }
+}
+
 let tokenClient = null, accessToken = null, currentUserEmail = null;
 let tokenExpiresAt = null, tokenRefreshTimer = null;
 let clData = { courses:[], assignments:[], announcements:[] };
@@ -1272,7 +1394,7 @@ function initGoogleAuth(){
       document.getElementById('classroom-signin').style.display='none';
       document.getElementById('classroom-content').classList.add('visible');
       currentUserEmail = u.email||null;
-      loadEnrolled(); loadMaterials(); renderSchedule(); renderCourses(); renderMaterials();
+      loadEnrolled(); loadMaterials().then(()=>renderMaterials()); renderSchedule(); renderCourses();
       // Arka planda token al
       setTimeout(()=>{
         try{ tokenClient.requestAccessToken({prompt:''}); }
@@ -1310,8 +1432,7 @@ async function handleTokenResponse(resp){
     sessionStorage.setItem('guser', JSON.stringify({name:p.name,email:p.email,picture:p.picture}));
     // Kullanicinin kayitli derslerini yukle
     loadEnrolled();
-    loadMaterials();
-    renderMaterials();
+    loadMaterials().then(()=>renderMaterials());
     if(enrolled.size === 0){
       openCourseSetup();
     } else {
@@ -2026,7 +2147,18 @@ async function downloadFile(idx){
 // ===== MATERIALS =====
 let materials = [];
 function materialsKey(){ return currentUserEmail ? 'materials_'+currentUserEmail : 'materials_guest'; }
-function loadMaterials(){ materials = safeLocalStorage(materialsKey(), []); }
+async function loadMaterials(){
+  // Önce localStorage'dan yükle (hızlı)
+  materials = safeLocalStorage(materialsKey(), []);
+  // Sonra Supabase'den senkronize et
+  if(currentUserEmail && sb){
+    const sbMats = await sbLoadMaterials(currentUserEmail);
+    if(sbMats !== null){
+      materials = sbMats;
+      try{ localStorage.setItem(materialsKey(), JSON.stringify(materials)); }catch(e){}
+    }
+  }
+}
 let currentMatType = 'drive';
 
 function saveMaterials(){ localStorage.setItem(materialsKey(), JSON.stringify(materials)); }
@@ -2040,9 +2172,26 @@ function notesKey(courseCode){
   const u = safeSessionStorage('guser', null);
   return 'notes_' + (u ? u.email : 'guest') + '_' + courseCode;
 }
-function loadNotes(courseCode){ return safeLocalStorage(notesKey(courseCode), []); }
+function loadNotes(courseCode){
+  // localStorage'dan senkron dön (render için)
+  return safeLocalStorage(notesKey(courseCode), []);
+}
+async function loadNotesFromSupabase(courseCode){
+  if(!currentUserEmail || !sb) return null;
+  const sbNotes = await sbLoadNotes(currentUserEmail, courseCode);
+  if(sbNotes !== null){
+    try{ localStorage.setItem(notesKey(courseCode), JSON.stringify(sbNotes)); }catch(e){}
+    return sbNotes;
+  }
+  return null;
+}
 function saveNotes(courseCode, notes){
   try { localStorage.setItem(notesKey(courseCode), JSON.stringify(notes)); } catch(e){}
+}
+async function syncNoteToSupabase(courseCode, note){
+  if(!currentUserEmail || !sb) return;
+  const sbId = await sbSaveNote(currentUserEmail, courseCode, note);
+  if(sbId) note._sbId = sbId;
 }
 
 function buildNoteAddCard(){
@@ -2252,9 +2401,12 @@ async function saveMaterial(){
     const fileId = 'file_' + Date.now();
     try{
       await saveFileToDB(fileId, selectedFile);
-      materials.push({title, fileId, fileName:selectedFile.name,
+      const newMat = {title, fileId, fileName:selectedFile.name,
         fileSize:selectedFile.size, course, note,
-        type:'file', addedAt:new Date().toISOString()});
+        type:'file', addedAt:new Date().toISOString()};
+      const sbId = await sbSaveMaterial(currentUserEmail, {title, course, note, type:'file', fileName:selectedFile.name});
+      if(sbId) newMat._sbId = sbId;
+      materials.push(newMat);
       saveMaterials();
       closeMatModal();
       renderMaterials();
@@ -2266,7 +2418,10 @@ async function saveMaterial(){
   const url = document.getElementById('mat-url').value.trim();
   if(!title || !url){ alert('Başlık ve link zorunludur.'); return; }
   if(safeUrl(url) === '#'){ alert('Geçersiz URL. Lütfen https:// ile başlayan bir link girin.'); return; }
-  materials.push({title, url, course, note, type:currentMatType, addedAt:new Date().toISOString()});
+  const newMat2 = {title, url, course, note, type:currentMatType, addedAt:new Date().toISOString()};
+  const sbId2 = await sbSaveMaterial(currentUserEmail, {title, url, course, note, type:currentMatType});
+  if(sbId2) newMat2._sbId = sbId2;
+  materials.push(newMat2);
   saveMaterials();
   closeMatModal();
   renderMaterials();
@@ -2282,6 +2437,7 @@ async function deleteMaterial(idx){
   if(m && m.fileId){
     try{ await deleteFileFromDB(m.fileId); }catch(e){}
   }
+  if(m && m._sbId) await sbDeleteMaterial(m._sbId);
   materials.splice(idx,1);
   saveMaterials();
   renderMaterials();
@@ -2437,14 +2593,17 @@ function saveAiSummary(){
     date: new Date().toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})
   });
   saveSummaries(summaries);
+  sbSaveSummary(currentUserEmail, {title:currentSummaryTitle, course:currentSummaryCourse, html:currentSummaryHTML});
   document.getElementById('ai-save-bar').classList.remove('visible');
   showToast('✅ Özet kaydedildi!');
   renderSavedSummaries();
 }
 
-function deleteSummary(id){
-  const summaries = loadSummaries().filter(s => s.id !== id);
-  saveSummaries(summaries);
+async function deleteSummary(id){
+  const summaries = loadSummaries();
+  const toDelete = summaries.find(s => s.id === id);
+  if(toDelete && toDelete._sbId) await sbDeleteSummary(toDelete._sbId);
+  saveSummaries(summaries.filter(s => s.id !== id));
   renderSavedSummaries();
 }
 
@@ -2647,7 +2806,8 @@ function applyTheme(theme){
   if(saved) applyTheme(saved);
 })();
 
-window.addEventListener('load',()=>{initGoogleAuth();renderSchedule();renderCourses();});
+window.addEventListener('load',()=>{
+  initSupabase();initGoogleAuth();renderSchedule();renderCourses();});
 </script>
 
   <!-- AI ÖZET MODAL -->
