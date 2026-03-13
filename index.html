@@ -1447,7 +1447,7 @@ async function handleTokenResponse(resp){
       renderCourses();
       showToast('✅ '+enrolled.size+' ders programınız yüklendi!');
     }
-  }catch(e){}
+  }catch(e){ console.error('handleTokenResponse hatası:', e); }
   document.getElementById('classroom-signin').style.display='none';
   document.getElementById('classroom-content').classList.add('visible');
   loadClassroomData();
