@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gizlilik Politikası — AkademiX</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #07090f;
+    --surface: #0d1117;
+    --border: #1c2a3e;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --blue: #a78bfa;
+    --text: #e8edf5;
+    --text2: #b8c4d8;
+    --muted: #4d6480;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(59,130,246,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(167,139,250,0.05) 0%, transparent 60%);
+  }
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--muted); font-size: 13px; text-decoration: none;
+    margin-bottom: 40px; transition: color 0.15s;
+  }
+  .back-link:hover { color: var(--accent2); }
+  .header { margin-bottom: 48px; }
+  .logo {
+    font-family: 'Outfit', sans-serif;
+    font-size: 22px; font-weight: 800;
+    margin-bottom: 24px;
+  }
+  .logo span { color: var(--accent2); }
+  h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 36px; font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent), var(--blue), transparent);
+    opacity: 0.3;
+    margin: 32px 0;
+  }
+  .section { margin-bottom: 36px; }
+  h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px; font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  p { color: var(--text2); font-size: 15px; line-height: 1.8; margin-bottom: 10px; }
+  ul { padding-left: 20px; color: var(--text2); font-size: 15px; line-height: 1.8; }
+  ul li { margin-bottom: 6px; }
+  .highlight {
+    background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    color: var(--text2);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.8;
+  }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="index.html" class="back-link">← AkademiX'e Dön</a>
+
+  <div class="header">
+    <div class="logo">Akademi<span>X</span></div>
+    <h1>Gizlilik Politikası</h1>
+    <p class="subtitle">Son güncelleme: Mart 2026</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="highlight">
+    AkademiX, Bahçeşehir Üniversitesi öğrencileri için geliştirilmiş akademik yönetim platformudur. Bu gizlilik politikası, uygulamamızın hangi verileri nasıl işlediğini açıklamaktadır.
+  </div>
+
+  <div class="section">
+    <h2>📋 Toplanan Veriler</h2>
+    <p>AkademiX aşağıdaki verilere erişim sağlar:</p>
+    <ul>
+      <li>Google hesap bilgileri (ad, e-posta adresi, profil fotoğrafı)</li>
+      <li>Google Classroom verileri (dersler, ödevler, duyurular)</li>
+      <li>Uygulamaya yüklenen materyaller ve notlar</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>💾 Verilerin Saklanması</h2>
+    <p>Tüm kişisel veriler <strong>yalnızca sizin cihazınızda</strong> saklanır. AkademiX herhangi bir sunucuya kullanıcı verisi göndermez veya depolamaz.</p>
+    <ul>
+      <li>Ders programı ve materyaller tarayıcının <strong>localStorage</strong>'ında saklanır</li>
+      <li>Yüklenen dosyalar tarayıcının <strong>IndexedDB</strong>'sinde saklanır</li>
+      <li>Oturum bilgileri <strong>sessionStorage</strong>'da geçici olarak tutulur</li>
+      <li>Veriler yalnızca sizin cihazınızda kalır, üçüncü taraflarla paylaşılmaz</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🔑 Google OAuth</h2>
+    <p>AkademiX, kimlik doğrulama için Google OAuth 2.0 kullanır. Giriş işlemi Google'ın güvenli altyapısı üzerinden gerçekleşir.</p>
+    <ul>
+      <li>Yalnızca <strong>@bahcesehir.edu.tr</strong> uzantılı kurumsal hesaplar kabul edilir</li>
+      <li>Google Classroom verilerine erişim yalnızca uygulama içinde kullanılır</li>
+      <li>Erişim token'ları tarayıcı hafızasında tutulur, sunucuya gönderilmez</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🤖 Yapay Zeka (AI) Özetleme</h2>
+    <p>AI özetleme özelliği için Anthropic Claude API kullanılmaktadır. Bu özelliği kullanmak için:</p>
+    <ul>
+      <li>Kullanıcı kendi Anthropic API anahtarını girer</li>
+      <li>Yüklenen belge içerikleri özetleme için Anthropic API'ye gönderilir</li>
+      <li>Anthropic'in gizlilik politikası için: <a href="https://www.anthropic.com/privacy" target="_blank">anthropic.com/privacy</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🔒 Veri Güvenliği</h2>
+    <p>Kullanıcı verilerinin güvenliği önceliğimizdir:</p>
+    <ul>
+      <li>Tüm iletişim HTTPS üzerinden şifreli olarak gerçekleşir</li>
+      <li>Veriler yalnızca kullanıcının kendi cihazında saklanır</li>
+      <li>Uygulama herhangi bir analitik veya izleme kodu içermez</li>
+      <li>Üçüncü taraf reklam veya izleme servisi kullanılmaz</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🗑️ Verilerin Silinmesi</h2>
+    <p>Verilerinizi istediğiniz zaman silebilirsiniz:</p>
+    <ul>
+      <li>Tarayıcı ayarlarından site verilerini temizleyerek tüm yerel verileri silebilirsiniz</li>
+      <li>Google hesabınızın bağlantısını kesmek için Google hesap ayarlarından AkademiX uygulamasını kaldırabilirsiniz</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>📬 İletişim</h2>
+    <p>Gizlilik politikamız hakkında sorularınız için GitHub üzerinden iletişime geçebilirsiniz:</p>
+    <p><a href="https://github.com/lefos5/akademix" target="_blank">github.com/lefos5/akademix</a></p>
+  </div>
+
+  <div class="footer">
+    <p>© 2026 AkademiX — Bahçeşehir Üniversitesi öğrencileri için geliştirilmiştir.</p>
+    <p style="margin-top:6px"><a href="index.html">Ana Sayfaya Dön</a></p>
+  </div>
+</div>
+</body>
+</html>
