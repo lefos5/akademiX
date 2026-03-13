@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js" onload="initSupabase()"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -911,7 +911,12 @@ let sb = null;
 
 function initSupabase(){
   if(sb) return;
-  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  try{
+    const client = (window.supabase || window.supabaseJs);
+    if(!client){ console.warn('Supabase kütüphanesi yüklenmedi'); return; }
+    sb = client.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('Supabase bağlandı ✅');
+  }catch(e){ console.warn('Supabase init hatası:', e); }
 }
 
 // Supabase JWT token set et (Google access token ile değil, email ile RLS yapıyoruz)
