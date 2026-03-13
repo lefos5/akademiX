@@ -2693,15 +2693,10 @@ Bu bilgilerin gerçek hayatta veya problemlerde nasıl kullanılacağını somut
 Tüm bölümleri eksiksiz doldur. Kısa ve yüzeysel cevaplardan kaçın.`;
 
 async function runAiSummary(){
-  const key = document.getElementById('ai-key-input').value.trim();
   const extraText = document.getElementById('ai-text-input').value.trim();
   const title = document.getElementById('ai-modal-title').textContent;
 
-  if(!key){ alert('Lütfen Anthropic API key girin.'); return; }
-  if(!key.startsWith('sk-ant-')){ alert('Geçersiz API key formatı.'); return; }
   if(!aiCurrentFileData && !extraText){ alert('Lütfen bir dosya yükleyin veya metin yapıştırın.'); return; }
-
-  localStorage.setItem('anthropic_key', key);
 
   const btn = document.getElementById('ai-run-btn');
   btn.disabled = true;
@@ -2737,13 +2732,11 @@ async function runAiSummary(){
   }
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://oevvwezbsquxlmgnfydb.supabase.co/functions/v1/anthropic-proxy', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ldnZ3ZXpic3F1eGxtZ25meWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODc3OTAsImV4cCI6MjA4ODk2Mzc5MH0.REume7XGJrUFwH69NwKIwLYUuqNFreT7aI2MHx80amA'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
@@ -2829,12 +2822,8 @@ window.addEventListener('load',()=>{
         </div>
       </div>
 
-      <!-- API Key -->
-      <div class="ai-key-section" id="ai-key-section">
-        <label>Anthropic API Key</label>
-        <input type="password" class="ai-key-input" id="ai-key-input" placeholder="sk-ant-api03-...">
-        <span class="ai-settings-link" onclick="toggleKeyVisibility()">👁 Göster/Gizle</span>
-      </div>
+      <!-- API Key gizlendi - proxy kullanılıyor -->
+      <input type="hidden" id="ai-key-input" value="proxy">
 
       <!-- Yüklenen dosya varsa önizleme -->
       <div id="ai-file-preview" style="display:none;margin-bottom:16px">
