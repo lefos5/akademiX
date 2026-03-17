@@ -1305,11 +1305,11 @@ function showPage(id) {
   if(id==='calendar') renderCalendar();
   if(id==='materials') renderMaterials();
   if(id==='classroom'){
-    if(!accessToken && tokenClient){
-      // Token yoksa sessizce iste
-      try{ tokenClient.requestAccessToken({prompt:''}); }
-      catch(e){ console.warn('Token isteği başarısız:', e); }
-    } else if(accessToken){
+    if(!accessToken){
+      // Token yoksa signin ekranını göster
+      document.getElementById('classroom-signin').style.display='block';
+      document.getElementById('classroom-content').classList.remove('visible');
+    } else {
       loadClassroomData();
     }
   }
