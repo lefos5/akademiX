@@ -1304,6 +1304,15 @@ function showPage(id) {
   if(id==='courses') renderCourses();
   if(id==='calendar') renderCalendar();
   if(id==='materials') renderMaterials();
+  if(id==='classroom'){
+    if(!accessToken && tokenClient){
+      // Token yoksa sessizce iste
+      try{ tokenClient.requestAccessToken({prompt:''}); }
+      catch(e){ console.warn('Token isteği başarısız:', e); }
+    } else if(accessToken){
+      loadClassroomData();
+    }
+  }
 }
 
 // SCHEDULE
