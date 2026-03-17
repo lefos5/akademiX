@@ -1422,11 +1422,7 @@ function initGoogleAuth(){
       document.getElementById('classroom-content').classList.add('visible');
       currentUserEmail = u.email||null;
       loadEnrolled().then(()=>{ renderSchedule(); renderCourses(); }); loadMaterials().then(()=>renderMaterials());
-      // Arka planda token al
-      setTimeout(()=>{
-        try{ tokenClient.requestAccessToken({prompt:''}); }
-        catch(e){ console.warn('Sessiz giriş başarısız:', e); }
-      }, 500);
+      // Token sadece Classroom kullanılınca istenecek
     }catch(e){ localStorage.removeItem('guser'); }
   }
 }
