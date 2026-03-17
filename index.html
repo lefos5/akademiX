@@ -885,11 +885,11 @@ function safeLocalStorage(key, fallback){
 
 function safeSessionStorage(key, fallback){
   try {
-    const val = sessionStorage.getItem(key);
+    const val = localStorage.getItem(key);
     if(!val) return fallback;
     return JSON.parse(val);
   } catch(e) {
-    console.warn('sessionStorage parse hatası:', key);
+    console.warn('localStorage parse hatası:', key);
     localStorage.removeItem(key);
     return fallback;
   }
