@@ -1394,34 +1394,27 @@ function renderSchedule(){
       col.appendChild(line);
     }
 
-    // Çakışma tespiti — gruplara böl
-    const sorted=slots[day].slice().sort((a,b)=>timeToMinutes(a.start)-timeToMinutes(b.start));
-    const groups=[];
-    sorted.forEach(m=>{
-      let placed=false;
-      for(const g of groups){
-        const lastEnd=Math.max(...g.map(x=>timeToMinutes(x.end)));
-        if(timeToMinutes(m.start)<lastEnd){ g.push(m); placed=true; break; }
-      }
-      if(!placed) groups.push([m]);
+    // Sırala: başlangıç → bitiş → isim
+    const sorted=slots[day].slice().sort((a,b)=>{
+      const sa=timeToMinutes(a.start),sb=timeToMinutes(b.start);
+      if(sa!==sb) return sa-sb;
+      const ea=timeToMinutes(a.end),eb=timeToMinutes(b.end);
+      if(ea!==eb) return ea-eb;
+      return a.course.name.localeCompare(b.course.name);
     });
 
-    // Ders bloklarını çiz
-    groups.forEach(g=>{
-      const n=g.length;
-      g.forEach((m,i)=>{
-        const st=timeToMinutes(m.start);
-        const en=timeToMinutes(m.end);
-        const topPx=(st-startH*60)/60*ROW_H;
-        const heightPx=(en-st)/60*ROW_H;
-        const bl=document.createElement('div');
-        bl.className='course-block '+(DEPT_COLORS[m.course.dept]||'c-purple');
-        const W=100/n;
-        bl.style.cssText=`top:${topPx+2}px;height:${heightPx-4}px;left:calc(${W*i}% + 3px);width:calc(${W}% - 6px);`;
-        bl.innerHTML=`<div class="code">${m.course.code}</div><div class="name">${m.course.name}</div><div class="room">${m.room} · ${m.start}–${m.end}</div>`;
-        bl.onclick=()=>openModal(m.course);
-        col.appendChild(bl);
-      });
+    // Ders bloklarını üst üste çiz (z-index ile sıralı)
+    sorted.forEach((m,i)=>{
+      const st=timeToMinutes(m.start);
+      const en=timeToMinutes(m.end);
+      const topPx=(st-startH*60)/60*ROW_H;
+      const heightPx=(en-st)/60*ROW_H;
+      const bl=document.createElement('div');
+      bl.className='course-block '+(DEPT_COLORS[m.course.dept]||'c-purple');
+      bl.style.cssText=`top:${topPx+2}px;height:${heightPx-4}px;left:3px;right:3px;z-index:${i+1};`;
+      bl.innerHTML=`<div class="code">${m.course.code}</div><div class="name">${m.course.name}</div><div class="room">${m.room} · ${m.start}–${m.end}</div>`;
+      bl.onclick=()=>openModal(m.course);
+      col.appendChild(bl);
     });
     body.appendChild(col);
   });
