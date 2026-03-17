@@ -890,7 +890,7 @@ function safeSessionStorage(key, fallback){
     return JSON.parse(val);
   } catch(e) {
     console.warn('sessionStorage parse hatası:', key);
-    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
     return fallback;
   }
 }
@@ -923,6 +923,23 @@ function initSupabase(){
 
 // Supabase JWT token set et (Google access token ile değil, email ile RLS yapıyoruz)
 // Materyaller için email'i parametre olarak kullanıyoruz
+
+
+async function sbLoadEnrolled(email){
+  if(!sb || !email) return null;
+  try{
+    const { data, error } = await sb.from('enrolled').select('courses').eq('user_email', email).single();
+    if(error && error.code !== 'PGRST116') throw error;
+    return data ? data.courses : null;
+  }catch(e){ console.warn('Supabase enrolled yükleme hatası:', e); return null; }
+}
+
+async function sbSaveEnrolled(email, coursesArr){
+  if(!sb || !email) return;
+  try{
+    await sb.from('enrolled').upsert({ user_email: email, courses: coursesArr }, { onConflict: 'user_email' });
+  }catch(e){ console.warn('Supabase enrolled kaydetme hatası:', e); }
+}
 
 async function sbLoadMaterials(email){
   if(!sb || !email) return null;
@@ -1265,8 +1282,11 @@ const BANNER_COLORS=['#1a73e8','#188038','#e37400','#d93025','#9334e6','#007b83'
 let enrolled = new Set();
 let activeFilter = "ALL";
 function enrolledKey(){ return currentUserEmail ? 'enrolled_'+currentUserEmail : 'enrolled_guest'; }
-function saveEnrolled(){ localStorage.setItem(enrolledKey(), JSON.stringify([...enrolled])); }
-function loadEnrolled(){
+function saveEnrolled(){
+  localStorage.setItem(enrolledKey(), JSON.stringify([...enrolled]));
+  if(currentUserEmail && sb) sbSaveEnrolled(currentUserEmail, [...enrolled]);
+}
+async function loadEnrolled(){
   const raw = safeLocalStorage(enrolledKey(), []);
   // Güvenlik: sadece string array kabul et, her item whitelist'te olmalı
   const validCodes = new Set(rawCourses.map(c=>c.code));
@@ -1389,7 +1409,7 @@ function initGoogleAuth(){
     callback:handleTokenResponse,
   });
   // Önceden giriş yapıldıysa sessizce yeniden giriş yap
-  const saved = sessionStorage.getItem('guser');
+  const saved = localStorage.getItem('guser');
   if(saved){
     try{
       const u = JSON.parse(saved);
@@ -1401,13 +1421,13 @@ function initGoogleAuth(){
       document.getElementById('classroom-signin').style.display='none';
       document.getElementById('classroom-content').classList.add('visible');
       currentUserEmail = u.email||null;
-      loadEnrolled(); loadMaterials().then(()=>renderMaterials()); renderSchedule(); renderCourses();
+      loadEnrolled().then(()=>{ renderSchedule(); renderCourses(); }); loadMaterials().then(()=>renderMaterials());
       // Arka planda token al
       setTimeout(()=>{
         try{ tokenClient.requestAccessToken({prompt:''}); }
         catch(e){ console.warn('Sessiz giriş başarısız:', e); }
       }, 500);
-    }catch(e){ sessionStorage.removeItem('guser'); }
+    }catch(e){ localStorage.removeItem('guser'); }
   }
 }
 function startGoogleSignIn(){
@@ -1436,9 +1456,9 @@ async function handleTokenResponse(resp){
     document.getElementById('user-avatar').src=p.picture||'';
     document.getElementById('user-card').classList.add('visible');
     // Kullanıcı bilgilerini session'a kaydet (refresh sonrası UI'ı hızlı geri yükle)
-    sessionStorage.setItem('guser', JSON.stringify({name:p.name,email:p.email,picture:p.picture}));
+    localStorage.setItem('guser', JSON.stringify({name:p.name,email:p.email,picture:p.picture}));
     // Kullanicinin kayitli derslerini yukle
-    loadEnrolled();
+    loadEnrolled().then(()=>{ renderSchedule(); renderCourses(); });
     loadMaterials().then(()=>renderMaterials());
     if(enrolled.size === 0){
       openCourseSetup();
@@ -1609,6 +1629,7 @@ function signOut(){
     try{ google.accounts.oauth2.revoke(accessToken, ()=>{}); }catch(e){}
     accessToken=null;
   }
+  localStorage.removeItem('guser');
   currentUserEmail=null;
   materials=[];
   renderMaterials();
