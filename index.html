@@ -1437,6 +1437,11 @@ function startGoogleSignIn(){
 }
 async function handleTokenResponse(resp){
   if(resp.error){
+    // Sessiz token yenilemesi başarısız — kullanıcı zaten giriş yapmışsa UI'yı sıfırlama
+    if(currentUserEmail){
+      console.warn('Sessiz token yenileme başarısız:', resp.error);
+      return;
+    }
     const e=document.getElementById('signin-error');
     e.textContent='Giriş başarısız: '+(resp.error_description||resp.error);
     e.style.display='block';return;
