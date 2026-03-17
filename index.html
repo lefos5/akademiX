@@ -1306,9 +1306,18 @@ function showPage(id) {
   if(id==='materials') renderMaterials();
   if(id==='classroom'){
     if(!accessToken){
-      // Token yoksa signin ekranını göster
-      document.getElementById('classroom-signin').style.display='block';
-      document.getElementById('classroom-content').classList.remove('visible');
+      // Sessizce token almayı dene
+      if(tokenClient){
+        try{
+          tokenClient.requestAccessToken({prompt:'none'});
+        }catch(e){
+          document.getElementById('classroom-signin').style.display='block';
+          document.getElementById('classroom-content').classList.remove('visible');
+        }
+      } else {
+        document.getElementById('classroom-signin').style.display='block';
+        document.getElementById('classroom-content').classList.remove('visible');
+      }
     } else {
       loadClassroomData();
     }
@@ -1467,6 +1476,12 @@ async function handleTokenResponse(resp){
     document.getElementById('user-card').classList.add('visible');
     // Kullanıcı bilgilerini session'a kaydet (refresh sonrası UI'ı hızlı geri yükle)
     localStorage.setItem('guser', JSON.stringify({name:p.name,email:p.email,picture:p.picture}));
+    // Classroom sekmesi açıksa yükle
+    if(document.getElementById('page-classroom').classList.contains('active')){
+      document.getElementById('classroom-signin').style.display='none';
+      document.getElementById('classroom-content').classList.add('visible');
+      loadClassroomData();
+    }
     // Kullanicinin kayitli derslerini yukle
     loadEnrolled().then(()=>{ renderSchedule(); renderCourses(); });
     loadMaterials().then(()=>renderMaterials());
