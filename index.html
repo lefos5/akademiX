@@ -6,7 +6,6 @@
 <title>AkademiX Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1067,7 +1066,8 @@ async function sbDeleteSummary(sbId){
   catch(e){ console.warn('Supabase özet silme hatası:', e); }
 }
 
-let tokenClient = null, accessToken = null, currentUserEmail = null;
+const BACKEND_URL = 'https://akademix-backend.vercel.app';
+let accessToken = null, currentUserEmail = null;
 let tokenExpiresAt = null, tokenRefreshTimer = null;
 let clData = { courses:[], assignments:[], announcements:[] };
 
@@ -1482,34 +1482,41 @@ function toggleEnroll(code){
 function closeModal(e){if(!e||e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
 
 // GOOGLE AUTH
-function initGoogleAuth(){
-  if(typeof google==='undefined'){setTimeout(initGoogleAuth,500);return;}
-  tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:CLIENT_ID, scope:SCOPES,
-    callback:handleTokenResponse,
-  });
-  // Önceden giriş yapıldıysa sessizce yeniden giriş yap
-  const saved = localStorage.getItem('guser');
-  if(saved){
-    try{
-      const u = JSON.parse(saved);
-      // UI'ı hemen geri yükle (token gelmeden önce)
+async function initGoogleAuth(){
+  // URL'de login=success varsa session yeni kuruldu
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('login') === 'success'){
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+  if(params.get('login') === 'error'){
+    document.getElementById('signin-error').textContent = 'Giriş başarısız, tekrar deneyin.';
+    document.getElementById('signin-error').style.display = 'block';
+    window.history.replaceState({}, '', window.location.pathname);
+    return;
+  }
+
+  // Backend'den session kontrol et
+  try{
+    const resp = await fetch(BACKEND_URL + '/api/auth?action=me', { credentials: 'include' });
+    if(resp.ok){
+      const u = await resp.json();
+      accessToken = u.access_token;
+      currentUserEmail = u.email;
+      localStorage.setItem('guser', JSON.stringify({name:u.name, email:u.email, picture:u.picture}));
       document.getElementById('user-name').textContent = u.name||'';
       document.getElementById('user-email').textContent = u.email||'';
       document.getElementById('user-avatar').src = u.picture||'';
       document.getElementById('user-card').classList.add('visible');
       document.getElementById('classroom-signin').style.display='none';
       document.getElementById('classroom-content').classList.add('visible');
-      currentUserEmail = u.email||null;
-      loadEnrolled().then(()=>{ renderSchedule(); renderCourses(); }); loadMaterials().then(()=>renderMaterials());
-      // Token sadece Classroom kullanılınca istenecek
-    }catch(e){ localStorage.removeItem('guser'); }
-  }
+      loadEnrolled().then(()=>{ renderSchedule(); renderCourses(); });
+      loadMaterials().then(()=>renderMaterials());
+    }
+  }catch(e){ console.warn('Session kontrol hatası:', e); }
 }
 function startGoogleSignIn(){
   document.getElementById('signin-error').style.display='none';
-  if(!tokenClient){initGoogleAuth();setTimeout(startGoogleSignIn,700);return;}
-  tokenClient.requestAccessToken();
+  window.location.href = BACKEND_URL + '/api/auth?action=login';
 }
 async function handleTokenResponse(resp){
   if(resp.error){
@@ -1560,17 +1567,7 @@ async function handleTokenResponse(resp){
   loadClassroomData();
 }
 
-// Token sessiz yenileme
-function silentTokenRefresh(){
-  if(!tokenClient || !accessToken) return;
-  try{
-    // prompt:'none' ile kullanıcıya göstermeden token yenile
-    tokenClient.requestAccessToken({prompt:''});
-    console.log('[Token] Sessiz yenileme isteği gönderildi');
-  }catch(e){
-    console.warn('[Token] Sessiz yenileme başarısız:', e);
-  }
-}
+// Token yenileme backend tarafından otomatik yapılıyor
 
 async function clFetch(url){
   let r = await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
@@ -1710,12 +1707,9 @@ function switchTab(tab){
   document.querySelectorAll('.cl-panel').forEach((p,i)=>p.classList.toggle('active',tabs[i]===tab));
 }
 
-function signOut(){
-  // Google token'ı iptal et
-  if(accessToken){
-    try{ google.accounts.oauth2.revoke(accessToken, ()=>{}); }catch(e){}
-    accessToken=null;
-  }
+async function signOut(){
+  await fetch(BACKEND_URL + '/api/auth?action=logout', { credentials: 'include' });
+  accessToken=null;
   localStorage.removeItem('guser');
   currentUserEmail=null;
   materials=[];
