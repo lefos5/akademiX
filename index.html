@@ -1501,7 +1501,7 @@ async function initGoogleAuth(){
   try{
     const sid = localStorage.getItem('akademix_session');
     if(!sid){ return; }
-      const resp = await fetch(BACKEND_URL + '/api/auth?action=me&session=' + sid, { credentials: 'include' });
+    const resp = await fetch(BACKEND_URL + '/api/auth?action=me&session=' + sid, { credentials: 'include' });
     if(resp.ok){
       const u = await resp.json();
       const user = u.user || {};
