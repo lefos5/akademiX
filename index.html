@@ -1060,9 +1060,9 @@ async function sbSaveSummary(email, summary){
   }catch(e){ console.warn('Supabase özet kaydetme hatası:', e); return null; }
 }
 
-async function sbDeleteSummary(matTitle){
-  if(!sb || !matTitle) return;
-  try{ await sb.from('summaries').delete().eq('mat_title', matTitle); }
+async function sbDeleteSummary(sbId){
+  if(!sb || !sbId) return;
+  try{ await sb.from('summaries').delete().eq('id', sbId); }
   catch(e){ console.warn('Supabase özet silme hatası:', e); }
 }
 
@@ -1483,9 +1483,10 @@ function closeModal(e){if(!e||e.target===document.getElementById('modal'))docume
 
 // GOOGLE AUTH
 async function initGoogleAuth(){
-  // URL'de login=success varsa session yeni kuruldu
   const params = new URLSearchParams(window.location.search);
-  if(params.get('login') === 'success'){
+  const sessionIdFromUrl = params.get('session_id');
+  if(sessionIdFromUrl){
+    localStorage.setItem('akademix_session', sessionIdFromUrl);
     window.history.replaceState({}, '', window.location.pathname);
   }
   if(params.get('login') === 'error'){
@@ -1497,15 +1498,18 @@ async function initGoogleAuth(){
 
   // Backend'den session kontrol et
   try{
-    const resp = await fetch(BACKEND_URL + '/api/auth?action=me', { credentials: 'include' });
+    const sid = localStorage.getItem('akademix_session');
+    if(!sid){ return; }
+    const resp = await fetch(BACKEND_URL + '/api/auth?action=me&session=' + sid, { credentials: 'include' });
     if(resp.ok){
       const u = await resp.json();
-      accessToken = u.access_token;
-      currentUserEmail = u.email;
-      localStorage.setItem('guser', JSON.stringify({name:u.name, email:u.email, picture:u.picture}));
-      document.getElementById('user-name').textContent = u.name||'';
-      document.getElementById('user-email').textContent = u.email||'';
-      document.getElementById('user-avatar').src = u.picture||'';
+      const user = u.user || {};
+      accessToken = u.accessToken;
+      currentUserEmail = user.email;
+      localStorage.setItem('guser', JSON.stringify({name:user.name, email:user.email, picture:user.picture}));
+      document.getElementById('user-name').textContent = user.name||'';
+      document.getElementById('user-email').textContent = user.email||'';
+      document.getElementById('user-avatar').src = user.picture||'';
       document.getElementById('user-card').classList.add('visible');
       document.getElementById('classroom-signin').style.display='none';
       document.getElementById('classroom-content').classList.add('visible');
@@ -1708,7 +1712,9 @@ function switchTab(tab){
 }
 
 async function signOut(){
-  await fetch(BACKEND_URL + '/api/auth?action=logout', { credentials: 'include' });
+  const sid = localStorage.getItem('akademix_session');
+  await fetch(BACKEND_URL + '/api/auth?action=logout' + (sid ? '&session='+sid : ''), { credentials: 'include' });
+  localStorage.removeItem('akademix_session');
   accessToken=null;
   localStorage.removeItem('guser');
   currentUserEmail=null;
@@ -2547,7 +2553,7 @@ async function deleteMaterial(idx){
     try{ await deleteFileFromDB(m.fileId); }catch(e){}
   }
   if(m && m._sbId) await sbDeleteMaterial(m._sbId);
-  if(m && m.name) await sbDeleteSummary(m.name);
+  if(m && m.title) await sbDeleteSummary(m.title);
   materials.splice(idx,1);
   saveMaterials();
   renderMaterials();
