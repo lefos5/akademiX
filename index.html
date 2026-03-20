@@ -2547,6 +2547,7 @@ async function deleteMaterial(idx){
     try{ await deleteFileFromDB(m.fileId); }catch(e){}
   }
   if(m && m._sbId) await sbDeleteMaterial(m._sbId);
+  if(m && m._sbId) await sbDeleteSummary(m._sbId);
   materials.splice(idx,1);
   saveMaterials();
   renderMaterials();
