@@ -2554,6 +2554,8 @@ async function deleteMaterial(idx){
   }
   if(m && m._sbId) await sbDeleteMaterial(m._sbId);
   if(m && m.title) await sbDeleteSummary(m.title);
+  const allSums = loadSummaries();
+  saveSummaries(allSums.filter(s => s.title !== m.title));
   materials.splice(idx,1);
   saveMaterials();
   renderMaterials();
