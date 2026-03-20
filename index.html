@@ -1060,9 +1060,9 @@ async function sbSaveSummary(email, summary){
   }catch(e){ console.warn('Supabase özet kaydetme hatası:', e); return null; }
 }
 
-async function sbDeleteSummary(sbId){
-  if(!sb || !sbId) return;
-  try{ await sb.from('summaries').delete().eq('id', sbId); }
+async function sbDeleteSummary(matTitle){
+  if(!sb || !matTitle) return;
+  try{ await sb.from('summaries').delete().eq('mat_title', matTitle); }
   catch(e){ console.warn('Supabase özet silme hatası:', e); }
 }
 
@@ -2718,7 +2718,7 @@ function saveAiSummary(){
 async function deleteSummary(id){
   const summaries = loadSummaries();
   const toDelete = summaries.find(s => s.id === id);
-  if(toDelete && toDelete._sbId) await sbDeleteSummary(toDelete._sbId);
+  if(toDelete && toDelete.title) await sbDeleteSummary(toDelete.title);
   saveSummaries(summaries.filter(s => s.id !== id));
   renderSavedSummaries();
 }
