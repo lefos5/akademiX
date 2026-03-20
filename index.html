@@ -1060,9 +1060,9 @@ async function sbSaveSummary(email, summary){
   }catch(e){ console.warn('Supabase özet kaydetme hatası:', e); return null; }
 }
 
-async function sbDeleteSummary(sbId){
-  if(!sb || !sbId) return;
-  try{ await sb.from('summaries').delete().eq('id', sbId); }
+async function sbDeleteSummary(matTitle){
+  if(!sb || !matTitle) return;
+  try{ await sb.from('summaries').delete().eq('mat_title', matTitle); }
   catch(e){ console.warn('Supabase özet silme hatası:', e); }
 }
 
@@ -2547,7 +2547,7 @@ async function deleteMaterial(idx){
     try{ await deleteFileFromDB(m.fileId); }catch(e){}
   }
   if(m && m._sbId) await sbDeleteMaterial(m._sbId);
-  if(m && m._sbId) await sbDeleteSummary(m._sbId);
+  if(m && m.name) await sbDeleteSummary(m.name);
   materials.splice(idx,1);
   saveMaterials();
   renderMaterials();
