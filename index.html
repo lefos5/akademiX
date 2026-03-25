@@ -184,7 +184,9 @@
   }
 
   /* ── MAIN ── */
-  .main { margin-left: 248px; padding: 32px 36px; min-height: 100vh; }
+  .main { margin-left: 248px; min-height: 100vh; }
+  .page { padding: 32px 36px; }
+  #page-materials { padding: 0 !important; }
   .page { display: none; }
   .page.active { display: block; animation: fadeIn 0.2s ease; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
@@ -458,6 +460,318 @@
   .note-add-card input:focus { border-color:var(--accent); }
   .note-add-card textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); font-size:12px; font-family:inherit; resize:vertical; min-height:80px; box-sizing:border-box; outline:none; line-height:1.6; }
   .note-add-card textarea:focus { border-color:var(--accent); }
+
+
+  /* ═══════════════════════════════════════
+     YENİ MATERYALLER LAYOUT
+  ═══════════════════════════════════════ */
+  .mat-layout {
+    display: flex;
+    height: calc(100vh - 0px);
+    overflow: hidden;
+  }
+
+  /* ── Sol panel ── */
+  .mat-sidebar {
+    width: 290px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .mat-sidebar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .mat-sidebar-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px; font-weight: 700; color: var(--text);
+  }
+  .mat-add-btn {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--accent-glow); border: 1px solid rgba(59,130,246,0.3);
+    color: var(--accent2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .mat-add-btn:hover { background: var(--accent); color: white; }
+  .mat-sidebar-filter {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .mat-sidebar-filter select {
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 10px; color: var(--text); font-size: 12px;
+    outline: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  .mat-sidebar-filter select:focus { border-color: var(--accent); }
+  .mat-list {
+    flex: 1; overflow-y: auto; padding: 8px;
+  }
+  .mat-list-empty {
+    text-align: center; padding: 48px 16px;
+    color: var(--muted); font-size: 13px; line-height: 1.6;
+  }
+  .mat-list-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 3px; border: 1px solid transparent;
+    position: relative;
+  }
+  .mat-list-item:hover { background: var(--surface2); }
+  .mat-list-item.active {
+    background: linear-gradient(90deg, var(--accent-glow), transparent);
+    border-color: rgba(59,130,246,0.2);
+  }
+  .mat-list-item.active .mat-list-name { color: var(--accent2); }
+  .mat-list-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .mat-list-info { flex: 1; min-width: 0; }
+  .mat-list-name {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: color 0.15s;
+  }
+  .mat-list-course {
+    font-size: 11px; color: var(--muted); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mat-list-del {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 12px; padding: 4px 6px;
+    border-radius: 5px; opacity: 0; transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .mat-list-item:hover .mat-list-del { opacity: 1; }
+  .mat-list-del:hover { color: var(--red); background: rgba(248,113,113,0.1); }
+
+  /* ── Sağ panel ── */
+  .mat-detail {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; background: var(--bg); min-width: 0;
+  }
+  .mat-welcome {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; padding: 40px;
+  }
+  .mat-welcome-icon {
+    font-size: 48px; opacity: 0.4;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)}
+  }
+  .mat-welcome-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px; font-weight: 700; color: var(--text2);
+  }
+  .mat-welcome-sub {
+    font-size: 13px; color: var(--muted); text-align: center;
+    max-width: 340px; line-height: 1.6;
+  }
+  .mat-workspace {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .mat-workspace-header {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface); flex-shrink: 0;
+  }
+  .mat-ws-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 17px; font-weight: 700; color: var(--text);
+    margin-bottom: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mat-ws-meta {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .mat-ws-tag {
+    font-size: 11px; font-weight: 600; padding: 3px 8px;
+    border-radius: 5px;
+  }
+  .mat-ws-actions { display: flex; gap: 7px; }
+  .mat-ws-action {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; padding: 6px 12px;
+    border-radius: 8px; border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text2);
+    cursor: pointer; transition: all 0.15s; text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .mat-ws-action:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-glow); }
+
+  /* AI mode bar */
+  .mat-ai-bar {
+    display: flex; gap: 0; flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0 16px;
+    overflow-x: auto;
+  }
+  .mat-mode-btn {
+    padding: 12px 16px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: none; background: transparent;
+    color: var(--muted); font-family: 'DM Sans', sans-serif;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .mat-mode-btn:hover { color: var(--text2); }
+  .mat-mode-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+  /* Chat messages */
+  .mat-messages {
+    flex: 1; overflow-y: auto; padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    min-height: 0;
+  }
+  .mat-msg {
+    display: flex; gap: 10px; align-items: flex-start;
+    animation: msgIn 0.2s ease;
+  }
+  @keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  .mat-msg.user { flex-direction: row-reverse; }
+  .mat-msg-avatar {
+    width: 30px; height: 30px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0; margin-top: 2px;
+  }
+  .mat-msg.ai .mat-msg-avatar { background: linear-gradient(135deg,#3b82f6,#6366f1); }
+  .mat-msg.user .mat-msg-avatar { background: var(--surface3); border: 1px solid var(--border); }
+  .mat-msg-body { max-width: 82%; }
+  .mat-msg-bubble {
+    padding: 11px 15px; border-radius: 14px;
+    font-size: 13px; line-height: 1.75; color: var(--text2);
+  }
+  .mat-msg.ai .mat-msg-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+  }
+  .mat-msg.user .mat-msg-bubble {
+    background: var(--accent-glow);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: var(--text);
+    border-top-right-radius: 4px;
+  }
+  .mat-msg-bubble h3 {
+    font-size: 11px; font-weight: 700; color: var(--accent2);
+    margin: 14px 0 5px; text-transform: uppercase; letter-spacing: 0.9px;
+  }
+  .mat-msg-bubble h3:first-child { margin-top: 0; }
+  .mat-msg-bubble ul { padding-left: 18px; }
+  .mat-msg-bubble li { margin-bottom: 5px; }
+  .mat-msg-bubble strong { color: var(--text); }
+  .mat-msg-bubble br + br { display: none; }
+
+  /* Typing indicator */
+  .mat-typing {
+    display: flex; gap: 5px; align-items: center; padding: 4px 2px;
+  }
+  .mat-typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); opacity: 0.5;
+    animation: typingDot 1.2s ease-in-out infinite;
+  }
+  .mat-typing span:nth-child(2){ animation-delay:.2s }
+  .mat-typing span:nth-child(3){ animation-delay:.4s }
+  @keyframes typingDot{0%,80%,100%{transform:scale(0.6);opacity:0.3}40%{transform:scale(1);opacity:1}}
+
+  /* Input bar */
+  .mat-input-bar {
+    padding: 14px 20px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #mat-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  #mat-input:focus { border-color: var(--accent); }
+  .mat-input-actions {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mat-analyze-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    color: white; border: none; padding: 8px 18px;
+    border-radius: 10px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 3px 12px rgba(59,130,246,0.3);
+  }
+  .mat-analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(59,130,246,0.4); }
+  .mat-analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .mat-send-btn {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--surface3); border: 1px solid var(--border2);
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .mat-send-btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
+  .mat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Flashcards */
+  .fc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px; padding: 4px 0;
+  }
+  .fc-card {
+    min-height: 100px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px;
+    cursor: pointer; transition: all 0.2s;
+    text-align: center; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; position: relative; overflow: hidden;
+  }
+  .fc-card::before {
+    content: 'TAP';
+    position: absolute; top: 6px; right: 8px;
+    font-size: 9px; color: var(--muted2); font-weight: 700;
+    letter-spacing: 0.5px; transition: opacity 0.2s;
+  }
+  .fc-card.flipped::before { content: '✓'; color: var(--green); }
+  .fc-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,0.1); }
+  .fc-q { font-size: 12px; font-weight: 600; color: var(--text2); line-height: 1.4; }
+  .fc-a { font-size: 12px; color: var(--accent2); line-height: 1.4; display: none; }
+  .fc-divider { width: 24px; height: 1px; background: var(--border); display: none; }
+  .fc-card.flipped .fc-a { display: block; }
+  .fc-card.flipped .fc-divider { display: block; }
+  .fc-card.flipped .fc-q { font-size: 10px; color: var(--muted); }
 
   /* MATERIALS */
   .mat-header-row { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
@@ -780,19 +1094,53 @@
 
   <!-- MATERIALS -->
   <div class="page" id="page-materials">
-    <div class="page-header">
-      <div><h2>Materyaller</h2><p>Ders linklerinizi ve kaynaklarınızı yönetin</p></div>
+    <div class="mat-layout">
+      <div class="mat-sidebar">
+        <div class="mat-sidebar-top">
+          <span class="mat-sidebar-title">Materyaller</span>
+          <button class="mat-add-btn" onclick="openMatModal()" title="Yeni Materyal">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+        <div class="mat-sidebar-filter">
+          <select id="mat-filter" onchange="renderMaterials()">
+            <option value="ALL">Tüm Dersler</option>
+          </select>
+        </div>
+        <div class="mat-list" id="mat-list">
+          <div class="mat-list-empty"><div style="font-size:32px;opacity:0.25;margin-bottom:10px">📂</div><p>Henüz materyal yok</p></div>
+        </div>
+      </div>
+      <div class="mat-detail" id="mat-detail">
+        <div class="mat-welcome" id="mat-welcome">
+          <div class="mat-welcome-icon">✨</div>
+          <div class="mat-welcome-title">Bir materyal seçin</div>
+          <div class="mat-welcome-sub">Soldan bir materyal seçerek AI ile analiz edin, soru sorun veya flashcard oluşturun.</div>
+        </div>
+        <div class="mat-workspace" id="mat-workspace" style="display:none">
+          <div class="mat-workspace-header" id="mat-workspace-header"></div>
+          <div class="mat-ai-bar">
+            <button class="mat-mode-btn active" data-mode="summary" onclick="setMatMode('summary',this)">📝 Özet</button>
+            <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Sınav</button>
+            <button class="mat-mode-btn" data-mode="flashcard" onclick="setMatMode('flashcard',this)">🃏 Flashcard</button>
+            <button class="mat-mode-btn" data-mode="explain" onclick="setMatMode('explain',this)">🧠 Anlat</button>
+            <button class="mat-mode-btn" data-mode="chat" onclick="setMatMode('chat',this)">💬 Sohbet</button>
+          </div>
+          <div class="mat-messages" id="mat-messages"></div>
+          <div class="mat-input-bar">
+            <textarea id="mat-input" placeholder="Bir şey sor veya Analiz Et butonuna bas..." rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();matSend()}"
+              oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+            <div class="mat-input-actions">
+              <button class="mat-analyze-btn" onclick="matAnalyze()">✨ Analiz Et</button>
+              <button class="mat-send-btn" id="mat-send-btn" onclick="matSend()" title="Gönder">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="mat-header-row">
-      <select class="mat-course-select" id="mat-filter" onchange="renderMaterials()">
-        <option value="ALL">Tüm Dersler</option>
-      </select>
-      <button class="add-btn" style="margin-left:auto" onclick="openMatModal()">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Materyal Ekle
-      </button>
-    </div>
-    <div class="mat-grid" id="mat-grid"></div>
   </div>
 
 </main>
@@ -2428,62 +2776,233 @@ function closeNoteViewer(){
 }
 
 
+// ═══════════════════════════════════════
+// YENİ MATERYALLER SİSTEMİ
+// ═══════════════════════════════════════
+let currentMatIdx = null;
+let currentMatMode = 'summary';
+let matChatHistory = [];
+let matFileData = null;
+
+const MAT_PROMPTS = {
+  summary: (t) => `Sen deneyimli bir akademik asistansın. Bu materyali Türkçe, kapsamlı özetle.\n\n## 📌 Genel Özet\n## 🎯 Ana Konular\n## 📖 Temel Kavramlar ve Tanımlar\n## ⚡ Önemli Noktalar\n## 📝 Muhtemel Sınav Konuları\n\nMateryal: ${t}`,
+  quiz: (t) => `Bu materyalden Türkçe sınav soruları oluştur. Çoktan seçmeli, doğru/yanlış ve açık uçlu karışık sorular yaz. Her sorunun cevabını da belirt.\n\nMateryal: ${t}`,
+  flashcard: (t) => `Bu materyalden Türkçe flashcard oluştur. Her kart için kesinlikle bu formatı kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım]\n\nEn az 10 kart oluştur.\nMateryal: ${t}`,
+  explain: (t) => `Bu konuyu hiç bilmeyen birine, sıfırdan ve çok sade Türkçe ile anlat. Günlük hayattan örnekler, benzetmeler ve basit dil kullan. Teknik terimlerden kaçın.\n\nMateryal: ${t}`,
+  chat: (t) => `Sen bu materyal hakkında derin bilgiye sahip bir öğretmensin. Öğrencinin sorularını Türkçe olarak yanıtla.\n\nMateryal: ${t}`
+};
+
 function renderMaterials(){
-  // Populate course filter
   const sel = document.getElementById('mat-filter');
+  if(!sel) return;
   const cur = sel.value;
   sel.innerHTML = '<option value="ALL">Tüm Dersler</option>';
   rawCourses.filter(c=>enrolled.has(c.code)).forEach(c=>{
     sel.innerHTML+=`<option value="${c.code}">${c.code} — ${c.name}</option>`;
   });
-  // cur geçerli bir option değilse 'ALL' kullan
   sel.value = cur;
   const filter = sel.value || 'ALL';
-  if(sel.value !== filter) sel.value = 'ALL';
   const filtered = filter==='ALL' ? materials : materials.filter(m=>m.course===filter);
-  const grid = document.getElementById('mat-grid');
+  const list = document.getElementById('mat-list');
+  if(!list) return;
+
   if(!filtered.length){
-    grid.innerHTML=`<div class="mat-empty" style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)"><div style="font-size:48px;opacity:0.3;margin-bottom:12px">📎</div><p>Henüz materyal eklemediniz.<br>Sağ üstten ekleyebilirsiniz.</p></div>`;
+    list.innerHTML = '<div class="mat-list-empty"><div style="font-size:36px;opacity:0.2;margin-bottom:10px">📂</div><p>Henüz materyal eklemedin</p></div>';
     return;
   }
-  grid.innerHTML='';
-  // Belirli bir ders seçiliyse not kartlarını ekle
-  const courseFilter = filter !== 'ALL' ? filter : null;
-  if(courseFilter){
-    const notes = loadNotes(courseFilter);
-    // Not ekleme kartı
-    grid.innerHTML += buildNoteAddCard();
-    // Mevcut not kartları
-    notes.forEach(n => { grid.innerHTML += buildNoteCard(n, courseFilter); });
-  }
 
-  filtered.forEach((m,i)=>{
+  list.innerHTML = '';
+  filtered.forEach(m => {
     const realIdx = materials.indexOf(m);
     const icon = m.type==='file' ? getFileIcon(m.fileName||'') : (MAT_ICONS[m.type]||'📎');
     const bg = m.type==='file' ? 'rgba(14,165,233,0.15)' : (MAT_COLORS[m.type]||'rgba(108,99,255,0.15)');
     const course = rawCourses.find(c=>c.code===m.course);
-    grid.innerHTML+=`<div class="mat-card">
-      <div class="mat-card-top">
-        <div class="mat-type-icon" style="background:${bg}">${icon}</div>
-        <button class="mat-del" onclick="deleteMaterial(${realIdx})" title="Sil">✕</button>
+    const el = document.createElement('div');
+    el.className = 'mat-list-item' + (currentMatIdx===realIdx?' active':'');
+    el.dataset.idx = realIdx;
+    el.innerHTML = `
+      <div class="mat-list-icon" style="background:${bg}">${icon}</div>
+      <div class="mat-list-info">
+        <div class="mat-list-name">${escHtml(m.title)}</div>
+        <div class="mat-list-course">${course?course.code:(m.course||'')}</div>
       </div>
-      <h4>${m.title}</h4>
-      <div class="mat-course-tag">${course?course.code+' — '+course.name:m.course}</div>
-      ${m.type==='file'&&m.fileSize?`<div class="mat-desc" style="font-size:10px">${getFileIcon(m.fileName||'')} ${escHtml(m.fileName||'')} · ${formatFileSize(m.fileSize)}</div>`:''}
-      ${m.note?`<div class="mat-desc">${m.note}</div>`:''}
-      <div style="display:flex;gap:6px;margin-top:8px;flex-direction:column">
-        ${m.type==='file' ? `
-          <div style="display:flex;gap:6px">
-            <button class="mat-link" style="flex:1;justify-content:center;border:none;cursor:pointer" onclick="viewFile(${realIdx})">👁 Görüntüle</button>
-            <button class="mat-link" style="flex:0 0 auto;justify-content:center;border:none;cursor:pointer;padding:0 12px" onclick="downloadFile(${realIdx})" title="İndir">⬇️</button>
-          </div>` :
-          `<a class="mat-link" style="flex:1;justify-content:center" href="${safeUrl(m.url)}" target="_blank" rel="noopener noreferrer">${icon} Aç →</a>`
-        }
-        <button class="ai-btn" onclick="openAiModal('${escHtml(m.title)}','${escHtml(m.course)}',${realIdx})">✨ AI ile Özetle</button>
-      </div>
-    </div>`;
+      <button class="mat-list-del" onclick="event.stopPropagation();deleteMaterial(${realIdx})" title="Sil">✕</button>`;
+    el.onclick = () => selectMat(realIdx);
+    list.appendChild(el);
   });
 }
+
+async function selectMat(idx){
+  currentMatIdx = idx;
+  matChatHistory = [];
+  matFileData = null;
+
+  document.querySelectorAll('.mat-list-item').forEach(el=>{
+    el.classList.toggle('active', parseInt(el.dataset.idx)===idx);
+  });
+
+  const m = materials[idx];
+  if(!m) return;
+
+  const course = rawCourses.find(c=>c.code===m.course);
+  const icon = m.type==='file' ? getFileIcon(m.fileName||'') : (MAT_ICONS[m.type]||'📎');
+  const bg = m.type==='file' ? 'rgba(14,165,233,0.15)' : (MAT_COLORS[m.type]||'rgba(108,99,255,0.15)');
+
+  // Header
+  let actions = '';
+  if(m.type==='file'){
+    actions = `
+      <button class="mat-ws-action" onclick="viewFile(${idx})">👁 Görüntüle</button>
+      <button class="mat-ws-action" onclick="downloadFile(${idx})">⬇️ İndir</button>`;
+  } else {
+    actions = `<a class="mat-ws-action" href="${safeUrl(m.url)}" target="_blank" rel="noopener noreferrer">${icon} Aç →</a>`;
+  }
+
+  document.getElementById('mat-workspace-header').innerHTML = `
+    <div class="mat-ws-title">${escHtml(m.title)}</div>
+    <div class="mat-ws-meta">
+      ${course?`<span class="mat-ws-tag" style="background:rgba(59,130,246,0.1);color:var(--accent2);border:1px solid rgba(59,130,246,0.2)">${course.code}</span>`:''}
+      <span class="mat-ws-tag" style="background:${bg};color:var(--text2);border:1px solid var(--border)">${icon} ${m.type==='file'?'Dosya':m.type}</span>
+      ${m.fileSize?`<span style="font-size:11px;color:var(--muted)">${formatFileSize(m.fileSize)}</span>`:''}
+    </div>
+    <div class="mat-ws-actions">${actions}</div>`;
+
+  // Clear chat
+  document.getElementById('mat-messages').innerHTML = '';
+  document.getElementById('mat-input').value = '';
+
+  document.getElementById('mat-welcome').style.display = 'none';
+  document.getElementById('mat-workspace').style.display = 'flex';
+  document.getElementById('mat-workspace').style.flexDirection = 'column';
+
+  // Prepare file data in background
+  if(m.type==='file' && m.fileId){
+    try{
+      const f = await getFileFromDB(m.fileId);
+      if(f) matFileData = await prepareFileForClaude(f);
+    }catch(e){ console.warn('Dosya hazırlanamadı:', e); }
+  }
+}
+
+function setMatMode(mode, btn){
+  currentMatMode = mode;
+  document.querySelectorAll('.mat-mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const hints = {
+    summary:'Özet için Analiz Et butonuna bas...',
+    quiz:'Sınav soruları için Analiz Et butonuna bas...',
+    flashcard:'Flashcard oluşturmak için Analiz Et butonuna bas...',
+    explain:'Konuyu basitçe anlatması için Analiz Et butonuna bas...',
+    chat:'Bu materyal hakkında bir şey sor...'
+  };
+  document.getElementById('mat-input').placeholder = hints[mode]||'';
+}
+
+function matAddMsg(role, html){
+  const msgs = document.getElementById('mat-messages');
+  const div = document.createElement('div');
+  div.className = 'mat-msg ' + role;
+  const avatar = role==='ai'?'✨':'👤';
+  div.innerHTML = `
+    <div class="mat-msg-avatar ${role}">${avatar}</div>
+    <div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function matShowTyping(){
+  const msgs = document.getElementById('mat-messages');
+  const div = document.createElement('div');
+  div.className = 'mat-msg ai'; div.id = 'mat-typing';
+  div.innerHTML = `<div class="mat-msg-avatar ai">✨</div><div class="mat-msg-body"><div class="mat-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function matHideTyping(){ const t=document.getElementById('mat-typing'); if(t) t.remove(); }
+
+function matMd(text){
+  return text
+    .replace(/## (.+)/g,'<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^- (.+)/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m=>'<ul>'+m+'</ul>')
+    .replace(/\n{2,}/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+}
+
+function matBuildFlashcards(text){
+  const pairs = [];
+  const lines = text.split('\n');
+  let q='',a='';
+  for(const l of lines){
+    const lc = l.trim();
+    if(/^(Q:|Soru:)/i.test(lc)){ q=lc.replace(/^(Q:|Soru:)\s*/i,''); a=''; }
+    else if(/^(A:|Cevap:)/i.test(lc)){ a=lc.replace(/^(A:|Cevap:)\s*/i,''); if(q&&a){pairs.push({q,a});q='';a='';} }
+  }
+  if(!pairs.length) return '<div>'+matMd(text)+'</div>';
+  return `<div class="fc-grid">${pairs.map(p=>`
+    <div class="fc-card" onclick="this.classList.toggle('flipped')">
+      <div class="fc-q">${escHtml(p.q)}</div>
+      <div class="fc-divider"></div>
+      <div class="fc-a">${escHtml(p.a)}</div>
+    </div>`).join('')}</div>`;
+}
+
+async function matCallAI(userText){
+  const m = currentMatIdx!==null ? materials[currentMatIdx] : null;
+  if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
+
+  const prompt = userText || MAT_PROMPTS[currentMatMode](m.title);
+  document.getElementById('mat-analyze-btn').disabled = true;
+  document.getElementById('mat-send-btn') && (document.getElementById('mat-send-btn').disabled = true);
+  matShowTyping();
+
+  let messageContent = [];
+  if(matFileData){
+    const fd = matFileData;
+    if(fd.type==='pdf') messageContent=[{type:'document',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
+    else if(fd.type==='image') messageContent=[{type:'image',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
+    else messageContent=[{type:'text',text:prompt+'\n\nİçerik:\n'+fd.content}];
+  } else {
+    messageContent=[{type:'text',text:prompt}];
+  }
+
+  const msgs = [...matChatHistory, {role:'user',content:messageContent}];
+
+  try{
+    const resp = await fetch('https://oevvwezbsquxlmgnfydb.supabase.co/functions/v1/anthropic-proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ldnZ3ZXpic3F1eGxtZ25meWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODc3OTAsImV4cCI6MjA4ODk2Mzc5MH0.REume7XGJrUFwH69NwKIwLYUuqNFreT7aI2MHx80amA'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:msgs})
+    });
+    const data = await resp.json();
+    const result = data.content?.map(c=>c.text||'').join('')||'Yanıt alınamadı.';
+    matChatHistory.push({role:'user',content:messageContent});
+    matChatHistory.push({role:'assistant',content:result});
+    matHideTyping();
+    const html = (currentMatMode==='flashcard'&&!userText) ? matBuildFlashcards(result) : matMd(result);
+    matAddMsg('ai', html);
+  }catch(e){
+    matHideTyping();
+    matAddMsg('ai',`<span style="color:var(--red)">❌ Hata: ${escHtml(e.message)}</span>`);
+  }finally{
+    document.getElementById('mat-analyze-btn').disabled=false;
+    const sb=document.getElementById('mat-send-btn'); if(sb) sb.disabled=false;
+  }
+}
+
+function matAnalyze(){ matCallAI(''); }
+
+function matSend(){
+  const inp = document.getElementById('mat-input');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  matAddMsg('user', escHtml(txt));
+  inp.value = ''; inp.style.height='auto';
+  matCallAI(txt);
+}
+
 
 function openMatModal(){
   // populate course select
