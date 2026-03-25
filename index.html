@@ -184,7 +184,8 @@
   }
 
   /* ── MAIN ── */
-  .main { margin-left: 248px; padding: 32px 36px; min-height: 100vh; }
+  .main { margin-left: 248px; min-height: 100vh; }
+  .page.active:not(#page-materials) { padding: 32px 36px; }
   .page { display: none; }
   .page.active { display: block; animation: fadeIn 0.2s ease; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
@@ -569,6 +570,65 @@
   .ai-settings-link:hover { color:var(--accent2); }
 
 
+  /* ── YENİ MATERYALLer LAYOUT ── */
+  #page-materials { padding: 0 !important; }
+  .mat-layout { display:flex; height:100vh; overflow:hidden; }
+  .mat-sidebar { width:280px; flex-shrink:0; border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); overflow:hidden; }
+  .mat-sidebar-header { display:flex; align-items:center; justify-content:space-between; padding:20px 16px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .mat-sidebar-filter { padding:10px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .mat-list { flex:1; overflow-y:auto; padding:8px; }
+  .mat-list-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; cursor:pointer; transition:all 0.15s; margin-bottom:2px; border:1px solid transparent; position:relative; }
+  .mat-list-item:hover { background:var(--surface2); }
+  .mat-list-item.active { background:var(--accent-glow); border-color:rgba(59,130,246,0.2); }
+  .mat-list-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .mat-list-info { flex:1; min-width:0; }
+  .mat-list-title { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mat-list-sub { font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mat-list-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:3px 5px; border-radius:4px; opacity:0; transition:opacity 0.15s; flex-shrink:0; }
+  .mat-list-item:hover .mat-list-del { opacity:1; }
+  .mat-list-del:hover { color:var(--red); background:rgba(248,113,113,0.1); }
+  .mat-list-empty { text-align:center; padding:40px 16px; color:var(--muted); font-size:13px; }
+  .mat-detail { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+  .mat-detail-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--muted); }
+  .mat-detail-content { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .mat-detail-header { padding:20px 24px 16px; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--surface); }
+  .mat-detail-title { font-family:'Outfit',sans-serif; font-size:18px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .mat-detail-meta { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .mat-detail-tag { font-size:11px; padding:3px 8px; border-radius:5px; background:rgba(59,130,246,0.1); color:var(--accent2); border:1px solid rgba(59,130,246,0.2); }
+  .mat-detail-actions { display:flex; gap:8px; margin-top:12px; }
+  .mat-ai-section { flex:1; display:flex; flex-direction:column; overflow:hidden; padding:16px 24px; gap:12px; }
+  .mat-ai-modes { display:flex; gap:6px; flex-wrap:wrap; flex-shrink:0; }
+  .mat-ai-mode-btn { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border2); background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+  .mat-ai-mode-btn:hover { border-color:var(--accent); color:var(--text2); background:var(--surface2); }
+  .mat-ai-mode-btn.active { background:var(--accent-glow); border-color:var(--accent); color:var(--accent2); }
+  .mat-chat-messages { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:16px; padding:8px 0; min-height:0; }
+  .mat-chat-msg { display:flex; gap:10px; align-items:flex-start; }
+  .mat-chat-msg.user { flex-direction:row-reverse; }
+  .mat-chat-avatar { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+  .mat-chat-avatar.ai { background:linear-gradient(135deg,var(--accent),#6366f1); }
+  .mat-chat-avatar.user { background:var(--surface3); }
+  .mat-chat-bubble { max-width:80%; padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.7; color:var(--text2); }
+  .mat-chat-msg.ai .mat-chat-bubble { background:var(--surface); border:1px solid var(--border); border-radius:4px 12px 12px 12px; }
+  .mat-chat-msg.user .mat-chat-bubble { background:var(--accent-glow); border:1px solid rgba(59,130,246,0.2); color:var(--text); border-radius:12px 4px 12px 12px; }
+  .mat-chat-bubble h3 { font-size:12px; font-weight:700; color:var(--accent2); margin:12px 0 4px; text-transform:uppercase; letter-spacing:0.8px; }
+  .mat-chat-bubble h3:first-child { margin-top:0; }
+  .mat-chat-bubble ul { padding-left:16px; }
+  .mat-chat-bubble li { margin-bottom:4px; }
+  .mat-chat-bubble strong { color:var(--text); }
+  .mat-chat-input-area { display:flex; gap:8px; align-items:flex-end; flex-shrink:0; }
+  .mat-chat-input { flex:1; background:var(--surface); border:1px solid var(--border2); border-radius:12px; padding:10px 14px; color:var(--text); font-size:13px; font-family:'DM Sans',sans-serif; resize:none; outline:none; line-height:1.5; max-height:120px; overflow-y:auto; }
+  .mat-chat-input:focus { border-color:var(--accent); }
+  .mat-chat-send { width:38px; height:38px; border-radius:10px; background:var(--accent); border:none; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
+  .mat-chat-send:hover { transform:translateY(-1px); }
+  .mat-chat-send:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .flashcard-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
+  .flashcard { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s; text-align:center; }
+  .flashcard:hover { border-color:var(--accent); }
+  .flashcard .fc-q { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:6px; }
+  .flashcard .fc-a { font-size:12px; color:var(--accent2); display:none; }
+  .flashcard.flipped .fc-a { display:block; }
+  .flashcard.flipped .fc-q { color:var(--muted); font-size:11px; }
+
   /* ── DOSYA YÜKLEME ── */
   .file-drop-zone {
     border: 2px dashed var(--border2); border-radius: 12px;
@@ -779,20 +839,61 @@
   </div>
 
   <!-- MATERIALS -->
-  <div class="page" id="page-materials">
-    <div class="page-header">
-      <div><h2>Materyaller</h2><p>Ders linklerinizi ve kaynaklarınızı yönetin</p></div>
+  <div class="page" id="page-materials" style="padding:0;height:calc(100vh - 0px);">
+    <div class="mat-layout">
+      <!-- Sol panel: materyal listesi -->
+      <div class="mat-sidebar">
+        <div class="mat-sidebar-header">
+          <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--text)">Materyaller</div>
+          <button class="add-btn" style="padding:7px 12px;font-size:12px" onclick="openMatModal()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Yeni
+          </button>
+        </div>
+        <div class="mat-sidebar-filter">
+          <select class="mat-course-select" id="mat-filter" onchange="renderMaterials()" style="width:100%;font-size:12px;padding:7px 10px">
+            <option value="ALL">Tüm Dersler</option>
+          </select>
+        </div>
+        <div class="mat-list" id="mat-list"></div>
+      </div>
+      <!-- Sağ panel: detay + AI chat -->
+      <div class="mat-detail" id="mat-detail">
+        <div class="mat-detail-empty" id="mat-detail-empty">
+          <div style="font-size:48px;margin-bottom:16px;opacity:0.3">📎</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text2);margin-bottom:8px">Materyal seçin</div>
+          <div style="font-size:13px;color:var(--muted)">Soldan bir materyal seçerek AI ile analiz edin</div>
+        </div>
+        <div class="mat-detail-content" id="mat-detail-content" style="display:none">
+          <!-- Materyal bilgisi -->
+          <div class="mat-detail-header" id="mat-detail-header"></div>
+          <!-- AI Chat alanı -->
+          <div class="mat-ai-section">
+            <div class="mat-ai-modes" id="mat-ai-modes">
+              <button class="mat-ai-mode-btn active" onclick="setAiMode('summary',this)">📝 Özet</button>
+              <button class="mat-ai-mode-btn" onclick="setAiMode('quiz',this)">❓ Sınav Soruları</button>
+              <button class="mat-ai-mode-btn" onclick="setAiMode('flashcard',this)">🃏 Flashcard</button>
+              <button class="mat-ai-mode-btn" onclick="setAiMode('explain',this)">🧠 Basit Anlatım</button>
+              <button class="mat-ai-mode-btn" onclick="setAiMode('chat',this)">💬 Soru-Cevap</button>
+            </div>
+            <!-- Chat mesajları -->
+            <div class="mat-chat-messages" id="mat-chat-messages"></div>
+            <!-- Input alanı -->
+            <div class="mat-chat-input-area">
+              <textarea class="mat-chat-input" id="mat-chat-input" placeholder="Bir şey sor veya Analiz Et butonuna bas..." rows="1" onkeydown="matChatKeydown(event)" oninput="autoResizeTextarea(this)"></textarea>
+              <button class="mat-chat-send" id="mat-chat-send" onclick="sendMatChat()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+            <div style="text-align:center;margin-top:8px">
+              <button class="add-btn" id="mat-analyze-btn" onclick="runMatAnalysis()" style="padding:8px 20px;font-size:12px">
+                ✨ Analiz Et
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="mat-header-row">
-      <select class="mat-course-select" id="mat-filter" onchange="renderMaterials()">
-        <option value="ALL">Tüm Dersler</option>
-      </select>
-      <button class="add-btn" style="margin-left:auto" onclick="openMatModal()">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Materyal Ekle
-      </button>
-    </div>
-    <div class="mat-grid" id="mat-grid"></div>
   </div>
 
 </main>
@@ -2428,61 +2529,277 @@ function closeNoteViewer(){
 }
 
 
+// ===== YENİ MATERYALLer LAYOUT =====
+let currentMatIdx = null;
+let currentAiMode = 'summary';
+let matChatHistory = []; // {role, content}
+let matAiFileData = null;
+
 function renderMaterials(){
-  // Populate course filter
   const sel = document.getElementById('mat-filter');
   const cur = sel.value;
   sel.innerHTML = '<option value="ALL">Tüm Dersler</option>';
   rawCourses.filter(c=>enrolled.has(c.code)).forEach(c=>{
     sel.innerHTML+=`<option value="${c.code}">${c.code} — ${c.name}</option>`;
   });
-  // cur geçerli bir option değilse 'ALL' kullan
   sel.value = cur;
   const filter = sel.value || 'ALL';
-  if(sel.value !== filter) sel.value = 'ALL';
+
   const filtered = filter==='ALL' ? materials : materials.filter(m=>m.course===filter);
-  const grid = document.getElementById('mat-grid');
+  const list = document.getElementById('mat-list');
+  if(!list) return;
+
   if(!filtered.length){
-    grid.innerHTML=`<div class="mat-empty" style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)"><div style="font-size:48px;opacity:0.3;margin-bottom:12px">📎</div><p>Henüz materyal eklemediniz.<br>Sağ üstten ekleyebilirsiniz.</p></div>`;
+    list.innerHTML = `<div class="mat-list-empty"><div style="font-size:36px;opacity:0.3;margin-bottom:10px">📎</div><p>Henüz materyal yok.<br>Sağ üstten ekleyebilirsin.</p></div>`;
     return;
   }
-  grid.innerHTML='';
-  // Belirli bir ders seçiliyse not kartlarını ekle
-  const courseFilter = filter !== 'ALL' ? filter : null;
-  if(courseFilter){
-    const notes = loadNotes(courseFilter);
-    // Not ekleme kartı
-    grid.innerHTML += buildNoteAddCard();
-    // Mevcut not kartları
-    notes.forEach(n => { grid.innerHTML += buildNoteCard(n, courseFilter); });
-  }
 
-  filtered.forEach((m,i)=>{
+  list.innerHTML = '';
+  filtered.forEach(m => {
     const realIdx = materials.indexOf(m);
     const icon = m.type==='file' ? getFileIcon(m.fileName||'') : (MAT_ICONS[m.type]||'📎');
     const bg = m.type==='file' ? 'rgba(14,165,233,0.15)' : (MAT_COLORS[m.type]||'rgba(108,99,255,0.15)');
     const course = rawCourses.find(c=>c.code===m.course);
-    grid.innerHTML+=`<div class="mat-card">
-      <div class="mat-card-top">
-        <div class="mat-type-icon" style="background:${bg}">${icon}</div>
-        <button class="mat-del" onclick="deleteMaterial(${realIdx})" title="Sil">✕</button>
+    const item = document.createElement('div');
+    item.className = 'mat-list-item' + (currentMatIdx === realIdx ? ' active' : '');
+    item.dataset.idx = realIdx;
+    item.innerHTML = `
+      <div class="mat-list-icon" style="background:${bg}">${icon}</div>
+      <div class="mat-list-info">
+        <div class="mat-list-title">${escHtml(m.title)}</div>
+        <div class="mat-list-sub">${course ? course.code : (m.course||'')}</div>
       </div>
-      <h4>${m.title}</h4>
-      <div class="mat-course-tag">${course?course.code+' — '+course.name:m.course}</div>
-      ${m.type==='file'&&m.fileSize?`<div class="mat-desc" style="font-size:10px">${getFileIcon(m.fileName||'')} ${escHtml(m.fileName||'')} · ${formatFileSize(m.fileSize)}</div>`:''}
-      ${m.note?`<div class="mat-desc">${m.note}</div>`:''}
-      <div style="display:flex;gap:6px;margin-top:8px;flex-direction:column">
-        ${m.type==='file' ? `
-          <div style="display:flex;gap:6px">
-            <button class="mat-link" style="flex:1;justify-content:center;border:none;cursor:pointer" onclick="viewFile(${realIdx})">👁 Görüntüle</button>
-            <button class="mat-link" style="flex:0 0 auto;justify-content:center;border:none;cursor:pointer;padding:0 12px" onclick="downloadFile(${realIdx})" title="İndir">⬇️</button>
-          </div>` :
-          `<a class="mat-link" style="flex:1;justify-content:center" href="${safeUrl(m.url)}" target="_blank" rel="noopener noreferrer">${icon} Aç →</a>`
-        }
-        <button class="ai-btn" onclick="openAiModal('${escHtml(m.title)}','${escHtml(m.course)}',${realIdx})">✨ AI ile Özetle</button>
-      </div>
-    </div>`;
+      <button class="mat-list-del" onclick="event.stopPropagation();deleteMaterial(${realIdx})" title="Sil">✕</button>`;
+    item.onclick = () => selectMaterial(realIdx);
+    list.appendChild(item);
   });
+}
+
+async function selectMaterial(idx){
+  currentMatIdx = idx;
+  matChatHistory = [];
+  matAiFileData = null;
+
+  // Sol listede aktif işaretle
+  document.querySelectorAll('.mat-list-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
+  });
+
+  const m = materials[idx];
+  if(!m) return;
+
+  const course = rawCourses.find(c=>c.code===m.course);
+  const icon = m.type==='file' ? getFileIcon(m.fileName||'') : (MAT_ICONS[m.type]||'📎');
+
+  // Header
+  document.getElementById('mat-detail-header').innerHTML = `
+    <div class="mat-detail-title">${escHtml(m.title)}</div>
+    <div class="mat-detail-meta">
+      ${course ? `<span class="mat-detail-tag">${course.code}</span>` : ''}
+      <span class="mat-detail-tag" style="background:rgba(108,99,255,0.1);color:var(--blue);border-color:rgba(108,99,255,0.2)">${icon} ${m.type==='file'?'Dosya':m.type}</span>
+      ${m.fileSize ? `<span style="font-size:11px;color:var(--muted)">${formatFileSize(m.fileSize)}</span>` : ''}
+    </div>
+    <div class="mat-detail-actions">
+      ${m.type==='file' ? `
+        <button class="mat-link" style="border:none;cursor:pointer" onclick="viewFile(${idx})">👁 Görüntüle</button>
+        <button class="mat-link" style="border:none;cursor:pointer" onclick="downloadFile(${idx})">⬇️ İndir</button>
+      ` : `
+        <a class="mat-link" href="${safeUrl(m.url)}" target="_blank" rel="noopener noreferrer">${icon} Aç →</a>
+      `}
+    </div>`;
+
+  // Chat temizle
+  document.getElementById('mat-chat-messages').innerHTML = '';
+  document.getElementById('mat-chat-input').value = '';
+
+  // Görünür yap
+  document.getElementById('mat-detail-empty').style.display = 'none';
+  document.getElementById('mat-detail-content').style.display = 'flex';
+
+  // Dosya varsa hazırla
+  if(m.type === 'file' && m.fileId){
+    try{
+      const f = await getFileFromDB(m.fileId);
+      if(f) matAiFileData = await prepareFileForClaude(f);
+    }catch(e){ console.warn('Dosya yüklenemedi:', e); }
+  }
+}
+
+function setAiMode(mode, btn){
+  currentAiMode = mode;
+  document.querySelectorAll('.mat-ai-mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const placeholders = {
+    summary: 'Özet için Analiz Et butonuna bas veya özel bir istek yaz...',
+    quiz: 'Sınav soruları için Analiz Et butonuna bas...',
+    flashcard: 'Flashcard oluşturmak için Analiz Et butonuna bas...',
+    explain: 'Konuyu basitçe anlatması için Analiz Et butonuna bas...',
+    chat: 'Bu materyal hakkında bir şey sor...'
+  };
+  document.getElementById('mat-chat-input').placeholder = placeholders[mode] || '';
+}
+
+function matChatKeydown(e){
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMatChat(); }
+}
+
+function autoResizeTextarea(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function addChatMessage(role, html){
+  const msgs = document.getElementById('mat-chat-messages');
+  const div = document.createElement('div');
+  div.className = 'mat-chat-msg ' + role;
+  const avatar = role === 'ai' ? '✨' : '👤';
+  div.innerHTML = `
+    <div class="mat-chat-avatar ${role}">${avatar}</div>
+    <div class="mat-chat-bubble">${html}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addThinkingMsg(){
+  const msgs = document.getElementById('mat-chat-messages');
+  const div = document.createElement('div');
+  div.className = 'mat-chat-msg ai';
+  div.id = 'thinking-msg';
+  div.innerHTML = `
+    <div class="mat-chat-avatar ai">✨</div>
+    <div class="mat-chat-bubble">
+      <div class="mat-chat-thinking"><span></span><span></span><span></span></div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeThinkingMsg(){
+  const t = document.getElementById('thinking-msg');
+  if(t) t.remove();
+}
+
+function markdownToHtml(text){
+  return text
+    .replace(/## (.+)/g, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)/gm, '<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>
+?)+/g, m => '<ul>' + m + '</ul>')
+    .replace(/
+/g, '<br>');
+}
+
+function buildFlashcards(text){
+  // parse Q: ... A: ... pairs
+  const pairs = [];
+  const lines = text.split('
+');
+  let q='', a='';
+  lines.forEach(l=>{
+    if(l.startsWith('Q:') || l.startsWith('Soru:')) { q = l.replace(/^(Q:|Soru:)\s*/,''); a=''; }
+    else if(l.startsWith('A:') || l.startsWith('Cevap:')) { a = l.replace(/^(A:|Cevap:)\s*/,''); if(q&&a) pairs.push({q,a}); }
+  });
+  if(!pairs.length) return '<div class="mat-chat-bubble" style="width:100%">' + markdownToHtml(text) + '</div>';
+  return `<div class="flashcard-grid">${pairs.map(p=>`
+    <div class="flashcard" onclick="this.classList.toggle('flipped')">
+      <div class="fc-q">${escHtml(p.q)}</div>
+      <div class="fc-a">${escHtml(p.a)}</div>
+    </div>`).join('')}</div>`;
+}
+
+const MODE_PROMPTS = {
+  summary: (title) => `Sen deneyimli bir akademik asistan ve öğretmensin. Bu materyali Türkçe olarak kapsamlı özetle:
+
+## 📌 Genel Özet
+## 🎯 Ana Konular
+## 📖 Temel Kavramlar
+## ⚡ Önemli Noktalar
+## 📝 Muhtemel Sınav Konuları
+
+Materyal: ${title}`,
+  quiz: (title) => `Bu materyalden Türkçe sınav soruları oluştur. Hem çoktan seçmeli hem açık uçlu sorular ekle. Her sorunun cevabını da yaz.
+
+Materyal: ${title}`,
+  flashcard: (title) => `Bu materyalden Türkçe flashcard oluştur. Her kart için tam olarak şu formatta yaz:
+Q: [soru]
+A: [cevap]
+
+En az 8 kart oluştur. Materyal: ${title}`,
+  explain: (title) => `Bu konuyu hiç bilmiyormuş gibi, sıfırdan ve çok sade Türkçe ile anlat. Örnekler ve benzetmeler kullan.
+
+Materyal: ${title}`,
+  chat: (title) => `Sen bu materyali bilen bir öğretmensin. Öğrencinin sorularını Türkçe olarak yanıtla.
+
+Materyal: ${title}`
+};
+
+async function runMatAnalysis(){
+  if(currentMatIdx === null){ showToast('❌ Önce bir materyal seçin.'); return; }
+  const m = materials[currentMatIdx];
+  const userInput = document.getElementById('mat-chat-input').value.trim();
+  const prompt = userInput || MODE_PROMPTS[currentAiMode](m.title);
+
+  if(userInput){
+    addChatMessage('user', escHtml(userInput));
+    document.getElementById('mat-chat-input').value = '';
+    autoResizeTextarea(document.getElementById('mat-chat-input'));
+  }
+
+  addThinkingMsg();
+  document.getElementById('mat-analyze-btn').disabled = true;
+  document.getElementById('mat-chat-send').disabled = true;
+
+  let messageContent = [];
+  const fullPrompt = (userInput ? userInput : MODE_PROMPTS[currentAiMode](m.title));
+
+  if(matAiFileData){
+    const fd = matAiFileData;
+    if(fd.type==='pdf') messageContent = [{type:'document',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:fullPrompt}];
+    else if(fd.type==='image') messageContent = [{type:'image',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:fullPrompt}];
+    else messageContent = [{type:'text',text:fullPrompt+'\n\nİçerik:\n'+fd.content}];
+  } else {
+    messageContent = [{type:'text',text:fullPrompt}];
+  }
+
+  // Chat history için
+  const historyMessages = matChatHistory.map(h=>({role:h.role, content:h.content}));
+  historyMessages.push({role:'user', content: messageContent});
+
+  try{
+    const response = await fetch('https://oevvwezbsquxlmgnfydb.supabase.co/functions/v1/anthropic-proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ldnZ3ZXpic3F1eGxtZ25meWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODc3OTAsImV4cCI6MjA4ODk2Mzc5MH0.REume7XGJrUFwH69NwKIwLYUuqNFreT7aI2MHx80amA'},
+      body: JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:historyMessages})
+    });
+    const data = await response.json();
+    const result = data.content?.map(c=>c.text||'').join('') || 'Yanıt alınamadı.';
+
+    matChatHistory.push({role:'user', content: messageContent});
+    matChatHistory.push({role:'assistant', content: result});
+
+    removeThinkingMsg();
+    const html = currentAiMode==='flashcard' && !userInput
+      ? buildFlashcards(result)
+      : markdownToHtml(result);
+    addChatMessage('ai', html);
+
+  }catch(e){
+    removeThinkingMsg();
+    addChatMessage('ai', `<span style="color:var(--red)">❌ Hata: ${escHtml(e.message)}</span>`);
+  }finally{
+    document.getElementById('mat-analyze-btn').disabled = false;
+    document.getElementById('mat-chat-send').disabled = false;
+  }
+}
+
+async function sendMatChat(){
+  const input = document.getElementById('mat-chat-input').value.trim();
+  if(!input) return;
+  if(currentMatIdx === null){ showToast('❌ Önce bir materyal seçin.'); return; }
+  await runMatAnalysis();
 }
 
 function openMatModal(){
