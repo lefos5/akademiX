@@ -2963,7 +2963,8 @@ async function matCallAI(userText){
     const fd = matFileData;
     if(fd.type==='pdf') messageContent=[{type:'document',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
     else if(fd.type==='image') messageContent=[{type:'image',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
-    else messageContent=[{type:'text',text:prompt+'\n\nİçerik:\n'+fd.content}];
+    else if(fd.type==='text' && fd.content) messageContent=[{type:'text',text:prompt+'\n\nİçerik:\n'+fd.content}];
+    else messageContent=[{type:'text',text:prompt+'\n\n[Dosya türü ('+( fd.name||fd.mediaType||'bilinmiyor')+') doğrudan okunamıyor. Lütfen içeriği elle metin kutusuna yapıştırın veya PDF/Word formatında yükleyin.]'}];
   } else {
     messageContent=[{type:'text',text:prompt}];
   }
@@ -3189,8 +3190,12 @@ ${pageText}
     const text = atob(base64);
     return { type: 'text', content: text.substring(0, 8000) };
   }
-  // Diğer → base64 olarak gönder, Claude denesin
-  return { type: 'other', base64, mediaType: f.type || 'application/octet-stream', name: f.name };
+  // PPT/PPTX/XLS/XLSX → içerik okunamıyor, kullanıcıya bildir
+  if(['ppt','pptx','xls','xlsx'].includes(ext)){
+    return { type: 'text', content: `[${f.name} dosyası (${ext.toUpperCase()}) otomatik okunamıyor. Slayt veya tablo içeriğini kopyalayıp metin kutusuna yapıştırın, ardından analiz edin.]` };
+  }
+  // Diğer → desteklenmiyor
+  return { type: 'text', content: `[${f.name} dosyası desteklenmiyor. İçeriği metin olarak yapıştırın.]` };
 }
 
 function base64ToArrayBuffer(base64){
