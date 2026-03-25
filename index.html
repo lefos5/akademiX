@@ -1132,7 +1132,7 @@
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();matSend()}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
             <div class="mat-input-actions">
-              <button class="mat-analyze-btn" onclick="matAnalyze()">✨ Analiz Et</button>
+              <button class="mat-analyze-btn" id="mat-analyze-btn" onclick="matAnalyze()">✨ Analiz Et</button>
               <button class="mat-send-btn" id="mat-send-btn" onclick="matSend()" title="Gönder">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
@@ -2954,8 +2954,8 @@ async function matCallAI(userText){
   if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
 
   const prompt = userText || MAT_PROMPTS[currentMatMode](m.title);
-  document.getElementById('mat-analyze-btn').disabled = true;
-  document.getElementById('mat-send-btn') && (document.getElementById('mat-send-btn').disabled = true);
+  const _ab=document.getElementById('mat-analyze-btn'); if(_ab) _ab.disabled=true;
+  const _sb=document.getElementById('mat-send-btn'); if(_sb) _sb.disabled=true;
   matShowTyping();
 
   let messageContent = [];
@@ -2987,8 +2987,8 @@ async function matCallAI(userText){
     matHideTyping();
     matAddMsg('ai',`<span style="color:var(--red)">❌ Hata: ${escHtml(e.message)}</span>`);
   }finally{
-    document.getElementById('mat-analyze-btn').disabled=false;
-    const sb=document.getElementById('mat-send-btn'); if(sb) sb.disabled=false;
+    const ab2=document.getElementById('mat-analyze-btn'); if(ab2) ab2.disabled=false;
+    const sb2=document.getElementById('mat-send-btn'); if(sb2) sb2.disabled=false;
   }
 }
 
