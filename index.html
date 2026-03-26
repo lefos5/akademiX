@@ -1251,12 +1251,13 @@ function safeLocalStorage(key, fallback){
 
 function safeSessionStorage(key, fallback){
   try {
-    const val = localStorage.getItem(key);
+    // Önce sessionStorage dene; yoksa localStorage'a bak (cross-tab uyumu için)
+    let val = sessionStorage.getItem(key);
+    if(!val) val = localStorage.getItem(key);
     if(!val) return fallback;
     return JSON.parse(val);
   } catch(e) {
-    console.warn('localStorage parse hatası:', key);
-    localStorage.removeItem(key);
+    console.warn('sessionStorage parse hatası:', key);
     return fallback;
   }
 }
@@ -1270,6 +1271,26 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile'
 ].join(' ');
+
+// tokenClient: Google Identity Services token istemcisi.
+// Backend session akışı (akademix-backend) ana giriş yöntemi.
+// Bu nesne yalnızca Classroom için ek Google token gerektiğinde devreye girer.
+let tokenClient = null;
+function initTokenClient(){
+  if(!window.google?.accounts?.oauth2) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: handleTokenResponse
+  });
+}
+
+async function silentTokenRefresh(){
+  if(!tokenClient){ console.warn('[Token] tokenClient henüz hazır değil'); return; }
+  try{
+    tokenClient.requestAccessToken({ prompt: '' });
+  }catch(e){ console.warn('[Token] Sessiz yenileme başarısız:', e); }
+}
 
 
 // ===== SUPABASE =====
@@ -1655,10 +1676,21 @@ function saveEnrolled(){
   if(currentUserEmail && sb) sbSaveEnrolled(currentUserEmail, [...enrolled]);
 }
 async function loadEnrolled(){
+  // 1) Önce localStorage'dan hızlıca yükle (anlık render için)
   const raw = safeLocalStorage(enrolledKey(), []);
-  // Güvenlik: sadece string array kabul et, her item whitelist'te olmalı
   const validCodes = new Set(rawCourses.map(c=>c.code));
   enrolled = new Set((Array.isArray(raw)?raw:[]).filter(x=>typeof x==='string' && validCodes.has(x)));
+
+  // 2) Supabase'den senkronize et (giriş yapmışsa)
+  if(currentUserEmail && sb){
+    try{
+      const sbCourses = await sbLoadEnrolled(currentUserEmail);
+      if(sbCourses !== null){
+        enrolled = new Set(sbCourses.filter(x=>typeof x==='string' && validCodes.has(x)));
+        localStorage.setItem(enrolledKey(), JSON.stringify([...enrolled]));
+      }
+    }catch(e){ console.warn('Enrolled Supabase sync hatası:', e); }
+  }
 }
 
 // NAV
@@ -2860,7 +2892,17 @@ function setMatType(type, btn){
   const isFile = type === 'file';
   document.getElementById('mat-url-section').style.display = isFile ? 'none' : 'block';
   document.getElementById('mat-file-section').style.display = isFile ? 'block' : 'none';
-  if(!isFile){ selectedFile = null; resetFileDropZone(); }
+  if(!isFile){
+    selectedFile = null;
+    resetFileDropZone();
+    // Dosya input'unu sıfırla — aynı dosya yeniden seçilebilsin
+    const fi = document.getElementById('mat-file-input');
+    if(fi) fi.value = '';
+  } else {
+    // URL alanını temizle
+    const urlEl = document.getElementById('mat-url');
+    if(urlEl) urlEl.value = '';
+  }
 }
 
 function openMatModal(){
@@ -2881,6 +2923,28 @@ function openMatModal(){
   currentMatType='drive';
   resetFileDropZone();
   document.getElementById('mat-modal').classList.add('open');
+
+  // Drag & drop event listener'larını ekle (her açılışta temiz bağla)
+  const zone = document.getElementById('file-drop-zone');
+  if(zone && !zone._ddReady){
+    zone._ddReady = true;
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      zone.classList.add('dragover');
+    });
+    zone.addEventListener('dragleave', e => {
+      if(!zone.contains(e.relatedTarget)) zone.classList.remove('dragover');
+    });
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if(file){
+        const fakeEvt = { target: { files: [file] } };
+        handleFileSelect(fakeEvt);
+      }
+    });
+  }
 }
 
 
@@ -3118,6 +3182,16 @@ function base64ToArrayBuffer(base64){
   const bytes = new Uint8Array(binary.length);
   for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes.buffer;
+}
+
+function arrayBufferToBase64(buffer){
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const CHUNK = 8192;
+  for(let i = 0; i < bytes.length; i += CHUNK){
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
 }
 
 
@@ -3358,7 +3432,12 @@ function applyTheme(theme){
 })();
 
 window.addEventListener('load',()=>{
-  initSupabase();initGoogleAuth();renderSchedule();renderCourses();});
+  initSupabase();
+  initGoogleAuth();
+  initTokenClient();
+  renderSchedule();
+  renderCourses();
+});
 </script>
 
   <!-- AI ÖZET MODAL -->
