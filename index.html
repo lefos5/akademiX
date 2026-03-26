@@ -1183,8 +1183,8 @@
       <!-- Dosya yükleme alanı -->
       <div id="mat-file-section" style="display:none">
         <label>Dosya</label>
-        <div class="file-drop-zone" id="file-drop-zone" onclick="document.getElementById('mat-file-input').click()">
-          <input type="file" id="mat-file-input" style="display:none" onchange="handleFileSelect(event)">
+        <div class="file-drop-zone" id="file-drop-zone">
+          <input type="file" id="mat-file-input" style="display:none">
           <div id="file-drop-content">
             <div style="font-size:32px;margin-bottom:8px">📂</div>
             <div style="font-size:13px;font-weight:600;color:var(--text2)">Dosya seçmek için tıkla</div>
@@ -1305,6 +1305,13 @@ function initSupabase(){
     if(!client){ console.warn('Supabase kütüphanesi yüklenmedi'); return; }
     sb = client.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log('Supabase bağlandı ✅');
+    // Storage erişimini test et (sessiz)
+    sb.storage.from('materials').list('', { limit: 1 })
+      .then(({ error }) => {
+        if(error) console.warn('[Storage] "materials" bucket erişim hatası:', error.message,
+          '\n👉 Supabase Dashboard → Storage → New Bucket → "materials" (Public: açık) oluşturuldu mu?');
+        else console.log('[Storage] "materials" bucket erişilebilir ✅');
+      });
   }catch(e){ console.warn('Supabase init hatası:', e); }
 }
 
@@ -2924,10 +2931,27 @@ function openMatModal(){
   resetFileDropZone();
   document.getElementById('mat-modal').classList.add('open');
 
-  // Drag & drop event listener'larını ekle (her açılışta temiz bağla)
+  // Dosya input ve drag & drop — sadece bir kere bağla
   const zone = document.getElementById('file-drop-zone');
-  if(zone && !zone._ddReady){
+  const fileInput = document.getElementById('mat-file-input');
+
+  if(zone && fileInput && !zone._ddReady){
     zone._ddReady = true;
+
+    // Tıklama → dosya seçici aç
+    zone.addEventListener('click', (e) => {
+      // "✕ kaldır" butonuna tıklanırsa tetiklenmesin
+      if(e.target.closest('.file-remove-btn')) return;
+      fileInput.click();
+    });
+
+    // Dosya seçilince preview göster
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(file) handleFileSelect({ target: { files: [file] } });
+    });
+
+    // Drag & drop
     zone.addEventListener('dragover', e => {
       e.preventDefault();
       zone.classList.add('dragover');
@@ -2939,17 +2963,17 @@ function openMatModal(){
       e.preventDefault();
       zone.classList.remove('dragover');
       const file = e.dataTransfer.files[0];
-      if(file){
-        const fakeEvt = { target: { files: [file] } };
-        handleFileSelect(fakeEvt);
-      }
+      if(file) handleFileSelect({ target: { files: [file] } });
     });
   }
 }
 
 
-function handleFileSelect(event){
-  const file = event.target.files[0];
+function handleFileSelect(eventOrFile){
+  // Hem gerçek event hem de {target:{files:[file]}} şeklinde sahte event kabul eder
+  const file = (eventOrFile instanceof File)
+    ? eventOrFile
+    : eventOrFile?.target?.files?.[0];
   if(!file) return;
   selectedFile = file;
   if(!document.getElementById('mat-title').value){
@@ -2991,17 +3015,47 @@ async function saveMaterial(){
   if(currentMatType === 'file'){
     if(!selectedFile){ alert('Lütfen bir dosya seçin.'); return; }
     if(!title){ alert('Başlık zorunludur.'); return; }
+
+    // Supabase ve oturum kontrolleri
+    if(!sb){ alert('Supabase bağlantısı kurulamadı. Sayfayı yenileyip tekrar deneyin.'); return; }
+    if(!currentUserEmail){ alert('Dosya yükleyebilmek için Google hesabınızla giriş yapmalısınız.'); return; }
+
+    // Dosya boyutu kontrolü (50 MB limit)
+    const MAX_MB = 50;
+    if(selectedFile.size > MAX_MB * 1024 * 1024){
+      alert(`Dosya boyutu ${MAX_MB} MB sınırını aşıyor (${(selectedFile.size/1024/1024).toFixed(1)} MB).`);
+      return;
+    }
+
     try{
       showToast('⏳ Dosya yükleniyor...');
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = crypto.randomUUID() + '.' + fileExt;
-      const filePath = (currentUserEmail || 'guest') + '/' + fileName;
+      const fileExt = selectedFile.name.split('.').pop().toLowerCase();
+      // crypto.randomUUID sadece güvenli bağlamda (HTTPS/localhost) çalışır
+      const uid = (typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : Date.now() + '_' + Math.random().toString(36).slice(2);
+      const fileName = uid + '.' + fileExt;
+      const filePath = currentUserEmail + '/' + fileName;
+
       const { error: uploadError } = await sb.storage
         .from('materials')
         .upload(filePath, selectedFile, { upsert: false });
-      if(uploadError) throw new Error('Yükleme hatası: ' + uploadError.message);
+
+      if(uploadError){
+        // Supabase hata kodlarını Türkçe'ye çevir
+        const msg = uploadError.message || '';
+        if(msg.includes('Bucket not found'))
+          throw new Error('Depolama alanı bulunamadı. Supabase panelinde "materials" bucket\'ı oluşturuldu mu?');
+        if(msg.includes('violates row-level security') || msg.includes('new row violates'))
+          throw new Error('Yetki hatası: RLS politikası engelledi. Supabase Storage politikasını kontrol edin.');
+        if(msg.includes('Payload too large') || msg.includes('413'))
+          throw new Error('Dosya çok büyük. Supabase planınızın izin verdiği boyutu aşıyor.');
+        throw new Error('Yükleme hatası: ' + msg);
+      }
+
       const { data: urlData } = sb.storage.from('materials').getPublicUrl(filePath);
       const fileUrl = urlData.publicUrl;
+
       const newMat = {
         title, course, note, type:'file',
         fileName: selectedFile.name,
@@ -3010,18 +3064,23 @@ async function saveMaterial(){
         filePath: filePath,
         addedAt: new Date().toISOString()
       };
+
       const sbId = await sbSaveMaterial(currentUserEmail, {
         title, course, note, type:'file',
         fileName: selectedFile.name,
         fileUrl: fileUrl
       });
       if(sbId) newMat._sbId = sbId;
+
       materials.push(newMat);
       saveMaterials();
       closeMatModal();
       renderMaterials();
       showToast('✅ Dosya yüklendi!');
-    }catch(e){ alert('Dosya kaydedilemedi: ' + e.message); }
+    }catch(e){
+      console.error('[saveMaterial]', e);
+      alert('Dosya kaydedilemedi:\n' + e.message);
+    }
     return;
   }
 
