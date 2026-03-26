@@ -2629,9 +2629,12 @@ async function downloadFile(idx){
   const m = materials[idx];
   // Supabase Storage URL varsa direkt indir
   if(m && m.fileUrl && !m.fileId){
+    const resp = await fetch(m.fileUrl);
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = m.fileUrl; a.download = m.fileName || 'dosya';
-    a.target = '_blank'; a.click();
+    a.href = url; a.download = m.fileName || 'dosya'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
     return;
   }
   if(!m || !m.fileId){ showToast('❌ Dosya bu cihazda mevcut değil.'); return; }
