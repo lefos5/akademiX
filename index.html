@@ -1218,7 +1218,28 @@
 
 <script>
 
-// ===== GÜVENLİK =====
+function getFileIcon(fileName){
+  const ext = (fileName||'').split('.').pop().toLowerCase();
+  const map = {
+    pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊',
+    ppt:'📑', pptx:'📑', txt:'📃', md:'📃',
+    jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', webp:'🖼️', svg:'🖼️',
+    mp4:'🎬', mov:'🎬', avi:'🎬', webm:'🎬',
+    mp3:'🎵', wav:'🎵', m4a:'🎵', aac:'🎵',
+    zip:'🗜️', rar:'🗜️', gz:'🗜️',
+    js:'💻', ts:'💻', py:'💻', java:'💻', cpp:'💻', c:'💻', html:'💻', css:'💻', json:'💻'
+  };
+  return map[ext] || '📎';
+}
+
+function formatFileSize(bytes){
+  if(!bytes || bytes === 0) return '0 B';
+  const units = ['B','KB','MB','GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+}
+
+
 function escHtml(str){
   if(!str) return '';
   return String(str)
