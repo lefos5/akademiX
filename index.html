@@ -1320,6 +1320,7 @@ async function sbLoadMaterials(email){
       note: r.description,
       url: r.url,
       fileName: r.file_name,
+      fileUrl: r.url,
       addedAt: r.created_at,
       _sbId: r.id
     }));
@@ -1335,7 +1336,7 @@ async function sbSaveMaterial(email, mat){
       course: mat.course || '',
       type: mat.type || 'other',
       description: mat.note || '',
-      url: mat.url || '',
+      url: mat.url || mat.fileUrl || '',
       file_name: mat.fileName || ''
     }).select().single();
     if(error) throw error;
@@ -2451,7 +2452,12 @@ function toBlobURL(f){
 
 async function viewFile(idx){
   const m = materials[idx];
-  if(!m || !m.fileId){ showToast('❌ Dosya bulunamadı.'); return; }
+  // Supabase Storage URL varsa direkt aç
+  if(m && m.fileUrl && !m.fileId){
+    window.open(m.fileUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  if(!m || !m.fileId){ showToast('❌ Dosya bu cihazda mevcut değil.'); return; }
   currentViewFileIdx = idx;
 
   const modal = document.getElementById('file-viewer-modal');
@@ -2595,7 +2601,14 @@ async function downloadCurrentFile(){
 
 async function downloadFile(idx){
   const m = materials[idx];
-  if(!m || !m.fileId){ showToast('❌ Dosya bulunamadı.'); return; }
+  // Supabase Storage URL varsa direkt indir
+  if(m && m.fileUrl && !m.fileId){
+    const a = document.createElement('a');
+    a.href = m.fileUrl; a.download = m.fileName || 'dosya';
+    a.target = '_blank'; a.click();
+    return;
+  }
+  if(!m || !m.fileId){ showToast('❌ Dosya bu cihazda mevcut değil.'); return; }
   try{
     const f = await getFileFromDB(m.fileId);
     if(!f){ showToast('❌ Dosya silinmiş olabilir.'); return; }
@@ -2876,11 +2889,27 @@ async function selectMat(idx){
   document.getElementById('mat-workspace').style.flexDirection = 'column';
 
   // Prepare file data in background
-  if(m.type==='file' && m.fileId){
-    try{
-      const f = await getFileFromDB(m.fileId);
-      if(f) matFileData = await prepareFileForClaude(f);
-    }catch(e){ console.warn('Dosya hazırlanamadı:', e); }
+  if(m.type==='file'){
+    if(m.fileId){
+      try{
+        const f = await getFileFromDB(m.fileId);
+        if(f) matFileData = await prepareFileForClaude(f);
+      }catch(e){ console.warn('IndexedDB dosya hatası:', e); }
+    }
+    // IndexedDB'de yoksa Supabase URL'den fetch et
+    if(!matFileData && m.fileUrl){
+      try{
+        const resp = await fetch(m.fileUrl);
+        const blob = await resp.blob();
+        const file = new File([blob], m.fileName||'file', {type: blob.type});
+        const fakeF = {
+          name: m.fileName||'file',
+          type: blob.type,
+          buffer: await blob.arrayBuffer()
+        };
+        matFileData = await prepareFileForClaude(fakeF);
+      }catch(e){ console.warn('URL den dosya yuklenemedi:', e); }
+    }
   }
 }
 
@@ -3033,14 +3062,37 @@ async function saveMaterial(){
   if(currentMatType === 'file'){
     if(!selectedFile){ alert('Lütfen bir dosya seçin.'); return; }
     if(!title){ alert('Başlık zorunludur.'); return; }
-    const fileId = 'file_' + Date.now();
     try{
-      await saveFileToDB(fileId, selectedFile);
-      const newMat = {title, fileId, fileName:selectedFile.name,
-        fileSize:selectedFile.size, course, note,
-        type:'file', addedAt:new Date().toISOString()};
-      const sbId = await sbSaveMaterial(currentUserEmail, {title, course, note, type:'file', fileName:selectedFile.name});
+      showToast('⏳ Dosya yükleniyor...');
+      // 1. Supabase Storage'a yükle
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = crypto.randomUUID() + '.' + fileExt;
+      const filePath = (currentUserEmail || 'guest') + '/' + fileName;
+      const { data: uploadData, error: uploadError } = await sb.storage
+        .from('materials')
+        .upload(filePath, selectedFile, { upsert: false });
+      if(uploadError) throw new Error('Yükleme hatası: ' + uploadError.message);
+      // 2. Public URL al
+      const { data: urlData } = sb.storage.from('materials').getPublicUrl(filePath);
+      const fileUrl = urlData.publicUrl;
+      // 3. Metadata DB'ye kaydet
+      const newMat = {
+        title, course, note, type:'file',
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        fileUrl: fileUrl,
+        filePath: filePath,
+        addedAt: new Date().toISOString()
+      };
+      const sbId = await sbSaveMaterial(currentUserEmail, {
+        title, course, note, type:'file',
+        fileName: selectedFile.name,
+        fileUrl: fileUrl
+      });
       if(sbId) newMat._sbId = sbId;
+      // 4. IndexedDB'ye de kaydet (offline görüntüleme için)
+      const fileId = 'file_' + Date.now();
+      try{ await saveFileToDB(fileId, selectedFile); newMat.fileId = fileId; }catch(e){}
       materials.push(newMat);
       saveMaterials();
       closeMatModal();
@@ -3071,6 +3123,10 @@ async function deleteMaterial(idx){
   const m = materials[idx];
   if(m && m.fileId){
     try{ await deleteFileFromDB(m.fileId); }catch(e){}
+  }
+  // Supabase Storage'dan sil
+  if(m && m.filePath && sb){
+    try{ await sb.storage.from('materials').remove([m.filePath]); }catch(e){}
   }
   if(m && m._sbId) await sbDeleteMaterial(m._sbId);
   if(m && m.title) await sbDeleteSummary(m.title);
