@@ -2872,6 +2872,42 @@ function openMatModal(){
   document.getElementById('mat-modal').classList.add('open');
 }
 
+
+function handleFileSelect(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  selectedFile = file;
+  if(!document.getElementById('mat-title').value){
+    document.getElementById('mat-title').value = file.name.replace(/\.[^.]+$/, '');
+  }
+  const icon = getFileIcon(file.name);
+  document.getElementById('file-drop-content').innerHTML = `
+    <div class="file-selected">
+      <div class="file-selected-icon">${icon}</div>
+      <div class="file-selected-info">
+        <div class="file-selected-name">${escHtml(file.name)}</div>
+        <div class="file-selected-size">${formatFileSize(file.size)}</div>
+      </div>
+      <button class="file-remove-btn" onclick="event.stopPropagation();removeSelectedFile()">✕</button>
+    </div>`;
+}
+
+function removeSelectedFile(){
+  selectedFile = null;
+  document.getElementById('mat-file-input').value = '';
+  resetFileDropZone();
+}
+
+function resetFileDropZone(){
+  const el = document.getElementById('file-drop-content');
+  if(!el) return;
+  el.innerHTML = `
+    <div style="font-size:32px;margin-bottom:8px">📂</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text2)">Dosya seçmek için tıkla</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">veya sürükle bırak</div>
+    <div style="font-size:10px;color:var(--muted2);margin-top:8px">Tüm dosya türleri desteklenir</div>`;
+}
+
 async function saveMaterial(){
   const title = document.getElementById('mat-title').value.trim();
   const course = document.getElementById('mat-course-sel').value;
