@@ -2452,9 +2452,35 @@ function toBlobURL(f){
 
 async function viewFile(idx){
   const m = materials[idx];
-  // Supabase Storage URL varsa direkt aç
+  // Supabase URL varsa önce fetch et, inline viewer'da göster
   if(m && m.fileUrl && !m.fileId){
-    window.open(m.fileUrl, '_blank', 'noopener,noreferrer');
+    currentViewFileIdx = idx;
+    const modal = document.getElementById('file-viewer-modal');
+    const content = document.getElementById('fv-content');
+    document.getElementById('fv-icon').textContent = getFileIcon(m.fileName||'');
+    document.getElementById('fv-title').textContent = m.title || m.fileName || 'Dosya';
+    document.getElementById('fv-meta').textContent = m.fileName || '';
+    content.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:300px;color:var(--muted);flex-direction:column;gap:12px"><div class="ai-loading-dots" style="display:flex"><span></span><span></span><span></span></div><div>Yükleniyor...</div></div>';
+    modal.classList.add('open');
+    try{
+      const resp = await fetch(m.fileUrl);
+      const blob = await resp.blob();
+      const blobURL = URL.createObjectURL(blob);
+      activeBlobURLs.push(blobURL);
+      currentBlobURL = blobURL;
+      const ext = (m.fileName||'').split('.').pop().toLowerCase();
+      document.getElementById('fv-newtab-btn').style.display = 'flex';
+      if(ext==='pdf'){
+        content.style.height='100%'; content.style.display='flex'; content.style.flexDirection='column';
+        content.innerHTML = `<iframe src="${blobURL}" style="width:100%;height:100%;flex:1;border:none;background:#fff" allowfullscreen></iframe>`;
+      } else if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)){
+        content.innerHTML = `<div style="padding:20px;text-align:center;background:var(--surface2);min-height:300px;display:flex;align-items:center;justify-content:center"><img src="${blobURL}" style="max-width:100%;max-height:75vh;border-radius:8px;" alt=""></div>`;
+      } else {
+        content.innerHTML = `<div style="padding:60px;text-align:center;color:var(--muted)"><div style="font-size:48px;margin-bottom:16px">${getFileIcon(m.fileName||'')}</div><div style="font-size:14px;margin-bottom:20px">${escHtml(m.fileName||'')}</div><button class="add-btn" style="margin:0 auto" onclick="window.open('${m.fileUrl}','_blank')">↗ Yeni Sekmede Aç</button></div>`;
+      }
+    }catch(e){
+      content.innerHTML = `<div style="padding:40px;text-align:center;color:var(--red)">❌ Dosya yüklenemedi: ${escHtml(e.message)}</div>`;
+    }
     return;
   }
   if(!m || !m.fileId){ showToast('❌ Dosya bu cihazda mevcut değil.'); return; }
