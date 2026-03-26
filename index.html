@@ -2852,6 +2852,17 @@ function matSend(){
 }
 
 
+
+function setMatType(type, btn){
+  currentMatType = type;
+  document.querySelectorAll('.mat-type-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const isFile = type === 'file';
+  document.getElementById('mat-url-section').style.display = isFile ? 'none' : 'block';
+  document.getElementById('mat-file-section').style.display = isFile ? 'block' : 'none';
+  if(!isFile){ selectedFile = null; resetFileDropZone(); }
+}
+
 function openMatModal(){
   // populate course select
   const sel=document.getElementById('mat-course-sel');
