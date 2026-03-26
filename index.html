@@ -2580,7 +2580,13 @@ async function viewFile(idx){
 
 
 function openInNewTab(){
-  if(currentBlobURL) window.open(currentBlobURL, '_blank');
+  if(!currentBlobURL) return;
+  const m = currentViewFileIdx !== null ? materials[currentViewFileIdx] : null;
+  const filename = m ? (m.fileName || m.title || 'dosya') : 'dosya';
+  const a = document.createElement('a');
+  a.href = currentBlobURL;
+  a.download = filename;
+  a.click();
 }
 
 function toggleViewerFullscreen(){
