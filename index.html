@@ -2260,171 +2260,6 @@ function calPrev(){calDate.setMonth(calDate.getMonth()-1);renderCalendar();}
 function calNext(){calDate.setMonth(calDate.getMonth()+1);renderCalendar();}
 
 
-// ===== DOSYA YÜKLEME (IndexedDB) =====
-let selectedFile = null;
-let fileDB = null;
-
-// IndexedDB başlat
-function initFileDB(){
-  return new Promise((resolve, reject) => {
-    if(fileDB){ resolve(fileDB); return; }
-    const req = indexedDB.open('akademix_files', 1);
-    req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if(!db.objectStoreNames.contains('files'))
-        db.createObjectStore('files', {keyPath:'id'});
-    };
-    req.onsuccess = e => { fileDB = e.target.result; resolve(fileDB); };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function saveFileToDB(id, file){
-  const db = await initFileDB();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const tx = db.transaction('files', 'readwrite');
-        tx.objectStore('files').put({
-          id,
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          buffer: reader.result   // ArrayBuffer — base64'ten çok daha verimli
-        });
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      } catch(e) { reject(e); }
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsArrayBuffer(file);  // base64 şişirmesi yok
-  });
-}
-
-// ArrayBuffer → data URL (görüntüleme/indirme için)
-function arrayBufferToDataURL(buffer, mimeType){
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  const chunk = 8192;
-  for(let i = 0; i < bytes.length; i += chunk)
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  return 'data:' + mimeType + ';base64,' + btoa(binary);
-}
-
-// ArrayBuffer → base64 string (Claude API için)
-function arrayBufferToBase64(buffer){
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  const chunk = 8192;
-  for(let i = 0; i < bytes.length; i += chunk)
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  return btoa(binary);
-}
-
-async function getFileFromDB(id){
-  const db = await initFileDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('files', 'readonly');
-    const req = tx.objectStore('files').get(id);
-    req.onsuccess = () => {
-      const f = req.result;
-      if(!f){ resolve(null); return; }
-      // Yeni format: buffer → lazım olduğunda data URL üret
-      if(f.buffer && !f.data){
-        f.data = arrayBufferToDataURL(f.buffer, f.type || 'application/octet-stream');
-      }
-      resolve(f);
-    };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function deleteFileFromDB(id){
-  const db = await initFileDB();
-  return new Promise((resolve) => {
-    const tx = db.transaction('files', 'readwrite');
-    tx.objectStore('files').delete(id);
-    tx.oncomplete = resolve;
-  });
-}
-
-function getFileIcon(filename){
-  const ext = filename.split('.').pop().toLowerCase();
-  const icons = {pdf:'📄', doc:'📝', docx:'📝', ppt:'📊', pptx:'📊', xls:'📈', xlsx:'📈',
-    jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', mp4:'🎬', mp3:'🎵', zip:'🗜️', rar:'🗜️'};
-  return icons[ext] || '📎';
-}
-
-function formatFileSize(bytes){
-  if(bytes < 1024) return bytes + ' B';
-  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
-  return (bytes/(1024*1024)).toFixed(1) + ' MB';
-}
-
-function setMatType(type, btn){
-  currentMatType = type;
-  document.querySelectorAll('.mat-type-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  // Dosya sekmesi
-  const isFile = type === 'file';
-  document.getElementById('mat-url-section').style.display = isFile ? 'none' : 'block';
-  document.getElementById('mat-file-section').style.display = isFile ? 'block' : 'none';
-  if(!isFile){ selectedFile = null; resetFileDropZone(); }
-}
-
-function handleFileSelect(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  selectedFile = file;
-  // Başlığı otomatik doldur
-  if(!document.getElementById('mat-title').value){
-    document.getElementById('mat-title').value = file.name.replace(/\.[^.]+$/, '');
-  }
-  // Drop zone'u güncelle
-  const icon = getFileIcon(file.name);
-  document.getElementById('file-drop-content').innerHTML = `
-    <div class="file-selected">
-      <div class="file-selected-icon">${icon}</div>
-      <div class="file-selected-info">
-        <div class="file-selected-name">${escHtml(file.name)}</div>
-        <div class="file-selected-size">${formatFileSize(file.size)}</div>
-      </div>
-      <button class="file-remove-btn" onclick="event.stopPropagation();removeSelectedFile()">✕</button>
-    </div>`;
-}
-
-function removeSelectedFile(){
-  selectedFile = null;
-  document.getElementById('mat-file-input').value = '';
-  resetFileDropZone();
-}
-
-function resetFileDropZone(){
-  document.getElementById('file-drop-content').innerHTML = `
-    <div style="font-size:32px;margin-bottom:8px">📂</div>
-    <div style="font-size:13px;font-weight:600;color:var(--text2)">Dosya seçmek için tıkla</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:4px">veya sürükle bırak</div>
-    <div style="font-size:10px;color:var(--muted2);margin-top:8px">Tüm dosya türleri desteklenir</div>`;
-}
-
-// Sürükle bırak
-document.addEventListener('DOMContentLoaded', () => {
-  const zone = document.getElementById('file-drop-zone');
-  if(!zone) return;
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if(file){
-      const input = document.getElementById('mat-file-input');
-      const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
-      handleFileSelect({target: input});
-    }
-  });
-});
-
 
 // ===== DOSYA GÖRÜNTÜLEYİCİ =====
 let currentViewFileIdx = null;
@@ -2483,96 +2318,51 @@ async function viewFile(idx){
     }
     return;
   }
-  if(!m || !m.fileId){ showToast('❌ Dosya bu cihazda mevcut değil.'); return; }
+  if(!m){ showToast('❌ Materyal bulunamadı.'); return; }
   currentViewFileIdx = idx;
 
   const modal = document.getElementById('file-viewer-modal');
   const content = document.getElementById('fv-content');
-  const icon = document.getElementById('fv-icon');
-  const title = document.getElementById('fv-title');
-  const meta = document.getElementById('fv-meta');
-
-  icon.textContent = getFileIcon(m.fileName || '');
-  title.textContent = m.title || m.fileName || 'Dosya';
-  meta.textContent = (m.fileName || '') + (m.fileSize ? ' · ' + formatFileSize(m.fileSize) : '');
+  document.getElementById('fv-icon').textContent = getFileIcon(m.fileName || '');
+  document.getElementById('fv-title').textContent = m.title || m.fileName || 'Dosya';
+  document.getElementById('fv-meta').textContent = (m.fileName || '') + (m.fileSize ? ' · ' + formatFileSize(m.fileSize) : '');
   content.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:300px;color:var(--muted);flex-direction:column;gap:12px"><div class="ai-loading-dots" style="display:flex"><span></span><span></span><span></span></div><div>Yükleniyor...</div></div>';
   modal.classList.add('open');
-  revokeBlobURLs(); // önceki blob'ları temizle
+  revokeBlobURLs();
+
+  const fileUrl = m.fileUrl || m.url;
+  if(!fileUrl){ content.innerHTML = '<div style="padding:40px;text-align:center;color:var(--red)">❌ Dosya URL bulunamadı.</div>'; return; }
 
   try {
-    const f = await getFileFromDB(m.fileId);
-    if(!f) throw new Error('Dosya bulunamadı');
+    const ext = (m.fileName || '').split('.').pop().toLowerCase();
+    document.getElementById('fv-newtab-btn').style.display = 'flex';
+    currentBlobURL = fileUrl;
 
-    const ext = (f.name || '').split('.').pop().toLowerCase();
-    const blobURL = toBlobURL(f);
-    currentBlobURL = blobURL;
-
-    // PDF
     if(ext === 'pdf'){
-      document.getElementById('fv-newtab-btn').style.display = 'flex';
       content.style.height='100%'; content.style.display='flex'; content.style.flexDirection='column';
-      content.innerHTML = `<iframe src="${blobURL}" style="width:100%;height:100%;flex:1;border:none;background:#fff" allowfullscreen></iframe>`;
-      return;
-    }
-
-    // Görsel
-    if(['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)){
-      document.getElementById('fv-newtab-btn').style.display = 'flex';
+      content.innerHTML = `<iframe src="${fileUrl}" style="width:100%;height:100%;flex:1;border:none;background:#fff" allowfullscreen></iframe>`;
+    } else if(['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)){
       content.innerHTML = `<div style="padding:20px;text-align:center;background:var(--surface2);min-height:300px;display:flex;align-items:center;justify-content:center">
-        <img src="${blobURL}" style="max-width:100%;max-height:75vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3)" alt="${escHtml(f.name)}">
+        <img src="${fileUrl}" style="max-width:100%;max-height:75vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3)" alt="${escHtml(m.fileName||'')}">
       </div>`;
-      return;
-    }
-
-    // Video
-    if(['mp4','webm','ogg','mov'].includes(ext)){
+    } else if(['mp4','webm','ogg','mov'].includes(ext)){
       content.innerHTML = `<div style="padding:20px;background:#000;display:flex;align-items:center;justify-content:center;min-height:300px">
-        <video controls style="max-width:100%;max-height:70vh" src="${blobURL}"></video>
+        <video controls style="max-width:100%;max-height:70vh" src="${fileUrl}"></video>
       </div>`;
-      return;
-    }
-
-    // Ses
-    if(['mp3','wav','ogg','m4a','aac'].includes(ext)){
+    } else if(['mp3','wav','m4a','aac'].includes(ext)){
       content.innerHTML = `<div style="padding:40px;text-align:center">
         <div style="font-size:64px;margin-bottom:16px">🎵</div>
-        <div style="font-size:14px;color:var(--text2);margin-bottom:20px">${escHtml(f.name)}</div>
-        <audio controls style="width:100%;max-width:400px" src="${blobURL}"></audio>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:20px">${escHtml(m.fileName||'')}</div>
+        <audio controls style="width:100%;max-width:400px" src="${fileUrl}"></audio>
       </div>`;
-      return;
-    }
-
-    // Metin dosyaları
-    if(['txt','md','csv','json','js','py','java','cpp','c','html','css','xml','ts','jsx','tsx','sh','yaml','yml'].includes(ext)){
-      let text;
-      try {
-        const buf = f.buffer || Uint8Array.from(atob(f.data.split(',')[1]), c=>c.charCodeAt(0)).buffer;
-        text = new TextDecoder('utf-8').decode(buf);
-      } catch(e){ text = '[Metin okunamadı]'; }
-      const escaped = escHtml(text);
-      const isCode = !['txt','md','csv'].includes(ext);
-      content.innerHTML = `<pre style="margin:0;padding:20px;font-family:monospace;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-all;background:${isCode?'#0d1117':'var(--surface2)'};color:${isCode?'#e6edf3':'var(--text2)'};min-height:300px;overflow:auto">${escaped}</pre>`;
-      return;
-    }
-
-    // Word, PPT, Excel → önizleme yok, indirme öner
-    if(['doc','docx','ppt','pptx','xls','xlsx'].includes(ext)){
+    } else {
       content.innerHTML = `<div style="padding:60px;text-align:center;color:var(--muted)">
-        <div style="font-size:64px;margin-bottom:16px">${getFileIcon(f.name)}</div>
-        <div style="font-size:15px;font-weight:600;color:var(--text2);margin-bottom:8px">${escHtml(f.name)}</div>
-        <div style="font-size:13px;margin-bottom:24px">Bu dosya türü tarayıcıda görüntülenemiyor.</div>
-        <button class="add-btn" style="margin:0 auto" onclick="downloadCurrentFile()">⬇️ İndir ve Aç</button>
+        <div style="font-size:64px;margin-bottom:16px">${getFileIcon(m.fileName||'')}</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text2);margin-bottom:8px">${escHtml(m.fileName||'')}</div>
+        <div style="font-size:13px;margin-bottom:24px">Bu dosya türü önizlenemiyor.</div>
+        <button class="add-btn" style="margin:0 auto" onclick="downloadCurrentFile()">⬇️ İndir</button>
       </div>`;
-      return;
     }
-
-    // Bilinmeyen tür
-    content.innerHTML = `<div style="padding:60px;text-align:center;color:var(--muted)">
-      <div style="font-size:64px;margin-bottom:16px">📎</div>
-      <div style="font-size:14px;margin-bottom:20px">Bu dosya türü önizlenemiyor.</div>
-      <button class="add-btn" style="margin:0 auto" onclick="downloadCurrentFile()">⬇️ İndir</button>
-    </div>`;
-
   } catch(e) {
     content.innerHTML = `<div style="padding:40px;text-align:center;color:var(--red)">❌ Hata: ${escHtml(e.message)}</div>`;
   }
@@ -2643,14 +2433,15 @@ async function downloadFile(idx){
     setTimeout(()=>URL.revokeObjectURL(url), 5000);
     return;
   }
-  if(!m || !m.fileId){ showToast('❌ Dosya bu cihazda mevcut değil.'); return; }
+  const fileUrl = m.fileUrl || m.url;
+  if(!fileUrl){ showToast('❌ Dosya bulunamadı.'); return; }
   try{
-    const f = await getFileFromDB(m.fileId);
-    if(!f){ showToast('❌ Dosya silinmiş olabilir.'); return; }
-    const url = toBlobURL(f);
+    const resp = await fetch(fileUrl);
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = f.name; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    a.href = url; a.download = m.fileName || 'dosya'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
   }catch(e){ showToast('❌ İndirme hatası: ' + e.message); }
 }
 
@@ -2670,6 +2461,7 @@ async function loadMaterials(){
     }
   }
 }
+let selectedFile = null;
 let currentMatType = 'drive';
 
 function saveMaterials(){ localStorage.setItem(materialsKey(), JSON.stringify(materials)); }
@@ -2923,28 +2715,19 @@ async function selectMat(idx){
   document.getElementById('mat-workspace').style.display = 'flex';
   document.getElementById('mat-workspace').style.flexDirection = 'column';
 
-  // Prepare file data in background
-  if(m.type==='file'){
-    if(m.fileId){
-      try{
-        const f = await getFileFromDB(m.fileId);
-        if(f) matFileData = await prepareFileForClaude(f);
-      }catch(e){ console.warn('IndexedDB dosya hatası:', e); }
-    }
-    // IndexedDB'de yoksa Supabase URL'den fetch et
-    if(!matFileData && m.fileUrl){
-      try{
-        const resp = await fetch(m.fileUrl);
-        const blob = await resp.blob();
-        const file = new File([blob], m.fileName||'file', {type: blob.type});
-        const fakeF = {
-          name: m.fileName||'file',
-          type: blob.type,
-          buffer: await blob.arrayBuffer()
-        };
-        matFileData = await prepareFileForClaude(fakeF);
-      }catch(e){ console.warn('URL den dosya yuklenemedi:', e); }
-    }
+  // Dosyayı AI için hazırla (Supabase URL'den)
+  if(m.type==='file' && (m.fileUrl || m.url)){
+    const fileUrl = m.fileUrl || m.url;
+    try{
+      const resp = await fetch(fileUrl);
+      const blob = await resp.blob();
+      const fakeF = {
+        name: m.fileName || 'file',
+        type: blob.type,
+        buffer: await blob.arrayBuffer()
+      };
+      matFileData = await prepareFileForClaude(fakeF);
+    }catch(e){ console.warn('Dosya hazırlanamadı:', e); }
   }
 }
 
@@ -3099,18 +2882,15 @@ async function saveMaterial(){
     if(!title){ alert('Başlık zorunludur.'); return; }
     try{
       showToast('⏳ Dosya yükleniyor...');
-      // 1. Supabase Storage'a yükle
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = crypto.randomUUID() + '.' + fileExt;
       const filePath = (currentUserEmail || 'guest') + '/' + fileName;
-      const { data: uploadData, error: uploadError } = await sb.storage
+      const { error: uploadError } = await sb.storage
         .from('materials')
         .upload(filePath, selectedFile, { upsert: false });
       if(uploadError) throw new Error('Yükleme hatası: ' + uploadError.message);
-      // 2. Public URL al
       const { data: urlData } = sb.storage.from('materials').getPublicUrl(filePath);
       const fileUrl = urlData.publicUrl;
-      // 3. Metadata DB'ye kaydet
       const newMat = {
         title, course, note, type:'file',
         fileName: selectedFile.name,
@@ -3125,9 +2905,6 @@ async function saveMaterial(){
         fileUrl: fileUrl
       });
       if(sbId) newMat._sbId = sbId;
-      // 4. IndexedDB'ye de kaydet (offline görüntüleme için)
-      const fileId = 'file_' + Date.now();
-      try{ await saveFileToDB(fileId, selectedFile); newMat.fileId = fileId; }catch(e){}
       materials.push(newMat);
       saveMaterials();
       closeMatModal();
@@ -3156,9 +2933,6 @@ function closeMatModal(e){if(!e||e.target===document.getElementById('mat-modal')
 async function deleteMaterial(idx){
   if(!confirm('Bu materyali silmek istiyor musun?')) return;
   const m = materials[idx];
-  if(m && m.fileId){
-    try{ await deleteFileFromDB(m.fileId); }catch(e){}
-  }
   // Supabase Storage'dan sil
   if(m && m.filePath && sb){
     try{ await sb.storage.from('materials').remove([m.filePath]); }catch(e){}
@@ -3213,10 +2987,13 @@ async function openAiModal(title, course, matIdx){
       document.getElementById('ai-file-status').textContent = '⏳ Dosya yükleniyor...';
       document.getElementById('ai-text-label').innerHTML = 'Ek Not <span style="color:var(--muted);text-transform:none;letter-spacing:0">(isteğe bağlı)</span>';
       document.getElementById('ai-text-input').placeholder = 'Dosyayla ilgili ek bilgi veya soru ekleyebilirsin...';
+      const fileUrl = m.fileUrl || m.url;
       try {
-        const f = await getFileFromDB(m.fileId);
-        if(!f) throw new Error('Dosya bulunamadı');
-        aiCurrentFileData = await prepareFileForClaude(f);
+        if(!fileUrl) throw new Error('Dosya URL bulunamadı');
+        const resp = await fetch(fileUrl);
+        const blob = await resp.blob();
+        const fakeF = { name: m.fileName||'file', type: blob.type, buffer: await blob.arrayBuffer() };
+        aiCurrentFileData = await prepareFileForClaude(fakeF);
         document.getElementById('ai-file-status').textContent = '✅ Dosya hazır — analiz edebilirsin';
         document.getElementById('ai-file-status').style.color = 'var(--green)';
       } catch(e) {
