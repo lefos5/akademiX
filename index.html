@@ -2580,13 +2580,13 @@ async function viewFile(idx){
 
 
 function openInNewTab(){
-  if(!currentBlobURL) return;
   const m = currentViewFileIdx !== null ? materials[currentViewFileIdx] : null;
-  const filename = m ? (m.fileName || m.title || 'dosya') : 'dosya';
-  const a = document.createElement('a');
-  a.href = currentBlobURL;
-  a.download = filename;
-  a.click();
+  // Supabase URL varsa direkt aç (temiz URL)
+  if(m && m.fileUrl) {
+    window.open(m.fileUrl, '_blank', 'noopener,noreferrer');
+  } else if(currentBlobURL) {
+    window.open(currentBlobURL, '_blank');
+  }
 }
 
 function toggleViewerFullscreen(){
