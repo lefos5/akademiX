@@ -435,6 +435,7 @@
   .cal-event { font-size:10px; border-radius:3px; padding:2px 5px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cal-event.hw { background:rgba(245,158,11,0.25); color:var(--orange); }
   .cal-event.course { background:rgba(108,99,255,0.2); color:var(--accent2); }
+  .cal-event.exam { background:rgba(248,113,113,0.2); color:var(--red); font-weight:600; }
   .agenda-list { display:flex; flex-direction:column; }
   .agenda-section { margin-bottom:20px; }
   .agenda-day-header { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; padding:6px 0; border-bottom:1px solid var(--border); margin-bottom:8px; }
@@ -999,10 +1000,11 @@
         </button>
       </div>
     </div>
-    <div class="stats-row">
+    <div class="stats-row" style="grid-template-columns:repeat(5,1fr)">
       <div class="stat-card"><div class="stat-label">Kayıtlı Ders</div><div class="stat-value" id="stat-count">0</div><div class="stat-sub">Bu dönem</div></div>
       <div class="stat-card"><div class="stat-label">Haftalık Saat</div><div class="stat-value" id="stat-hours">0</div><div class="stat-sub">Toplam ders saati</div></div>
       <div class="stat-card"><div class="stat-label">Online Ders</div><div class="stat-value" id="stat-online">0</div><div class="stat-sub">Uzaktan eğitim</div></div>
+      <div class="stat-card"><div class="stat-label">Ara Sınav</div><div class="stat-value" id="stat-exam" style="color:var(--red)">0</div><div class="stat-sub">6–10 Nisan 2026</div></div>
       <div class="stat-card"><div class="stat-label">Bekleyen Ödev</div><div class="stat-value" id="stat-hw" style="color:var(--orange)">–</div><div class="stat-sub">Classroom'dan</div></div>
     </div>
     <div id="schedule-empty" class="empty-state" style="display:none">
@@ -1702,6 +1704,97 @@ const rawCourses = [
   {code:"WIN406VL",name:"Endüstriyel Enformasyon Teknolojisi ve Sanal Ürün Geliştirme",dept:"WIN",instructor:"Dr.-Ing. Kai Lindow / Dr. Öğr. Üyesi Damla Durak Uşar",schedule:{"Thu":"14:00-16:00|ONLINE"},classroom:null},
 ];
 
+// ===== ARA SINAV PROGRAMI 2025-2026 BAHAR =====
+const EXAM_SCHEDULE = [
+  {code:"AIT002",name:"Atatürk İlkeleri ve İnkılap Tarihi II",date:"2026-04-10",time:"14:00-15:00",room:"C301, C302, C108"},
+  {code:"BAU092",name:"Bilimsel Çalışma Yöntemleri",date:"2026-04-07",time:"14:00-16:00",room:"C304"},
+  {code:"BAU102",name:"Taşıyıcı Sistemlerin Esasları ve Yapı Tasarımı",date:"2026-04-10",time:"10:00-12:00",room:"C304"},
+  {code:"BAU112",name:"Mukavemet",date:"2026-04-09",time:"09:30-11:30",room:"C304"},
+  {code:"BAU203",name:"Yapı İnşaatı I",date:"2026-04-10",time:"15:30-18:30",room:"C202"},
+  {code:"BAU204",name:"Yapı Statiği II",date:"2026-04-08",time:"10:00-12:00",room:"C202"},
+  {code:"BAU205",name:"Akışkanlar Mekaniği",date:"2026-04-09",time:"15:30-17:30",room:"C202"},
+  {code:"BAU207",name:"Yapı Malzemesi ve Kimyası II",date:"2026-04-06",time:"13:30-15:30",room:"C202"},
+  {code:"BAU252",name:"Yapı Fiziği",date:"2026-04-06",time:"10:00-12:00",room:"C208"},
+  {code:"BAU302",name:"Zemin Mekaniği ve Temel İnşaatı I",date:"2026-04-07",time:"14:00-16:00",room:"C202"},
+  {code:"BAU352",name:"Yapı İşletmesi I",date:"2026-04-09",time:"12:30-14:30",room:"C202"},
+  {code:"BAU356",name:"İnşaat Mühendisleri için Jeoloji",date:"2026-04-08",time:"16:00-18:00",room:"C202"},
+  {code:"BAU452",name:"Kentsel Su Yönetiminin Temelleri",date:"2026-04-10",time:"10:00-12:00",room:"C202"},
+  {code:"BAU458",name:"Yapı Dinamiği I",date:"2026-04-10",time:"10:00-12:00",room:"C203"},
+  {code:"BAU466",name:"Kaya Mekaniği",date:"2026-04-09",time:"15:30-17:30",room:"C203"},
+  {code:"ENG102-3",name:"İngilizce II",date:"2026-04-07",time:"11:00-12:15",room:"C301"},
+  {code:"ENG102-4",name:"İngilizce II",date:"2026-04-07",time:"11:00-12:15",room:"C302"},
+  {code:"ENG302-7",name:"İleri İngilizce II",date:"2026-04-08",time:"11:00-13:00",room:"C301"},
+  {code:"ENG302-8",name:"İleri İngilizce II",date:"2026-04-08",time:"11:00-13:00",room:"C302"},
+  {code:"ETE092",name:"Bilimsel Çalışma Yöntemleri",date:"2026-04-10",time:"14:00-16:00",room:"C201"},
+  {code:"ETE104",name:"Mikroişlemciler",date:"2026-04-10",time:"10:30-12:30",room:"C201"},
+  {code:"ETE202",name:"Elektrik Devreleri II",date:"2026-04-08",time:"13:00-15:00",room:"C201"},
+  {code:"ETE304",name:"Kontrol Mühendisliğinin Temelleri",date:"2026-04-08",time:"09:00-11:00",room:"C108"},
+  {code:"ETE312",name:"Elektronik II",date:"2026-04-06",time:"10:00-12:00",room:"C201"},
+  {code:"ETE372",name:"Telekomünikasyon",date:"2026-04-09",time:"10:00-12:00",room:"C201"},
+  {code:"ETE374",name:"Sayısal Sinyal İşlemenin Temelleri",date:"2026-04-09",time:"13:00-15:00",room:"C104"},
+  {code:"ETE414",name:"İşlemsel Yükselteçler ile Devre Tasarımı",date:"2026-04-10",time:"15:00-17:00",room:"C102"},
+  {code:"ETE459",name:"Doğrusal Olmayan Dinamik Sistemler",date:"2026-04-07",time:"10:00-12:00",room:"C102"},
+  {code:"ETE484",name:"Güç Dağıtım Sistemleri",date:"2026-04-09",time:"13:00-15:00",room:"C106"},
+  {code:"INF102",name:"Nesnel Programlama",date:"2026-04-06",time:"14:30-16:15",room:"C108"},
+  {code:"INF104",name:"Özdevinirler ve Biçimsel Diller",date:"2026-04-09",time:"09:30-11:15",room:"C305"},
+  {code:"INF110",name:"İşletim Sistemleri",date:"2026-04-07",time:"09:00-10:30",room:"C108"},
+  {code:"INF202",name:"Yazılım Mühendisliği",date:"2026-04-09",time:"12:30-13:45",room:"C201"},
+  {code:"INF204",name:"Algoritmalar ve Veri Yapıları II",date:"2026-04-10",time:"09:00-10:45",room:"C301"},
+  {code:"INF208",name:"Gömülü Sistemler",date:"2026-04-08",time:"09:30-10:45",room:"C201"},
+  {code:"INF210",name:"Bilgisayar Mühendisleri için Etik",date:"2026-04-08",time:"15:30-16:30",room:"C305"},
+  {code:"INF502",name:"Makine Öğrenmesi",date:"2026-04-08",time:"11:30-13:30",room:"C104"},
+  {code:"INF503",name:"Yapay Sinir Ağları",date:"2026-04-09",time:"14:30-16:30",room:"C304"},
+  {code:"INF510",name:"Bilgi Sistemleri Güvenliği",date:"2026-04-06",time:"12:30-14:15",room:"C304"},
+  {code:"INF514",name:"Bilgisayar Grafiği I",date:"2026-04-08",time:"12:00-13:15",room:"INF SEMINER"},
+  {code:"INF523",name:"İnsan-Makine Etkileşimi",date:"2026-04-10",time:"15:00-17:00",room:"C104"},
+  {code:"INF608",name:"Sensors and Transducers",date:"2026-04-07",time:"15:00-16:15",room:"C201"},
+  {code:"INF712",name:"Bilgisayar Destekli İstatistik",date:"2026-04-07",time:"11:00-12:45",room:"C304"},
+  {code:"INF804",name:"Proje Geliştirme Metodolojisi",date:"2026-04-10",time:"11:00-12:15",room:"C204"},
+  {code:"ING406",name:"Mühendisler için Hukuk",date:"2026-04-09",time:"15:00-16:00",room:"C107"},
+  {code:"ISG002",name:"İş Sağlığı ve Güvenliği II",date:"2026-04-04",time:"10:00-12:00",room:"ONLINE"},
+  {code:"MAB112",name:"Mukavemet",date:"2026-04-09",time:"09:00-11:00",room:"C301"},
+  {code:"MAB210",name:"İmalat Teknolojisinin Temelleri",date:"2026-04-10",time:"09:00-11:00",room:"C302"},
+  {code:"MAB214",name:"Diferansiyel Denklemler",date:"2026-04-06",time:"13:00-15:00",room:"C301"},
+  {code:"MAB312",name:"Isı Transferi",date:"2026-04-06",time:"09:30-11:30",room:"C304"},
+  {code:"MAB314",name:"Akışkanlar Mekaniği",date:"2026-04-09",time:"09:00-11:00",room:"C302"},
+  {code:"MAB384",name:"Taşıt Sistemleri: Seçilmiş Konular I",date:"2026-04-10",time:"09:00-11:00",room:"C106"},
+  {code:"MAB394",name:"Proje: Taşıt Sistemleri",date:"2026-04-08",time:"14:30-16:30",room:"C106"},
+  {code:"MAB455",name:"Havacılık Endüstrisine Giriş",date:"2026-04-06",time:"13:00-15:00",room:"C106"},
+  {code:"MAB462",name:"Tasarım: Seçilmiş Konular II",date:"2026-04-07",time:"10:00-12:00",room:"C106"},
+  {code:"MAB464",name:"Taşıt Sistemleri: Seçilmiş Konular II",date:"2026-04-07",time:"13:00-15:00",room:"C102"},
+  {code:"MAT106",name:"Lineer Cebir",date:"2026-04-08",time:"13:30-15:30",room:"C301, C302, C304, C108"},
+  {code:"MAT108",name:"Analiz II",date:"2026-04-06",time:"09:30-11:30",room:"C301, C302, C108"},
+  {code:"MAT204-A",name:"Veri Analizinin İstatistiksel Yöntemleri",date:"2026-04-07",time:"13:00-15:00",room:"C108"},
+  {code:"MAT204-B",name:"Veri Analizinin İstatistiksel Yöntemleri",date:"2026-04-06",time:"12:30-14:30",room:"C302, C303"},
+  {code:"MAT302",name:"Numerik Matematik",date:"2026-04-07",time:"13:00-15:00",room:"C201"},
+  {code:"MAT392",name:"Kompleks Analiz",date:"2026-04-08",time:"15:00-17:00",room:"C104"},
+  {code:"MEC002",name:"Uygulamalı Kontrol Mühendisliği",date:"2026-04-07",time:"10:30-12:30",room:"C107"},
+  {code:"MEC030",name:"Derin Öğrenme",date:"2026-04-06",time:"13:30-15:30",room:"C205"},
+  {code:"MEC092",name:"Bilimsel Çalışma Yöntemleri",date:"2026-04-07",time:"14:00-16:00",room:"C301"},
+  {code:"MEC112",name:"Mukavemet",date:"2026-04-10",time:"10:30-12:45",room:"C108"},
+  {code:"MEC208",name:"Ölçüm Teknikleri",date:"2026-04-09",time:"11:45-13:45",room:"C108"},
+  {code:"MEC214",name:"Elektrik Devreleri II",date:"2026-04-07",time:"13:30-15:45",room:"C302"},
+  {code:"MEC292",name:"Proje Yönetimi",date:"2026-04-07",time:"10:45-12:45",room:"C108"},
+  {code:"MEC302",name:"Kontrol Mühendisliğinin Temelleri",date:"2026-04-08",time:"12:00-14:00",room:"C305"},
+  {code:"MEC308",name:"Endüstriyel Robotik I",date:"2026-04-06",time:"10:30-12:30",room:"C305"},
+  {code:"MEC312",name:"Elektrik Devre Elemanları",date:"2026-04-06",time:"13:30-15:30",room:"C203"},
+  {code:"MEC324",name:"Görüntü Tabanlı Otomasyon II",date:"2026-04-06",time:"13:30-15:30",room:"C204"},
+  {code:"PHY102",name:"Elektrik ve Manyetizma",date:"2026-04-09",time:"09:30-11:30",room:"C108"},
+  {code:"TUR002",name:"Türkçe II",date:"2026-04-09",time:"14:00-15:00",room:"C301, C302, C108"},
+  {code:"VWL210",name:"Para, Banka ve Finans Piyasaları",date:"2026-04-07",time:"15:15-16:15",room:"DZ03"},
+  {code:"WIN104",name:"İktisada Giriş",date:"2026-04-09",time:"09:00-10:00",room:"C201"},
+  {code:"WIN204",name:"Muhasebe ve Bilanço",date:"2026-04-10",time:"10:00-12:00",room:"C305"},
+  {code:"WIN208",name:"Nesnel Programlama",date:"2026-04-08",time:"09:30-11:30",room:"C304, C305"},
+  {code:"WIN292",name:"Proje Yönetimi",date:"2026-04-07",time:"13:00-15:00",room:"C305"},
+  {code:"WIN302",name:"Fabrika Yönetimine Giriş",date:"2026-04-07",time:"09:30-11:30",room:"C201"},
+  {code:"WIN306",name:"Üretim ve Lojistik için Enformasyon Sistemleri",date:"2026-04-06",time:"09:30-11:30",room:"C106"},
+  {code:"WIN312",name:"Dijitalleşme ve Sanayide Akıllı Sistemler",date:"2026-04-08",time:"12:30-14:30",room:"C102"},
+  {code:"WIN314",name:"Kalite Yönetimi",date:"2026-04-09",time:"12:00-14:00",room:"C305"},
+  {code:"WIN316",name:"Yöneylem Araştırması II",date:"2026-04-06",time:"09:30-11:30",room:"C104"},
+  {code:"WIN322",name:"Havalimanı Yönetimi",date:"2026-04-10",time:"15:00-16:00",room:"C106"},
+  {code:"WIN406",name:"Endüstriyel Enformasyon Teknolojisi",date:"2026-04-10",time:"10:00-12:00",room:"ONLINE"},
+];
+
 const DAYS=["Mon","Tue","Wed","Thu","Fri"];
 const DAY_TR={Mon:"Pazartesi",Tue:"Salı",Wed:"Çarşamba",Thu:"Perşembe",Fri:"Cuma"};
 const DEPT_COLORS={INF:"c-purple",MAT:"c-blue",ENG:"c-green",ETE:"c-orange",PHY:"c-red",TUR:"c-pink",AIT:"c-pink",DEU:"c-orange",BAU:"c-blue",ISG:"c-green",MAB:"c-purple",MEC:"c-red",WIN:"c-blue",VWL:"c-orange",ING:"c-green",OTH:"c-purple"};
@@ -1771,6 +1864,11 @@ function renderSchedule(){
   let tm=0; my.forEach(c=>Object.values(c.schedule).forEach(s=>{const[t]=s.split('|');const[a,b]=t.split('-');tm+=timeToMinutes(b)-timeToMinutes(a);}));
   document.getElementById('stat-hours').textContent=Math.round(tm/60);
   document.getElementById('stat-online').textContent=my.filter(c=>Object.values(c.schedule).some(s=>s.includes('ONLINE'))).length;
+  // Sınav sayısı — kayıtlı derslerle eşleşen
+  const examCount = EXAM_SCHEDULE.filter(exam =>
+    [...enrolled].some(code => code.replace(/(VL|UE|L)$/,'') === exam.code || code === exam.code)
+  ).length;
+  document.getElementById('stat-exam').textContent = examCount;
   if(my.length===0){document.getElementById('schedule-grid').style.display='none';document.getElementById('schedule-empty').style.display='block';return;}
   document.getElementById('schedule-grid').style.display='block';document.getElementById('schedule-empty').style.display='none';
   const slots={};DAYS.forEach(d=>slots[d]=[]);
@@ -2271,16 +2369,39 @@ const TR_MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','A
 
 function getCalEvents() {
   const events = [];
-  // Sadece Classroom ödevleri
+
+  // Classroom ödevleri
   clData.assignments.forEach(a => {
     if(a.dueDate){
       const d = new Date(a.dueDate.year, (a.dueDate.month||1)-1, a.dueDate.day||1);
       events.push({date:d, type:'hw', title:'📝 '+a.title, sub:a.courseName, color:'var(--orange)'});
     }
   });
+
+  // Ara sınav programı — sadece kayıtlı dersler
+  // Ders kodu eşleştirme: enrolled set'indeki kodların prefix'ini karşılaştır
+  // (örn. "INF110VL" kayıtlıysa "INF110" sınavını göster)
+  EXAM_SCHEDULE.forEach(exam => {
+    const isEnrolled = [...enrolled].some(code => {
+      const base = code.replace(/(VL|UE|L)$/, '');
+      return base === exam.code || code === exam.code;
+    });
+    if(!isEnrolled) return;
+    const [year, month, day] = exam.date.split('-').map(Number);
+    const d = new Date(year, month-1, day);
+    events.push({
+      date: d,
+      type: 'exam',
+      title: '🎓 ' + exam.code,
+      sub: exam.name + ' · ' + exam.time + (exam.room ? ' · ' + exam.room : ''),
+      color: 'var(--red)'
+    });
+  });
+
   // Manuel eklenen etkinlikler
   const manual = safeLocalStorage('cal-events', []);
   manual.forEach(e => events.push({...e, date:new Date(e.date)}));
+
   return events;
 }
 
