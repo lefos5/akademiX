@@ -960,6 +960,11 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/></svg>
       Takvim
     </div>
+    <div class="nav-item" onclick="showPage('exams')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Ara Sınavlar
+      <span class="badge" id="badge-exam" style="background:var(--red);display:none">0</span>
+    </div>
     <div class="nav-item" onclick="showPage('materials')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
       Materyaller
@@ -1093,6 +1098,14 @@
     <div id="cal-agenda" style="display:none">
       <div class="agenda-list" id="agenda-list"></div>
     </div>
+  </div>
+
+  <!-- EXAMS -->
+  <div class="page" id="page-exams">
+    <div class="page-header">
+      <div><h2>Ara Sınav Programı</h2><p>2025–2026 Bahar Dönemi · 4–10 Nisan 2026</p></div>
+    </div>
+    <div id="exams-content"></div>
   </div>
 
   <!-- MATERIALS -->
@@ -1830,11 +1843,12 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
-  const idx={schedule:0,courses:1,classroom:2,calendar:3,materials:4}[id]??0;
+  const idx={schedule:0,courses:1,classroom:2,calendar:3,exams:4,materials:5}[id]??0;
   document.querySelectorAll('.nav-item')[idx].classList.add('active');
   if(id==='schedule') renderSchedule();
   if(id==='courses') renderCourses();
   if(id==='calendar') renderCalendar();
+  if(id==='exams') renderExams();
   if(id==='materials') renderMaterials();
   if(id==='classroom'){
     if(!accessToken){
@@ -1858,17 +1872,107 @@ function showPage(id) {
 
 // SCHEDULE
 function timeToMinutes(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function baseCode(code){
+  return code
+    .replace(/(VL|UE|L)$/i, '')
+    .replace(/[-–]?[A-Z]$/i, '')
+    .replace(/[-–]?\d+$/i, '')
+    .trim();
+}
+
+function getMyExams(){
+  return EXAM_SCHEDULE.filter(exam => {
+    const examBase = baseCode(exam.code);
+    return [...enrolled].some(code => {
+      const eb = baseCode(code);
+      return code === exam.code || eb === examBase || eb === exam.code;
+    });
+  }).sort((a,b) => new Date(a.date) - new Date(b.date));
+}
+
+function renderExams(){
+  const myExams = getMyExams();
+  const container = document.getElementById('exams-content');
+  if(!container) return;
+
+  // Badge güncelle
+  const badge = document.getElementById('badge-exam');
+  if(badge){ badge.textContent = myExams.length; badge.style.display = myExams.length ? 'inline-block' : 'none'; }
+
+  if(!myExams.length){
+    container.innerHTML = '<div class="empty-state"><div class="icon">🎓</div><p>Kayıtlı derslerine ait ara sınav bulunamadı.</p></div>';
+    return;
+  }
+
+  // Tarihe göre grupla
+  const grouped = {};
+  const dayNames = {
+    '2026-04-04': 'Cumartesi, 4 Nisan',
+    '2026-04-06': 'Pazartesi, 6 Nisan',
+    '2026-04-07': 'Salı, 7 Nisan',
+    '2026-04-08': 'Çarşamba, 8 Nisan',
+    '2026-04-09': 'Perşembe, 9 Nisan',
+    '2026-04-10': 'Cuma, 10 Nisan',
+  };
+  myExams.forEach(e => { if(!grouped[e.date]) grouped[e.date]=[]; grouped[e.date].push(e); });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let html = '';
+  Object.entries(grouped).forEach(([date, exams]) => {
+    const d = new Date(date);
+    const isPast = d < today;
+    const isToday = d.toDateString() === today.toDateString();
+    const label = dayNames[date] || date;
+    html += `
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:700;color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
+          text-transform:uppercase;letter-spacing:0.8px;padding:8px 0;
+          border-bottom:2px solid ${isToday?'var(--accent)':isPast?'var(--border)':'var(--border)'};
+          margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          ${isToday?'📍':isPast?'✓':''} ${label}
+          ${isToday?'<span style="background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;">BUGÜN</span>':''}
+          ${isPast&&!isToday?'<span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;">Geçti</span>':''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${exams.map(exam => `
+            <div style="background:var(--surface);border:1px solid ${isPast?'var(--border)':'rgba(248,113,113,0.25)'};
+              border-left:4px solid ${isPast?'var(--border2)':'var(--red)'};
+              border-radius:12px;padding:16px 18px;
+              display:flex;align-items:center;gap:16px;
+              opacity:${isPast?'0.6':'1'};
+              transition:box-shadow 0.15s;">
+              <div style="flex-shrink:0;text-align:center;min-width:60px;">
+                <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:0.5px;">${exam.time.split('-')[0]}</div>
+                <div style="font-size:10px;color:var(--muted);">–${exam.time.split('-')[1]||''}</div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                  <span style="background:rgba(248,113,113,0.1);color:var(--red);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid rgba(248,113,113,0.2);">${escHtml(exam.code)}</span>
+                  ${exam.room==='ONLINE'?'<span style="background:rgba(14,165,233,0.1);color:var(--accent2);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">🌐 ONLINE</span>':''}
+                </div>
+                <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${escHtml(exam.name)}</div>
+                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room)}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
 function renderSchedule(){
   const my=rawCourses.filter(c=>enrolled.has(c.code));
   document.getElementById('stat-count').textContent=my.length;
   let tm=0; my.forEach(c=>Object.values(c.schedule).forEach(s=>{const[t]=s.split('|');const[a,b]=t.split('-');tm+=timeToMinutes(b)-timeToMinutes(a);}));
   document.getElementById('stat-hours').textContent=Math.round(tm/60);
   document.getElementById('stat-online').textContent=my.filter(c=>Object.values(c.schedule).some(s=>s.includes('ONLINE'))).length;
-  // Sınav sayısı — kayıtlı derslerle eşleşen
-  const examCount = EXAM_SCHEDULE.filter(exam =>
-    [...enrolled].some(code => code.replace(/(VL|UE|L)$/,'') === exam.code || code === exam.code)
-  ).length;
-  document.getElementById('stat-exam').textContent = examCount;
+  // Sınav sayısı
+  const myExams = getMyExams();
+  const examEl = document.getElementById('stat-exam');
+  if(examEl) examEl.textContent = myExams.length;
+  const badge = document.getElementById('badge-exam');
+  if(badge){ badge.textContent = myExams.length; badge.style.display = myExams.length ? 'inline-block' : 'none'; }
   if(my.length===0){document.getElementById('schedule-grid').style.display='none';document.getElementById('schedule-empty').style.display='block';return;}
   document.getElementById('schedule-grid').style.display='block';document.getElementById('schedule-empty').style.display='none';
   const slots={};DAYS.forEach(d=>slots[d]=[]);
@@ -2378,13 +2482,12 @@ function getCalEvents() {
     }
   });
 
-  // Ara sınav programı — sadece kayıtlı dersler
-  // Ders kodu eşleştirme: enrolled set'indeki kodların prefix'ini karşılaştır
-  // (örn. "INF110VL" kayıtlıysa "INF110" sınavını göster)
+  // Ara sınav programı — kayıtlı derslerle eşleştir
   EXAM_SCHEDULE.forEach(exam => {
+    const examBase = baseCode(exam.code);
     const isEnrolled = [...enrolled].some(code => {
-      const base = code.replace(/(VL|UE|L)$/, '');
-      return base === exam.code || code === exam.code;
+      const enrolledBase = baseCode(code);
+      return code === exam.code || enrolledBase === examBase || enrolledBase === exam.code;
     });
     if(!isEnrolled) return;
     const [year, month, day] = exam.date.split('-').map(Number);
@@ -2394,13 +2497,14 @@ function getCalEvents() {
       type: 'exam',
       title: '🎓 ' + exam.code,
       sub: exam.name + ' · ' + exam.time + (exam.room ? ' · ' + exam.room : ''),
+      time: exam.time,
+      room: exam.room,
       color: 'var(--red)'
     });
   });
 
   // Manuel eklenen etkinlikler
-  const manual = safeLocalStorage('cal-events', []);
-  manual.forEach(e => events.push({...e, date:new Date(e.date)}));
+  safeLocalStorage('cal-events', []).forEach(e => events.push({...e, date:new Date(e.date)}));
 
   return events;
 }
@@ -2434,8 +2538,14 @@ function renderMonthly() {
     const dayEvents = events.filter(e=>e.date.toDateString()===d.toDateString());
     dayEvents.slice(0,3).forEach(ev=>{
       const ep = document.createElement('div');
-      ep.className='cal-event '+(ev.type==='hw'?'hw':'course');
-      ep.textContent=ev.title; ep.title=ev.title+(ev.sub?' — '+ev.sub:'');
+      ep.className = 'cal-event ' + (ev.type==='hw' ? 'hw' : ev.type==='exam' ? 'exam' : 'course');
+      // Aylık görünümde: sınav için kod + saat göster
+      if(ev.type === 'exam'){
+        ep.textContent = ev.title + (ev.time ? ' ' + ev.time : '');
+      } else {
+        ep.textContent = ev.title;
+      }
+      ep.title = ev.title + (ev.sub ? ' — ' + ev.sub : '');
       cell.appendChild(ep);
     });
     if(dayEvents.length>3){const m=document.createElement('div');m.className='cal-event';m.style.color='var(--muted)';m.textContent=`+${dayEvents.length-3} daha`;cell.appendChild(m);}
