@@ -723,9 +723,6 @@
   .mat-input-actions {
     display: flex; justify-content: space-between; align-items: center;
   }
-  .mat-analyze-btn {
-    display: none; /* removed */
-  }
   .mat-option-btn {
     display: block; width: 100%;
     background: var(--surface2); border: 1px solid var(--border2);
@@ -1125,8 +1122,8 @@
       <div class="mat-detail" id="mat-detail">
         <div class="mat-welcome" id="mat-welcome">
           <div class="mat-welcome-icon">✨</div>
-          <div class="mat-welcome-title">Select a material</div>
-          <div class="mat-welcome-sub">Select a material from the left to generate summaries, exam questions, flashcards, or chat with AI about it.</div>
+          <div class="mat-welcome-title">Bir materyal seçin</div>
+          <div class="mat-welcome-sub">Soldan bir materyal seçerek özet oluştur, sınav soruları üret, flashcard yap veya AI ile sohbet et.</div>
         </div>
         <div class="mat-workspace" id="mat-workspace" style="display:none">
           <div class="mat-workspace-header" id="mat-workspace-header"></div>
@@ -3142,7 +3139,7 @@ async function selectMat(idx){
 
   // Clear chat
   document.getElementById('mat-messages').innerHTML = '';
-  document.getElementById('mat-input').value = '';
+  document.getElementById('mat-input') && (document.getElementById('mat-input').value = '');
 
   document.getElementById('mat-welcome').style.display = 'none';
   document.getElementById('mat-workspace').style.display = 'flex';
@@ -3167,8 +3164,9 @@ async function selectMat(idx){
   const summaryBtn = document.querySelector('.mat-mode-btn[data-mode="summary"]');
   if(summaryBtn) setMatMode('summary', summaryBtn);
 
-  // Kaydedilen özetleri chat'in üstünde göster
-  renderMatSavedSummaries(m.title);
+  // Aktif modu otomatik tetikle (seçenek kartlarını göster)
+  const activeBtn = document.querySelector('.mat-mode-btn.active');
+  if(activeBtn) setMatMode(currentMatMode, activeBtn);
 }
 
 function renderMatSavedSummaries(matTitle){
@@ -3231,48 +3229,61 @@ function setMatMode(mode, btn){
   const msgs = document.getElementById('mat-messages');
   msgs.innerHTML = '';
 
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+
   if(mode === 'chat'){
     inputBar.style.display = 'flex';
-    document.getElementById('mat-input').placeholder = 'Ask something about this material...';
+    document.getElementById('mat-input').placeholder = 'Bu materyal hakkında bir şey sor...';
     document.getElementById('mat-input').value = '';
-    // Show chat prompt if material ready
-    const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
     if(m){
-      matAddMsg('ai', `<strong>Chat mode</strong><br>I have the material loaded. Ask me anything about <em>${escHtml(m.title)}</em>.`);
+      matAddMsg('ai', `<strong>Sohbet Modu</strong><br>Materyal yüklendi. <em>${escHtml(m.title)}</em> hakkında istediğini sorabilirsin.`);
     }
     return;
   }
 
-  // Non-chat: hide input, show option cards
   inputBar.style.display = 'none';
 
   if(mode === 'summary'){
-    matAddMsg('ai', `<strong>How would you like the summary?</strong>
+    if(m) renderMatSavedSummaries(m.title);
+    matAddMsg('ai', `<strong>Özet türünü seç:</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-        <button class="mat-option-btn" onclick="matRunVariant('summary','short')">⚡ Short — key points only</button>
-        <button class="mat-option-btn" onclick="matRunVariant('summary','detailed')">📚 Detailed — full analysis with sections</button>
-        <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Page-by-page — section by section</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','short')">⚡ Kısa — sadece ana noktalar</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','detailed')">📚 Detaylı — bölümlü kapsamlı analiz</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Sayfa sayfa — bölüm bölüm özet</button>
       </div>`);
   } else if(mode === 'quiz'){
-    matAddMsg('ai', `<strong>What kind of exam questions?</strong>
+    matAddMsg('ai', `<strong>Nasıl sorular oluşturayım?</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-        <button class="mat-option-btn" onclick="matRunVariant('quiz','easy_mc')">🟢 Easy — multiple choice</button>
-        <button class="mat-option-btn" onclick="matRunVariant('quiz','hard_mc')">🔴 Hard — multiple choice</button>
-        <button class="mat-option-btn" onclick="matRunVariant('quiz','open')">✏️ Open-ended questions</button>
-        <button class="mat-option-btn" onclick="matRunVariant('quiz','mixed')">🎯 Mixed — all types</button>
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','easy_mc')">🟢 Kolay — çoktan seçmeli</button>
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','hard_mc')">🔴 Zor — çoktan seçmeli</button>
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','open')">✏️ Açık uçlu sorular</button>
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','mixed')">🎯 Karışık — tüm türler</button>
       </div>`);
   } else if(mode === 'flashcard'){
-    // Flashcard goes straight, no options needed
-    matRunVariant('flashcard', null);
+    matAddMsg('ai', `<strong>Flashcard oluştur:</strong>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+        <button class="mat-option-btn" onclick="matRunVariant('flashcard',null)">🃏 Oluştur — AI en kritik noktaları seçer</button>
+      </div>`);
   }
 }
+
+
+  // Non-chat: hide input, show option cards
+  inputBar.style.display = 'none';
+
+  // Re-render saved summaries at top
+  if(m) renderMatSavedSummaries(m.title);
+
+  if(mode === 'summary'){
+    matAddMsg('ai', `<strong>How would you like the summary?</strong>
+
 
 async function matRunVariant(mode, variant){
   // Disable all option buttons
   document.querySelectorAll('.mat-option-btn').forEach(b=>{ b.disabled=true; b.style.opacity='0.5'; });
 
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
-  if(!m){ showToast('❌ Select a material first.'); return; }
+  if(!m){ showToast('❌ Bir materyal seçin first.'); return; }
 
   // Build prompt
   let promptFn;
@@ -3379,7 +3390,7 @@ async function prepareFileForClaude(f){
 
 async function matCallAI(userText, opts={}){
   const m = currentMatIdx!==null ? materials[currentMatIdx] : null;
-  if(!m){ showToast('❌ Select a material first.'); return; }
+  if(!m){ showToast('❌ Bir materyal seçin first.'); return; }
 
   // opts.forcePrompt = true means userText IS the full prompt (from option button)
   const prompt = opts.forcePrompt ? userText : (MAT_PROMPTS.chat(m.title) + '\n\nQuestion: ' + userText);
@@ -3393,8 +3404,8 @@ async function matCallAI(userText, opts={}){
     const fd = matFileData;
     if(fd.type==='pdf') messageContent=[{type:'document',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
     else if(fd.type==='image') messageContent=[{type:'image',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
-    else if(fd.type==='text' && fd.content) messageContent=[{type:'text',text:prompt+'\n\nContent:\n'+fd.content}];
-    else messageContent=[{type:'text',text:prompt+'\n\n[File type ('+( fd.name||fd.mediaType||'unknown')+') cannot be read directly. Please paste the content as text or upload as PDF/Word.]'}];
+    else if(fd.type==='text' && fd.content) messageContent=[{type:'text',text:prompt+'\n\nİçerik:\n'+fd.content}];
+    else messageContent=[{type:'text',text:prompt+'\n\n[File type ('+( fd.name||fd.mediaType||'bilinmiyor')+') doğrudan okunamıyor. Lütfen içeriği metin olarak yapıştırın veya PDF/Word yükleyin.]'}];
   } else {
     messageContent=[{type:'text',text:prompt}];
   }
@@ -3402,7 +3413,7 @@ async function matCallAI(userText, opts={}){
   const sessionId = localStorage.getItem('akademix_session');
   if(!sessionId){
     matHideTyping();
-    matAddMsg('ai', '<span style="color:var(--red)">❌ Please sign in with Google to use AI features.</span>');
+    matAddMsg('ai', '<span style="color:var(--red)">❌ AI özelliklerini kullanmak için Google hesabınla giriş yap.</span>');
     if(_sb) _sb.disabled=false;
     return;
   }
@@ -3419,7 +3430,7 @@ async function matCallAI(userText, opts={}){
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
-    const result = data.content?.map(c=>c.text||'').join('')||'No response.';
+    const result = data.content?.map(c=>c.text||'').join('')||'Yanıt alınamadı.';
 
     if(!opts.forcePrompt){
       matChatHistory.push({role:'user',content:messageContent});
@@ -3437,21 +3448,21 @@ async function matCallAI(userText, opts={}){
       const saveBtn = document.createElement('button');
       saveBtn.className = 'add-btn';
       saveBtn.style.cssText = 'padding:6px 14px;font-size:12px;flex-shrink:0;';
-      saveBtn.textContent = '💾 Save';
+      saveBtn.textContent = '💾 Kaydet';
       saveBtn._summaryHtml = html;
       saveBtn._summaryTitle = m.title;
       saveBtn._summaryCourse = m.course || '';
       saveBtn.onclick = function(){ matSaveCurrentSummary(this); };
       const label = document.createElement('span');
       label.style.cssText = 'font-size:12px;color:var(--muted);';
-      label.textContent = 'Save this summary to access later';
+      label.textContent = 'Bu özeti daha sonra görmek için kaydet';
       saveBar.appendChild(saveBtn);
       saveBar.appendChild(label);
       msgEl.querySelector('.mat-msg-body').appendChild(saveBar);
     }
   }catch(e){
     matHideTyping();
-    matAddMsg('ai',`<span style="color:var(--red)">❌ Error: ${escHtml(e.message)}</span>`);
+    matAddMsg('ai',`<span style="color:var(--red)">❌ Hata: ${escHtml(e.message)}</span>`);
   }finally{
     if(_sb) _sb.disabled=false;
   }
