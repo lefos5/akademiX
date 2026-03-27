@@ -1005,11 +1005,10 @@
         </button>
       </div>
     </div>
-    <div class="stats-row" style="grid-template-columns:repeat(5,1fr)">
+    <div class="stats-row">
       <div class="stat-card"><div class="stat-label">Kayıtlı Ders</div><div class="stat-value" id="stat-count">0</div><div class="stat-sub">Bu dönem</div></div>
       <div class="stat-card"><div class="stat-label">Haftalık Saat</div><div class="stat-value" id="stat-hours">0</div><div class="stat-sub">Toplam ders saati</div></div>
       <div class="stat-card"><div class="stat-label">Online Ders</div><div class="stat-value" id="stat-online">0</div><div class="stat-sub">Uzaktan eğitim</div></div>
-      <div class="stat-card"><div class="stat-label">Ara Sınav</div><div class="stat-value" id="stat-exam" style="color:var(--red)">0</div><div class="stat-sub">6–10 Nisan 2026</div></div>
       <div class="stat-card"><div class="stat-label">Bekleyen Ödev</div><div class="stat-value" id="stat-hw" style="color:var(--orange)">–</div><div class="stat-sub">Classroom'dan</div></div>
     </div>
     <div id="schedule-empty" class="empty-state" style="display:none">
@@ -1081,11 +1080,8 @@
         <span class="cal-month-label" id="cal-month-label"></span>
         <button onclick="calNext()">›</button>
       </div>
-      <div class="cal-view-toggle">
-        <button class="cal-view-btn active" id="btn-monthly" onclick="switchCalView('monthly')">Aylık</button>
-        <button class="cal-view-btn" id="btn-agenda" onclick="switchCalView('agenda')">Ajanda</button>
-      </div>
     </div>
+  </div>
     <div id="cal-monthly">
       <div class="cal-grid">
         <div class="cal-weekdays">
@@ -1094,9 +1090,6 @@
         </div>
         <div class="cal-days" id="cal-days"></div>
       </div>
-    </div>
-    <div id="cal-agenda" style="display:none">
-      <div class="agenda-list" id="agenda-list"></div>
     </div>
   </div>
 
@@ -1892,73 +1885,141 @@ function getMyExams(){
 
 function renderExams(){
   const myExams = getMyExams();
+  // Manuel eklenmiş sınavları da yükle
+  const manualExams = safeLocalStorage('manual_exams', []);
+  const allExams = [...myExams, ...manualExams].sort((a,b) => new Date(a.date) - new Date(b.date));
+
   const container = document.getElementById('exams-content');
   if(!container) return;
 
   // Badge güncelle
   const badge = document.getElementById('badge-exam');
-  if(badge){ badge.textContent = myExams.length; badge.style.display = myExams.length ? 'inline-block' : 'none'; }
+  if(badge){ badge.textContent = allExams.length; badge.style.display = allExams.length ? 'inline-block' : 'none'; }
 
-  if(!myExams.length){
-    container.innerHTML = '<div class="empty-state"><div class="icon">🎓</div><p>Kayıtlı derslerine ait ara sınav bulunamadı.</p></div>';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dayNames = {
+    '2026-04-04':'Cumartesi, 4 Nisan',
+    '2026-04-06':'Pazartesi, 6 Nisan',
+    '2026-04-07':'Salı, 7 Nisan',
+    '2026-04-08':'Çarşamba, 8 Nisan',
+    '2026-04-09':'Perşembe, 9 Nisan',
+    '2026-04-10':'Cuma, 10 Nisan',
+  };
+
+  // Manuel ekleme formu
+  const addFormHTML = `
+    <div id="exam-add-section" style="margin-bottom:24px;">
+      <button class="mat-ws-action" id="exam-add-toggle" onclick="toggleExamAddForm()" style="display:flex;align-items:center;gap:6px;font-size:13px;padding:8px 14px;">
+        ＋ Sınav Ekle
+      </button>
+      <div id="exam-add-form" style="display:none;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Ders Kodu</label>
+            <input id="exam-add-code" type="text" placeholder="örn. INF110" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Ders Adı</label>
+            <input id="exam-add-name" type="text" placeholder="örn. İşletim Sistemleri" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Tarih</label>
+            <input id="exam-add-date" type="date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Saat (örn. 09:00-11:00)</label>
+            <input id="exam-add-time" type="text" placeholder="09:00-11:00" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Salon</label>
+          <input id="exam-add-room" type="text" placeholder="örn. C201" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="add-btn" onclick="saveManualExam()" style="flex:1;justify-content:center;">Kaydet</button>
+          <button class="mat-ws-action" onclick="toggleExamAddForm()">İptal</button>
+        </div>
+      </div>
+    </div>`;
+
+  if(!allExams.length){
+    container.innerHTML = addFormHTML + '<div class="empty-state"><div class="icon">🎓</div><p>Kayıtlı derslerine ait ara sınav bulunamadı.<br>Yukarıdan manuel ekleyebilirsin.</p></div>';
     return;
   }
 
   // Tarihe göre grupla
   const grouped = {};
-  const dayNames = {
-    '2026-04-04': 'Cumartesi, 4 Nisan',
-    '2026-04-06': 'Pazartesi, 6 Nisan',
-    '2026-04-07': 'Salı, 7 Nisan',
-    '2026-04-08': 'Çarşamba, 8 Nisan',
-    '2026-04-09': 'Perşembe, 9 Nisan',
-    '2026-04-10': 'Cuma, 10 Nisan',
-  };
-  myExams.forEach(e => { if(!grouped[e.date]) grouped[e.date]=[]; grouped[e.date].push(e); });
+  allExams.forEach(e => { if(!grouped[e.date]) grouped[e.date]=[]; grouped[e.date].push(e); });
 
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  let html = '';
+  let html = addFormHTML;
   Object.entries(grouped).forEach(([date, exams]) => {
     const d = new Date(date);
     const isPast = d < today;
     const isToday = d.toDateString() === today.toDateString();
-    const label = dayNames[date] || date;
+    const label = dayNames[date] || d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
     html += `
       <div style="margin-bottom:24px;">
-        <div style="font-size:13px;font-weight:700;color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
+        <div style="font-size:12px;font-weight:700;color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
           text-transform:uppercase;letter-spacing:0.8px;padding:8px 0;
-          border-bottom:2px solid ${isToday?'var(--accent)':isPast?'var(--border)':'var(--border)'};
+          border-bottom:2px solid ${isToday?'var(--accent)':'var(--border)'};
           margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-          ${isToday?'📍':isPast?'✓':''} ${label}
-          ${isToday?'<span style="background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;">BUGÜN</span>':''}
-          ${isPast&&!isToday?'<span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;">Geçti</span>':''}
+          ${label}
+          ${isToday?'<span style="background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">BUGÜN</span>':''}
+          ${isPast&&!isToday?'<span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">Geçti</span>':''}
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
           ${exams.map(exam => `
-            <div style="background:var(--surface);border:1px solid ${isPast?'var(--border)':'rgba(248,113,113,0.25)'};
+            <div style="background:var(--surface);border:1px solid ${isPast?'var(--border)':'rgba(248,113,113,0.2)'};
               border-left:4px solid ${isPast?'var(--border2)':'var(--red)'};
-              border-radius:12px;padding:16px 18px;
-              display:flex;align-items:center;gap:16px;
-              opacity:${isPast?'0.6':'1'};
-              transition:box-shadow 0.15s;">
-              <div style="flex-shrink:0;text-align:center;min-width:60px;">
-                <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:0.5px;">${exam.time.split('-')[0]}</div>
-                <div style="font-size:10px;color:var(--muted);">–${exam.time.split('-')[1]||''}</div>
+              border-radius:12px;padding:14px 18px;
+              display:flex;align-items:center;gap:16px;opacity:${isPast?'0.55':'1'};">
+              <div style="flex-shrink:0;min-width:56px;text-align:center;">
+                <div style="font-size:13px;font-weight:700;color:var(--red);">${exam.time ? exam.time.split('-')[0] : '—'}</div>
+                <div style="font-size:10px;color:var(--muted);">${exam.time ? '–'+exam.time.split('-')[1] : ''}</div>
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                  <span style="background:rgba(248,113,113,0.1);color:var(--red);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid rgba(248,113,113,0.2);">${escHtml(exam.code)}</span>
-                  ${exam.room==='ONLINE'?'<span style="background:rgba(14,165,233,0.1);color:var(--accent2);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">🌐 ONLINE</span>':''}
+                <div style="margin-bottom:3px;">
+                  <span style="background:rgba(248,113,113,0.1);color:var(--red);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;">${escHtml(exam.code)}</span>
+                  ${exam._manual?'<span style="background:rgba(59,130,246,0.1);color:var(--accent2);font-size:10px;padding:2px 6px;border-radius:4px;margin-left:4px;">Manuel</span>':''}
                 </div>
-                <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${escHtml(exam.name)}</div>
-                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room)}</div>
+                <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${escHtml(exam.name)}</div>
+                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room||'—')}</div>
               </div>
+              ${exam._manual?`<button class="mat-list-del" style="opacity:1;" onclick="deleteManualExam('${exam._id}')" title="Sil">✕</button>`:''}
             </div>`).join('')}
         </div>
       </div>`;
   });
   container.innerHTML = html;
+}
+
+function toggleExamAddForm(){
+  const form = document.getElementById('exam-add-form');
+  if(!form) return;
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function saveManualExam(){
+  const code = document.getElementById('exam-add-code').value.trim();
+  const name = document.getElementById('exam-add-name').value.trim();
+  const date = document.getElementById('exam-add-date').value;
+  const time = document.getElementById('exam-add-time').value.trim();
+  const room = document.getElementById('exam-add-room').value.trim();
+  if(!code || !name || !date){ showToast('❌ Ders kodu, adı ve tarih zorunludur.'); return; }
+  const exams = safeLocalStorage('manual_exams', []);
+  exams.push({ code, name, date, time, room, _manual: true, _id: Date.now().toString() });
+  try{ localStorage.setItem('manual_exams', JSON.stringify(exams)); }catch(e){}
+  showToast('✅ Sınav eklendi!');
+  renderExams();
+  renderCalendar();
+}
+
+function deleteManualExam(id){
+  if(!confirm('Bu sınavı silmek istiyor musun?')) return;
+  const exams = safeLocalStorage('manual_exams', []).filter(e => e._id !== id);
+  try{ localStorage.setItem('manual_exams', JSON.stringify(exams)); }catch(e){}
+  renderExams();
+  renderCalendar();
 }
 
 function renderSchedule(){
@@ -1967,12 +2028,9 @@ function renderSchedule(){
   let tm=0; my.forEach(c=>Object.values(c.schedule).forEach(s=>{const[t]=s.split('|');const[a,b]=t.split('-');tm+=timeToMinutes(b)-timeToMinutes(a);}));
   document.getElementById('stat-hours').textContent=Math.round(tm/60);
   document.getElementById('stat-online').textContent=my.filter(c=>Object.values(c.schedule).some(s=>s.includes('ONLINE'))).length;
-  // Sınav sayısı
-  const myExams = getMyExams();
-  const examEl = document.getElementById('stat-exam');
-  if(examEl) examEl.textContent = myExams.length;
-  const badge = document.getElementById('badge-exam');
-  if(badge){ badge.textContent = myExams.length; badge.style.display = myExams.length ? 'inline-block' : 'none'; }
+  // Badge güncelle
+  const examBadge = document.getElementById('badge-exam');
+  if(examBadge){ const n=getMyExams().length; examBadge.textContent=n; examBadge.style.display=n?'inline-block':'none'; }
   if(my.length===0){document.getElementById('schedule-grid').style.display='none';document.getElementById('schedule-empty').style.display='block';return;}
   document.getElementById('schedule-grid').style.display='block';document.getElementById('schedule-empty').style.display='none';
   const slots={};DAYS.forEach(d=>slots[d]=[]);
@@ -2503,7 +2561,20 @@ function getCalEvents() {
     });
   });
 
-  // Manuel eklenen etkinlikler
+  // Manuel eklenmiş sınavlar
+  safeLocalStorage('manual_exams', []).forEach(exam => {
+    const [year, month, day] = exam.date.split('-').map(Number);
+    const d = new Date(year, month-1, day);
+    events.push({
+      date: d, type: 'exam',
+      title: '🎓 ' + exam.code,
+      sub: exam.name + (exam.time ? ' · ' + exam.time : '') + (exam.room ? ' · ' + exam.room : ''),
+      time: exam.time, room: exam.room,
+      color: 'var(--red)'
+    });
+  });
+
+  // Manuel eklenen takvim etkinlikleri
   safeLocalStorage('cal-events', []).forEach(e => events.push({...e, date:new Date(e.date)}));
 
   return events;
@@ -2511,8 +2582,7 @@ function getCalEvents() {
 
 function renderCalendar() {
   document.getElementById('cal-month-label').textContent = TR_MONTHS[calDate.getMonth()] + ' ' + calDate.getFullYear();
-  if(calView==='monthly') renderMonthly();
-  else renderAgenda();
+  renderMonthly();
 }
 
 function renderMonthly() {
@@ -2539,13 +2609,15 @@ function renderMonthly() {
     dayEvents.slice(0,3).forEach(ev=>{
       const ep = document.createElement('div');
       ep.className = 'cal-event ' + (ev.type==='hw' ? 'hw' : ev.type==='exam' ? 'exam' : 'course');
-      // Aylık görünümde: sınav için kod + saat göster
+      // Sadece kısa isim göster
+      ep.textContent = ev.type==='exam'
+        ? ev.title  // "🎓 INF110"
+        : ev.title;
+      ep.title = ev.sub || ev.title;
+      ep.style.cursor = 'pointer';
       if(ev.type === 'exam'){
-        ep.textContent = ev.title + (ev.time ? ' ' + ev.time : '');
-      } else {
-        ep.textContent = ev.title;
+        ep.onclick = (e) => { e.stopPropagation(); openExamPopup(ev); };
       }
-      ep.title = ev.title + (ev.sub ? ' — ' + ev.sub : '');
       cell.appendChild(ep);
     });
     if(dayEvents.length>3){const m=document.createElement('div');m.className='cal-event';m.style.color='var(--muted)';m.textContent=`+${dayEvents.length-3} daha`;cell.appendChild(m);}
@@ -2553,37 +2625,48 @@ function renderMonthly() {
   }
 }
 
-function renderAgenda() {
-  const events = getCalEvents();
-  const today = new Date(); today.setHours(0,0,0,0);
-  // next 30 days
-  const upcoming = events.filter(e=>{const d=new Date(e.date);d.setHours(0,0,0,0);return d>=today;}).sort((a,b)=>a.date-b.date).slice(0,50);
-  const grouped = {};
-  upcoming.forEach(e=>{const k=e.date.toDateString();if(!grouped[k])grouped[k]=[];grouped[k].push(e);});
-  const container = document.getElementById('agenda-list');
-  container.innerHTML='';
-  if(!Object.keys(grouped).length){container.innerHTML='<div class="mat-empty"><div style="font-size:48px;opacity:0.3">📅</div><p>Yaklaşan etkinlik yok.</p></div>';return;}
-  Object.entries(grouped).forEach(([dateStr, evs])=>{
-    const d = new Date(dateStr);
-    const isToday = d.toDateString()===today.toDateString();
-    const label = isToday ? 'Bugün — '+d.toLocaleDateString('tr-TR',{day:'numeric',month:'long'}) : d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
-    const sec = document.createElement('div'); sec.className='agenda-section';
-    sec.innerHTML=`<div class="agenda-day-header ${isToday?'today-hdr':''}">${label}</div>`;
-    evs.forEach(ev=>{
-      const item=document.createElement('div');item.className='agenda-item';
-      item.innerHTML=`<div class="a-dot" style="background:${ev.color}"></div><div class="a-info"><div class="a-title">${ev.title}</div>${ev.sub?`<div class="a-sub">${ev.sub}</div>`:''}</div>`;
-      sec.appendChild(item);
-    });
-    container.appendChild(sec);
-  });
+function openExamPopup(ev){
+  const popup = document.getElementById('exam-popup');
+  document.getElementById('exam-popup-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(248,113,113,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🎓</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">${escHtml(ev.title)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${ev.date ? new Date(ev.date).toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : ''}</div>
+      </div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;">📚</span>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Ders</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text2)">${escHtml((ev.sub||'').split('·')[0].trim())}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;">🕐</span>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Saat</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text2)">${escHtml(ev.time||'')}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;">📍</span>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Salon</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text2)">${escHtml(ev.room||'')}</div>
+        </div>
+      </div>
+    </div>`;
+  popup.classList.add('open');
+}
+
+function closeExamPopup(){
+  document.getElementById('exam-popup').classList.remove('open');
 }
 
 function switchCalView(v){
-  calView=v;
-  document.getElementById('btn-monthly').classList.toggle('active',v==='monthly');
-  document.getElementById('btn-agenda').classList.toggle('active',v==='agenda');
-  document.getElementById('cal-monthly').style.display=v==='monthly'?'block':'none';
-  document.getElementById('cal-agenda').style.display=v==='agenda'?'block':'none';
+  // Ajanda kaldırıldı — artık sadece aylık görünüm var
   renderCalendar();
 }
 function calPrev(){calDate.setMonth(calDate.getMonth()-1);renderCalendar();}
@@ -3724,6 +3807,14 @@ window.addEventListener('load',()=>{
     </div>
   </div>
 
+
+  <!-- SINAV DETAY POPUP -->
+  <div class="ai-modal-overlay" id="exam-popup" onclick="if(event.target===this)closeExamPopup()">
+    <div class="modal" style="width:400px;max-width:92vw;">
+      <button class="modal-close" onclick="closeExamPopup()">✕</button>
+      <div id="exam-popup-content"></div>
+    </div>
+  </div>
 
   <!-- NOT GÖRÜNTÜLEYİCİ MODAL -->
   <div class="ai-modal-overlay" id="nv-modal" onclick="if(event.target===this)closeNoteViewer()">
