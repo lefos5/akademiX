@@ -3048,6 +3048,13 @@ async function matCallAI(userText){
   }
 
   const sessionId = localStorage.getItem('akademix_session');
+  if(!sessionId){
+    matHideTyping();
+    matAddMsg('ai', '<span style="color:var(--red)">❌ AI analizi için giriş yapman gerekiyor. Lütfen Google hesabınla giriş yap.</span>');
+    const ab=document.getElementById('mat-analyze-btn'); if(ab) ab.disabled=false;
+    const sb2=document.getElementById('mat-send-btn'); if(sb2) sb2.disabled=false;
+    return;
+  }
 
   const msgs = [...matChatHistory, {role:'user',content:messageContent}];
 
@@ -3056,11 +3063,14 @@ async function matCallAI(userText){
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'x-session-id': sessionId || ''
+        'x-session-id': sessionId
       },
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:msgs})
     });
     const data = await resp.json();
+    if(!resp.ok){
+      throw new Error(data.error || `Sunucu hatası: ${resp.status}`);
+    }
     const result = data.content?.map(c=>c.text||'').join('')||'Yanıt alınamadı.';
     matChatHistory.push({role:'user',content:messageContent});
     matChatHistory.push({role:'assistant',content:result});
