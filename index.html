@@ -724,16 +724,19 @@
     display: flex; justify-content: space-between; align-items: center;
   }
   .mat-analyze-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: linear-gradient(135deg, var(--accent), #6366f1);
-    color: white; border: none; padding: 8px 18px;
-    border-radius: 10px; font-size: 12px; font-weight: 600;
-    cursor: pointer; transition: all 0.2s;
-    font-family: 'DM Sans', sans-serif;
-    box-shadow: 0 3px 12px rgba(59,130,246,0.3);
+    display: none; /* removed */
   }
-  .mat-analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(59,130,246,0.4); }
-  .mat-analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .mat-option-btn {
+    display: block; width: 100%;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 10px 16px;
+    color: var(--text2); font-size: 13px; font-weight: 500;
+    cursor: pointer; text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .mat-option-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent2); background: var(--accent-glow); }
+  .mat-option-btn:disabled { cursor: not-allowed; }
   .mat-send-btn {
     width: 34px; height: 34px; border-radius: 9px;
     background: var(--surface3); border: 1px solid var(--border2);
@@ -1122,26 +1125,24 @@
       <div class="mat-detail" id="mat-detail">
         <div class="mat-welcome" id="mat-welcome">
           <div class="mat-welcome-icon">✨</div>
-          <div class="mat-welcome-title">Bir materyal seçin</div>
-          <div class="mat-welcome-sub">Soldan bir materyal seçerek AI ile analiz edin, soru sorun veya flashcard oluşturun.</div>
+          <div class="mat-welcome-title">Select a material</div>
+          <div class="mat-welcome-sub">Select a material from the left to generate summaries, exam questions, flashcards, or chat with AI about it.</div>
         </div>
         <div class="mat-workspace" id="mat-workspace" style="display:none">
           <div class="mat-workspace-header" id="mat-workspace-header"></div>
           <div class="mat-ai-bar">
-            <button class="mat-mode-btn active" data-mode="summary" onclick="setMatMode('summary',this)">📝 Özet</button>
-            <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Sınav</button>
+            <button class="mat-mode-btn active" data-mode="summary" onclick="setMatMode('summary',this)">📝 Summary</button>
+            <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Exam</button>
             <button class="mat-mode-btn" data-mode="flashcard" onclick="setMatMode('flashcard',this)">🃏 Flashcard</button>
-            <button class="mat-mode-btn" data-mode="explain" onclick="setMatMode('explain',this)">🧠 Anlat</button>
-            <button class="mat-mode-btn" data-mode="chat" onclick="setMatMode('chat',this)">💬 Sohbet</button>
+            <button class="mat-mode-btn" data-mode="chat" onclick="setMatMode('chat',this)">💬 Chat</button>
           </div>
           <div class="mat-messages" id="mat-messages"></div>
-          <div class="mat-input-bar">
-            <textarea id="mat-input" placeholder="Bir şey sor veya Analiz Et butonuna bas..." rows="1"
+          <div class="mat-input-bar" id="mat-input-bar" style="display:none">
+            <textarea id="mat-input" placeholder="Ask something about this material..." rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();matSend()}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
             <div class="mat-input-actions">
-              <button class="mat-analyze-btn" id="mat-analyze-btn" onclick="matAnalyze()">✨ Analiz Et</button>
-              <button class="mat-send-btn" id="mat-send-btn" onclick="matSend()" title="Gönder">
+              <button class="mat-send-btn" id="mat-send-btn" onclick="matSend()" title="Send">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
             </div>
@@ -3049,48 +3050,19 @@ let matChatHistory = [];
 let matFileData = null;
 
 const MAT_PROMPTS = {
-  summary: (t) => `Sen deneyimli bir akademik asistan ve öğretmensin. Sana verilen ders materyalini Türkçe olarak kapsamlı ve derinlemesine analiz et. Her bölümü mümkün olduğunca ayrıntılı doldur — öğrenci bu özete bakarak konuyu tam anlayabilmeli.
-
-Materyal: ${t}
-
----
-
-## 📌 Genel Özet
-Bu materyalin tüm içeriğini kapsayan, en az 4-5 cümlelik detaylı bir özet yaz. Konunun bağlamını, amacını ve önemini belirt.
-
-## 🎯 Ana Konular ve Açıklamaları
-Her ana konuyu başlık olarak yaz ve altına en az 2-3 cümle açıklama ekle. Konular arasındaki ilişkileri de belirt.
-
-## 📖 Temel Kavramlar ve Tanımlar
-Materyalde geçen tüm önemli kavramları, terimleri ve tanımları listele. Her birini kendi cümlelerinle açıkla.
-
-## ⚡ Önemli Noktalar ve Detaylar
-- Altı çizilmesi gereken kritik bilgiler
-- Formüller, kurallar, istisnalar
-- Sık karıştırılan veya dikkat edilmesi gereken noktalar
-- Varsa sayısal veriler, tarihler, isimler
-
-## 🔗 Konular Arası İlişkiler
-Bu materyaldeki konuların birbiriyle ve daha önce görülmüş konularla nasıl bağlantılı olduğunu açıkla.
-
-## 📝 Muhtemel Sınav Konuları
-Hem klasik hem de test tipi sorular için:
-- Kesinlikle çıkabilecek konular (neden çıkabileceğini de belirt)
-- Örnek soru tipleri
-- Dikkat edilmesi gereken ince noktalar
-
-## 💡 Pratik Uygulama ve Örnekler
-Bu bilgilerin gerçek hayatta veya problemlerde nasıl kullanılacağını somut örneklerle açıkla.
-
-Tüm bölümleri eksiksiz doldur. Kısa ve yüzeysel cevaplardan kaçın.`,
-
-  quiz: (t) => `Bu materyalden Türkçe sınav soruları oluştur. Çoktan seçmeli (4 şık), doğru/yanlış ve açık uçlu karışık sorular yaz. Her sorunun cevabını ve neden doğru olduğunu da belirt.\n\nMateryal: ${t}`,
-
-  flashcard: (t) => `Bu materyalden Türkçe flashcard oluştur. Her kart için kesinlikle bu formatı kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım]\n\nEn az 10 kart oluştur. Kartlar konunun en kritik noktalarını kapsamalı.\nMateryal: ${t}`,
-
-  explain: (t) => `Bu konuyu hiç bilmeyen birine, sıfırdan ve çok sade Türkçe ile anlat. Günlük hayattan örnekler, benzetmeler ve basit dil kullan. Teknik terimlerden kaçın, zorunluysa parantez içinde açıkla.\n\nMateryal: ${t}`,
-
-  chat: (t) => `Sen bu materyal hakkında derin bilgiye sahip bir öğretmensin. Öğrencinin sorularını Türkçe olarak yanıtla. Önceki mesajları bağlamında değerlendir.\n\nMateryal: ${t}`
+  summary: {
+    short: (t) => `Analyze this material and write a concise summary in Turkish. Max 3 paragraphs. Cover the key points only.\n\nMaterial: ${t}`,
+    detailed: (t) => `Analyze this material thoroughly in Turkish. Include:\n\n## 📌 Overview\n## 🎯 Main Topics\n## 📖 Key Concepts & Definitions\n## ⚡ Important Details\n## 🔗 Connections Between Topics\n## 📝 Likely Exam Topics\n## 💡 Practical Examples\n\nBe thorough. Material: ${t}`,
+    paged: (t) => `Analyze this material page by page in Turkish. For each section/page write a short summary of what it covers. Material: ${t}`,
+  },
+  quiz: {
+    easy_mc: (t) => `Create 10 easy multiple-choice questions (4 options each) from this material in Turkish. Show the correct answer and brief explanation after each question.\n\nMaterial: ${t}`,
+    hard_mc: (t) => `Create 10 challenging multiple-choice questions (4 options each) from this material in Turkish. Show the correct answer and brief explanation after each question.\n\nMaterial: ${t}`,
+    open: (t) => `Create 8 open-ended exam questions from this material in Turkish, ranging from simple to complex. Include model answers.\n\nMaterial: ${t}`,
+    mixed: (t) => `Create a mixed exam from this material in Turkish: 5 multiple-choice, 3 true/false, 3 open-ended questions. Include answers for all.\n\nMaterial: ${t}`,
+  },
+  flashcard: (t) => `Create flashcards from this material in Turkish. Use this exact format for each:\nQ: [question or concept]\nA: [answer or definition]\n\nCreate at least 12 cards covering the most critical points.\n\nMaterial: ${t}`,
+  chat: (t) => `You are a knowledgeable teacher for this material. Answer the student's questions in Turkish based on the material. Consider previous messages for context.\n\nMaterial: ${t}`,
 };
 
 function renderMaterials(){
@@ -3191,6 +3163,10 @@ async function selectMat(idx){
     }catch(e){ console.warn('Dosya hazırlanamadı:', e); }
   }
 
+  // Auto-trigger summary mode (active by default)
+  const summaryBtn = document.querySelector('.mat-mode-btn[data-mode="summary"]');
+  if(summaryBtn) setMatMode('summary', summaryBtn);
+
   // Kaydedilen özetleri chat'in üstünde göster
   renderMatSavedSummaries(m.title);
 }
@@ -3247,16 +3223,65 @@ async function deleteMatSummary(id, matTitle){
 
 function setMatMode(mode, btn){
   currentMatMode = mode;
+  matChatHistory = [];
   document.querySelectorAll('.mat-mode-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const hints = {
-    summary:'Özet için Analiz Et butonuna bas...',
-    quiz:'Sınav soruları için Analiz Et butonuna bas...',
-    flashcard:'Flashcard oluşturmak için Analiz Et butonuna bas...',
-    explain:'Konuyu basitçe anlatması için Analiz Et butonuna bas...',
-    chat:'Bu materyal hakkında bir şey sor...'
-  };
-  document.getElementById('mat-input').placeholder = hints[mode]||'';
+
+  const inputBar = document.getElementById('mat-input-bar');
+  const msgs = document.getElementById('mat-messages');
+  msgs.innerHTML = '';
+
+  if(mode === 'chat'){
+    inputBar.style.display = 'flex';
+    document.getElementById('mat-input').placeholder = 'Ask something about this material...';
+    document.getElementById('mat-input').value = '';
+    // Show chat prompt if material ready
+    const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+    if(m){
+      matAddMsg('ai', `<strong>Chat mode</strong><br>I have the material loaded. Ask me anything about <em>${escHtml(m.title)}</em>.`);
+    }
+    return;
+  }
+
+  // Non-chat: hide input, show option cards
+  inputBar.style.display = 'none';
+
+  if(mode === 'summary'){
+    matAddMsg('ai', `<strong>How would you like the summary?</strong>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+        <button class="mat-option-btn" onclick="matRunVariant('summary','short')">⚡ Short — key points only</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','detailed')">📚 Detailed — full analysis with sections</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Page-by-page — section by section</button>
+      </div>`);
+  } else if(mode === 'quiz'){
+    matAddMsg('ai', `<strong>What kind of exam questions?</strong>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','easy_mc')">🟢 Easy — multiple choice</button>
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','hard_mc')">🔴 Hard — multiple choice</button>
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','open')">✏️ Open-ended questions</button>
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','mixed')">🎯 Mixed — all types</button>
+      </div>`);
+  } else if(mode === 'flashcard'){
+    // Flashcard goes straight, no options needed
+    matRunVariant('flashcard', null);
+  }
+}
+
+async function matRunVariant(mode, variant){
+  // Disable all option buttons
+  document.querySelectorAll('.mat-option-btn').forEach(b=>{ b.disabled=true; b.style.opacity='0.5'; });
+
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(!m){ showToast('❌ Select a material first.'); return; }
+
+  // Build prompt
+  let promptFn;
+  if(mode === 'summary') promptFn = MAT_PROMPTS.summary[variant];
+  else if(mode === 'quiz') promptFn = MAT_PROMPTS.quiz[variant];
+  else promptFn = MAT_PROMPTS.flashcard;
+
+  const prompt = promptFn(m.title);
+  await matCallAI(prompt, { forcePrompt: true, mode, variant });
 }
 
 function matAddMsg(role, html){
@@ -3352,12 +3377,14 @@ async function prepareFileForClaude(f){
   return { type: 'text', content: `[${f.name} desteklenmiyor. İçeriği metin olarak yapıştırın.]` };
 }
 
-async function matCallAI(userText){
+async function matCallAI(userText, opts={}){
   const m = currentMatIdx!==null ? materials[currentMatIdx] : null;
-  if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
+  if(!m){ showToast('❌ Select a material first.'); return; }
 
-  const prompt = userText || MAT_PROMPTS[currentMatMode](m.title);
-  const _ab=document.getElementById('mat-analyze-btn'); if(_ab) _ab.disabled=true;
+  // opts.forcePrompt = true means userText IS the full prompt (from option button)
+  const prompt = opts.forcePrompt ? userText : (MAT_PROMPTS.chat(m.title) + '\n\nQuestion: ' + userText);
+  const mode = opts.mode || currentMatMode;
+
   const _sb=document.getElementById('mat-send-btn'); if(_sb) _sb.disabled=true;
   matShowTyping();
 
@@ -3366,8 +3393,8 @@ async function matCallAI(userText){
     const fd = matFileData;
     if(fd.type==='pdf') messageContent=[{type:'document',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
     else if(fd.type==='image') messageContent=[{type:'image',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
-    else if(fd.type==='text' && fd.content) messageContent=[{type:'text',text:prompt+'\n\nİçerik:\n'+fd.content}];
-    else messageContent=[{type:'text',text:prompt+'\n\n[Dosya türü ('+(fd.name||fd.mediaType||'bilinmiyor')+') doğrudan okunamıyor. Lütfen içeriği elle metin kutusuna yapıştırın veya PDF/Word formatında yükleyin.]'}];
+    else if(fd.type==='text' && fd.content) messageContent=[{type:'text',text:prompt+'\n\nContent:\n'+fd.content}];
+    else messageContent=[{type:'text',text:prompt+'\n\n[File type ('+( fd.name||fd.mediaType||'unknown')+') cannot be read directly. Please paste the content as text or upload as PDF/Word.]'}];
   } else {
     messageContent=[{type:'text',text:prompt}];
   }
@@ -3375,60 +3402,58 @@ async function matCallAI(userText){
   const sessionId = localStorage.getItem('akademix_session');
   if(!sessionId){
     matHideTyping();
-    matAddMsg('ai', '<span style="color:var(--red)">❌ AI analizi için giriş yapman gerekiyor. Lütfen Google hesabınla giriş yap.</span>');
-    const ab=document.getElementById('mat-analyze-btn'); if(ab) ab.disabled=false;
-    const sb2=document.getElementById('mat-send-btn'); if(sb2) sb2.disabled=false;
+    matAddMsg('ai', '<span style="color:var(--red)">❌ Please sign in with Google to use AI features.</span>');
+    if(_sb) _sb.disabled=false;
     return;
   }
 
-  const msgs = [...matChatHistory, {role:'user',content:messageContent}];
+  const msgs = opts.forcePrompt
+    ? [{role:'user',content:messageContent}]
+    : [...matChatHistory, {role:'user',content:messageContent}];
 
   try{
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-session-id': sessionId
-      },
+      headers:{'Content-Type':'application/json','x-session-id': sessionId},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:msgs})
     });
     const data = await resp.json();
-    if(!resp.ok){
-      throw new Error(data.error || `Sunucu hatası: ${resp.status}`);
+    if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
+    const result = data.content?.map(c=>c.text||'').join('')||'No response.';
+
+    if(!opts.forcePrompt){
+      matChatHistory.push({role:'user',content:messageContent});
+      matChatHistory.push({role:'assistant',content:result});
     }
-    const result = data.content?.map(c=>c.text||'').join('')||'Yanıt alınamadı.';
-    matChatHistory.push({role:'user',content:messageContent});
-    matChatHistory.push({role:'assistant',content:result});
+
     matHideTyping();
-    const html = (currentMatMode==='flashcard'&&!userText) ? matBuildFlashcards(result) : matMd(result);
+    const html = (mode==='flashcard') ? matBuildFlashcards(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
 
-    // Özet modunda kaydet butonu göster
-    if(currentMatMode === 'summary' && !userText){
+    // Save button for summary
+    if(mode === 'summary'){
       const saveBar = document.createElement('div');
       saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
       const saveBtn = document.createElement('button');
       saveBtn.className = 'add-btn';
       saveBtn.style.cssText = 'padding:6px 14px;font-size:12px;flex-shrink:0;';
-      saveBtn.textContent = '💾 Kaydet';
-      // HTML'i dataset'e koy — onclick attribute'una gömmek tırnak sorunlarına yol açar
+      saveBtn.textContent = '💾 Save';
       saveBtn._summaryHtml = html;
       saveBtn._summaryTitle = m.title;
       saveBtn._summaryCourse = m.course || '';
       saveBtn.onclick = function(){ matSaveCurrentSummary(this); };
       const label = document.createElement('span');
       label.style.cssText = 'font-size:12px;color:var(--muted);';
-      label.textContent = 'Bu özeti daha sonra görmek için kaydet';
+      label.textContent = 'Save this summary to access later';
       saveBar.appendChild(saveBtn);
       saveBar.appendChild(label);
       msgEl.querySelector('.mat-msg-body').appendChild(saveBar);
     }
   }catch(e){
     matHideTyping();
-    matAddMsg('ai',`<span style="color:var(--red)">❌ Hata: ${escHtml(e.message)}</span>`);
+    matAddMsg('ai',`<span style="color:var(--red)">❌ Error: ${escHtml(e.message)}</span>`);
   }finally{
-    const ab2=document.getElementById('mat-analyze-btn'); if(ab2) ab2.disabled=false;
-    const sb2=document.getElementById('mat-send-btn'); if(sb2) sb2.disabled=false;
+    if(_sb) _sb.disabled=false;
   }
 }
 
@@ -3462,9 +3487,8 @@ function matSaveCurrentSummary(btn){
   renderMatSavedSummaries(title);
 }
 
-function matAnalyze(){ matCallAI(''); }
-
 function matSend(){
+  if(currentMatMode !== 'chat') return;
   const inp = document.getElementById('mat-input');
   const txt = inp.value.trim();
   if(!txt) return;
