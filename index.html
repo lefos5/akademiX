@@ -1239,6 +1239,23 @@ function formatFileSize(bytes){
   return (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
 }
 
+function arrayBufferToBase64(buffer){
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const CHUNK = 8192;
+  for(let i = 0; i < bytes.length; i += CHUNK){
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
+function base64ToArrayBuffer(base64){
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
 
 function escHtml(str){
   if(!str) return '';
@@ -1326,14 +1343,7 @@ function initSupabase(){
     if(!client){ console.warn('Supabase kütüphanesi yüklenmedi'); return; }
     sb = client.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log('Supabase bağlandı ✅');
-    // Storage erişimini test et (sessiz)
-    sb.storage.from('materials').list('', { limit: 1 })
-      .then(({ error }) => {
-        if(error) console.warn('[Storage] "materials" bucket erişim hatası:', error.message,
-          '\n👉 Supabase Dashboard → Storage → New Bucket → "materials" (Public: açık) oluşturuldu mu?');
-        else console.log('[Storage] "materials" bucket erişilebilir ✅');
-      });
-  }catch(e){ console.warn('Supabase init hatası:', e); }
+  }catch(e){ console.warn('Supabase init hatası:', String(e?.message || e)); }
 }
 
 // Supabase JWT token set et (Google access token ile değil, email ile RLS yapıyoruz)
@@ -2685,11 +2695,48 @@ let matChatHistory = [];
 let matFileData = null;
 
 const MAT_PROMPTS = {
-  summary: (t) => `Sen deneyimli bir akademik asistansın. Bu materyali Türkçe, kapsamlı özetle.\n\n## 📌 Genel Özet\n## 🎯 Ana Konular\n## 📖 Temel Kavramlar ve Tanımlar\n## ⚡ Önemli Noktalar\n## 📝 Muhtemel Sınav Konuları\n\nMateryal: ${t}`,
-  quiz: (t) => `Bu materyalden Türkçe sınav soruları oluştur. Çoktan seçmeli, doğru/yanlış ve açık uçlu karışık sorular yaz. Her sorunun cevabını da belirt.\n\nMateryal: ${t}`,
-  flashcard: (t) => `Bu materyalden Türkçe flashcard oluştur. Her kart için kesinlikle bu formatı kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım]\n\nEn az 10 kart oluştur.\nMateryal: ${t}`,
-  explain: (t) => `Bu konuyu hiç bilmeyen birine, sıfırdan ve çok sade Türkçe ile anlat. Günlük hayattan örnekler, benzetmeler ve basit dil kullan. Teknik terimlerden kaçın.\n\nMateryal: ${t}`,
-  chat: (t) => `Sen bu materyal hakkında derin bilgiye sahip bir öğretmensin. Öğrencinin sorularını Türkçe olarak yanıtla.\n\nMateryal: ${t}`
+  summary: (t) => `Sen deneyimli bir akademik asistan ve öğretmensin. Sana verilen ders materyalini Türkçe olarak kapsamlı ve derinlemesine analiz et. Her bölümü mümkün olduğunca ayrıntılı doldur — öğrenci bu özete bakarak konuyu tam anlayabilmeli.
+
+Materyal: ${t}
+
+---
+
+## 📌 Genel Özet
+Bu materyalin tüm içeriğini kapsayan, en az 4-5 cümlelik detaylı bir özet yaz. Konunun bağlamını, amacını ve önemini belirt.
+
+## 🎯 Ana Konular ve Açıklamaları
+Her ana konuyu başlık olarak yaz ve altına en az 2-3 cümle açıklama ekle. Konular arasındaki ilişkileri de belirt.
+
+## 📖 Temel Kavramlar ve Tanımlar
+Materyalde geçen tüm önemli kavramları, terimleri ve tanımları listele. Her birini kendi cümlelerinle açıkla.
+
+## ⚡ Önemli Noktalar ve Detaylar
+- Altı çizilmesi gereken kritik bilgiler
+- Formüller, kurallar, istisnalar
+- Sık karıştırılan veya dikkat edilmesi gereken noktalar
+- Varsa sayısal veriler, tarihler, isimler
+
+## 🔗 Konular Arası İlişkiler
+Bu materyaldeki konuların birbiriyle ve daha önce görülmüş konularla nasıl bağlantılı olduğunu açıkla.
+
+## 📝 Muhtemel Sınav Konuları
+Hem klasik hem de test tipi sorular için:
+- Kesinlikle çıkabilecek konular (neden çıkabileceğini de belirt)
+- Örnek soru tipleri
+- Dikkat edilmesi gereken ince noktalar
+
+## 💡 Pratik Uygulama ve Örnekler
+Bu bilgilerin gerçek hayatta veya problemlerde nasıl kullanılacağını somut örneklerle açıkla.
+
+Tüm bölümleri eksiksiz doldur. Kısa ve yüzeysel cevaplardan kaçın.`,
+
+  quiz: (t) => `Bu materyalden Türkçe sınav soruları oluştur. Çoktan seçmeli (4 şık), doğru/yanlış ve açık uçlu karışık sorular yaz. Her sorunun cevabını ve neden doğru olduğunu da belirt.\n\nMateryal: ${t}`,
+
+  flashcard: (t) => `Bu materyalden Türkçe flashcard oluştur. Her kart için kesinlikle bu formatı kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım]\n\nEn az 10 kart oluştur. Kartlar konunun en kritik noktalarını kapsamalı.\nMateryal: ${t}`,
+
+  explain: (t) => `Bu konuyu hiç bilmeyen birine, sıfırdan ve çok sade Türkçe ile anlat. Günlük hayattan örnekler, benzetmeler ve basit dil kullan. Teknik terimlerden kaçın, zorunluysa parantez içinde açıkla.\n\nMateryal: ${t}`,
+
+  chat: (t) => `Sen bu materyal hakkında derin bilgiye sahip bir öğretmensin. Öğrencinin sorularını Türkçe olarak yanıtla. Önceki mesajları bağlamında değerlendir.\n\nMateryal: ${t}`
 };
 
 function renderMaterials(){
@@ -2856,6 +2903,48 @@ function matBuildFlashcards(text){
     </div>`).join('')}</div>`;
 }
 
+async function prepareFileForClaude(f){
+  const ext = (f.name || '').split('.').pop().toLowerCase();
+  const base64 = f.buffer ? arrayBufferToBase64(f.buffer) : f.data.split(',')[1];
+
+  if(ext === 'pdf'){
+    try {
+      const pdfData = f.buffer ? new Uint8Array(f.buffer) : Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
+      let fullText = '';
+      const maxPages = Math.min(pdf.numPages, 30);
+      for(let i = 1; i <= maxPages; i++){
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        fullText += `[Sayfa ${i}]\n${textContent.items.map(item => item.str).join(' ')}\n\n`;
+      }
+      if(pdf.numPages > 30) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 30 sayfa analiz edildi]`;
+      return { type: 'text', content: fullText.substring(0, 12000) };
+    } catch(e) {
+      return { type: 'pdf', base64, mediaType: 'application/pdf' };
+    }
+  }
+  if(['jpg','jpeg','png','gif','webp'].includes(ext)){
+    return { type: 'image', base64, mediaType: ext === 'jpg' ? 'image/jpeg' : `image/${ext}` };
+  }
+  if(['doc','docx'].includes(ext)){
+    try {
+      const result = await mammoth.extractRawText({arrayBuffer: base64ToArrayBuffer(base64)});
+      return { type: 'text', content: result.value };
+    } catch(e) {
+      return { type: 'text', content: '[Word dosyası okunamadı, lütfen metni elle yapıştır]' };
+    }
+  }
+  if(['txt','md','csv','json','js','py','java','cpp','c','html','css'].includes(ext)){
+    return { type: 'text', content: atob(base64).substring(0, 8000) };
+  }
+  if(['ppt','pptx','xls','xlsx'].includes(ext)){
+    return { type: 'text', content: `[${f.name} (${ext.toUpperCase()}) otomatik okunamıyor. İçeriği kopyalayıp metin kutusuna yapıştırın.]` };
+  }
+  return { type: 'text', content: `[${f.name} desteklenmiyor. İçeriği metin olarak yapıştırın.]` };
+}
+
 async function matCallAI(userText){
   const m = currentMatIdx!==null ? materials[currentMatIdx] : null;
   if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
@@ -2871,7 +2960,7 @@ async function matCallAI(userText){
     if(fd.type==='pdf') messageContent=[{type:'document',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
     else if(fd.type==='image') messageContent=[{type:'image',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
     else if(fd.type==='text' && fd.content) messageContent=[{type:'text',text:prompt+'\n\nİçerik:\n'+fd.content}];
-    else messageContent=[{type:'text',text:prompt+'\n\n[Dosya türü ('+( fd.name||fd.mediaType||'bilinmiyor')+') doğrudan okunamıyor. Lütfen içeriği elle metin kutusuna yapıştırın veya PDF/Word formatında yükleyin.]'}];
+    else messageContent=[{type:'text',text:prompt+'\n\n[Dosya türü ('+(fd.name||fd.mediaType||'bilinmiyor')+') doğrudan okunamıyor. Lütfen içeriği elle metin kutusuna yapıştırın veya PDF/Word formatında yükleyin.]'}];
   } else {
     messageContent=[{type:'text',text:prompt}];
   }
@@ -2890,7 +2979,17 @@ async function matCallAI(userText){
     matChatHistory.push({role:'assistant',content:result});
     matHideTyping();
     const html = (currentMatMode==='flashcard'&&!userText) ? matBuildFlashcards(result) : matMd(result);
-    matAddMsg('ai', html);
+    const msgEl = matAddMsg('ai', html);
+
+    // Özet modunda kaydet butonu göster
+    if(currentMatMode === 'summary' && !userText){
+      const saveBar = document.createElement('div');
+      saveBar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:8px 12px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:8px;font-size:12px;';
+      saveBar.innerHTML = `
+        <span style="color:var(--muted)">Bu özeti kaydet</span>
+        <button class="add-btn" style="padding:5px 12px;font-size:11px" onclick="matSaveCurrentSummary(this,'${escHtml(m.title)}','${escHtml(m.course||'')}',${JSON.stringify(html).replace(/'/g,'&#39;')})">💾 Kaydet</button>`;
+      msgEl.querySelector('.mat-msg-body').appendChild(saveBar);
+    }
   }catch(e){
     matHideTyping();
     matAddMsg('ai',`<span style="color:var(--red)">❌ Hata: ${escHtml(e.message)}</span>`);
@@ -2898,6 +2997,22 @@ async function matCallAI(userText){
     const ab2=document.getElementById('mat-analyze-btn'); if(ab2) ab2.disabled=false;
     const sb2=document.getElementById('mat-send-btn'); if(sb2) sb2.disabled=false;
   }
+}
+
+function matSaveCurrentSummary(btn, title, course, html){
+  const summaries = loadSummaries();
+  summaries.unshift({
+    id: Date.now(),
+    title, course,
+    matTitle: title,
+    html,
+    date: new Date().toLocaleDateString('tr-TR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  });
+  saveSummaries(summaries);
+  sbSaveSummary(currentUserEmail, {title, course, html});
+  btn.textContent = '✅ Kaydedildi';
+  btn.disabled = true;
+  showToast('✅ Özet kaydedildi!');
 }
 
 function matAnalyze(){ matCallAI(''); }
@@ -3036,12 +3151,8 @@ async function saveMaterial(){
   if(currentMatType === 'file'){
     if(!selectedFile){ alert('Lütfen bir dosya seçin.'); return; }
     if(!title){ alert('Başlık zorunludur.'); return; }
-
-    // Supabase ve oturum kontrolleri
-    if(!sb){ alert('Supabase bağlantısı kurulamadı. Sayfayı yenileyip tekrar deneyin.'); return; }
     if(!currentUserEmail){ alert('Dosya yükleyebilmek için Google hesabınızla giriş yapmalısınız.'); return; }
 
-    // Dosya boyutu kontrolü (50 MB limit)
     const MAX_MB = 50;
     if(selectedFile.size > MAX_MB * 1024 * 1024){
       alert(`Dosya boyutu ${MAX_MB} MB sınırını aşıyor (${(selectedFile.size/1024/1024).toFixed(1)} MB).`);
@@ -3050,47 +3161,33 @@ async function saveMaterial(){
 
     try{
       showToast('⏳ Dosya yükleniyor...');
-      const fileExt = selectedFile.name.split('.').pop().toLowerCase();
-      // crypto.randomUUID sadece güvenli bağlamda (HTTPS/localhost) çalışır
-      const uid = (typeof crypto.randomUUID === 'function')
-        ? crypto.randomUUID()
-        : Date.now() + '_' + Math.random().toString(36).slice(2);
-      const fileName = uid + '.' + fileExt;
-      const filePath = currentUserEmail + '/' + fileName;
 
-      const { error: uploadError } = await sb.storage
-        .from('materials')
-        .upload(filePath, selectedFile, { upsert: false });
+      // Vercel backend üzerinden yükle (CORS/RLS sorunu yok, service key backend'de)
+      const sessionId = localStorage.getItem('akademix_session');
+      if(!sessionId){ alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.'); return; }
 
-      if(uploadError){
-        // Supabase hata kodlarını Türkçe'ye çevir
-        const msg = uploadError.message || '';
-        if(msg.includes('Bucket not found'))
-          throw new Error('Depolama alanı bulunamadı. Supabase panelinde "materials" bucket\'ı oluşturuldu mu?');
-        if(msg.includes('violates row-level security') || msg.includes('new row violates'))
-          throw new Error('Yetki hatası: RLS politikası engelledi. Supabase Storage politikasını kontrol edin.');
-        if(msg.includes('Payload too large') || msg.includes('413'))
-          throw new Error('Dosya çok büyük. Supabase planınızın izin verdiği boyutu aşıyor.');
-        throw new Error('Yükleme hatası: ' + msg);
-      }
+      const formData = new FormData();
+      formData.append('file', selectedFile, selectedFile.name);
 
-      const { data: urlData } = sb.storage.from('materials').getPublicUrl(filePath);
-      const fileUrl = urlData.publicUrl;
+      const uploadResp = await fetch(BACKEND_URL + '/api/upload', {
+        method: 'POST',
+        headers: { 'x-session-id': sessionId },
+        body: formData,
+      });
+
+      const uploadResult = await uploadResp.json();
+      if(!uploadResp.ok) throw new Error(uploadResult.error || 'Yükleme başarısız');
+
+      const { fileUrl, filePath, fileName, fileSize } = uploadResult;
 
       const newMat = {
-        title, course, note, type:'file',
-        fileName: selectedFile.name,
-        fileSize: selectedFile.size,
-        fileUrl: fileUrl,
-        filePath: filePath,
+        title, course, note, type: 'file',
+        fileName, fileSize, fileUrl, filePath,
         addedAt: new Date().toISOString()
       };
 
-      const sbId = await sbSaveMaterial(currentUserEmail, {
-        title, course, note, type:'file',
-        fileName: selectedFile.name,
-        fileUrl: fileUrl
-      });
+      // DB'ye kaydet
+      const sbId = await sbSaveMaterial(currentUserEmail, { title, course, note, type:'file', fileName, fileUrl });
       if(sbId) newMat._sbId = sbId;
 
       materials.push(newMat);
@@ -3139,350 +3236,7 @@ async function deleteMaterial(idx){
 
 
 
-// ===== AI ÖZET =====
-let aiCurrentFileData = null; // {type:'pdf'|'image'|'text', data:base64|string, mediaType:string}
 
-async function openAiModal(title, course, matIdx){
-  currentSummaryTitle = title || 'Materyal Özeti';
-  currentSummaryCourse = course || '';
-  currentSummaryHTML = '';
-  currentSummaryMatIdx = matIdx !== undefined ? matIdx : null;
-  // Reset
-  document.getElementById('ai-modal-title').textContent = title || 'Materyal Özeti';
-  document.getElementById('ai-modal-sub').textContent = course ? course + ' — Claude AI Analizi' : 'Claude AI ile analiz';
-  document.getElementById('ai-result').classList.remove('visible');
-  document.getElementById('ai-result').innerHTML = '';
-  document.getElementById('ai-loading').classList.remove('visible');
-  document.getElementById('ai-text-input').value = '';
-  document.getElementById('ai-file-preview').style.display = 'none';
-  document.getElementById('ai-text-label').innerHTML = 'Ders Notu veya Metin <span style="color:var(--muted);text-transform:none;letter-spacing:0">(içeriği buraya yapıştır)</span>';
-  aiCurrentFileData = null;
-
-  const savedKey = localStorage.getItem('anthropic_key');
-  if(savedKey){
-    document.getElementById('ai-key-input').value = savedKey;
-    document.getElementById('ai-key-section').style.opacity = '0.6';
-  }
-
-  // Dosya materyaliyse IndexedDB'den yükle
-  if(matIdx !== undefined && matIdx !== null){
-    const m = materials[matIdx];
-    if(m && m.type === 'file' && m.fileId){
-      document.getElementById('ai-file-preview').style.display = 'block';
-      document.getElementById('ai-file-info').innerHTML = `
-        <div class="file-selected-icon">${getFileIcon(m.fileName||'')}</div>
-        <div class="file-selected-info">
-          <div class="file-selected-name">${escHtml(m.fileName||m.title)}</div>
-          <div class="file-selected-size">${formatFileSize(m.fileSize||0)}</div>
-        </div>`;
-      document.getElementById('ai-file-status').textContent = '⏳ Dosya yükleniyor...';
-      document.getElementById('ai-text-label').innerHTML = 'Ek Not <span style="color:var(--muted);text-transform:none;letter-spacing:0">(isteğe bağlı)</span>';
-      document.getElementById('ai-text-input').placeholder = 'Dosyayla ilgili ek bilgi veya soru ekleyebilirsin...';
-      const fileUrl = m.fileUrl || m.url;
-      try {
-        if(!fileUrl) throw new Error('Dosya URL bulunamadı');
-        const resp = await fetch(fileUrl);
-        const blob = await resp.blob();
-        const fakeF = { name: m.fileName||'file', type: blob.type, buffer: await blob.arrayBuffer() };
-        aiCurrentFileData = await prepareFileForClaude(fakeF);
-        document.getElementById('ai-file-status').textContent = '✅ Dosya hazır — analiz edebilirsin';
-        document.getElementById('ai-file-status').style.color = 'var(--green)';
-      } catch(e) {
-        document.getElementById('ai-file-status').textContent = '❌ Dosya yüklenemedi: ' + e.message;
-        document.getElementById('ai-file-status').style.color = 'var(--red)';
-      }
-    }
-  }
-
-  document.getElementById('ai-save-bar').classList.remove('visible');
-  renderSavedSummaries();
-  document.getElementById('ai-modal').classList.add('open');
-}
-
-async function prepareFileForClaude(f){
-  const ext = (f.name || '').split('.').pop().toLowerCase();
-  // buffer varsa direkt kullan, yoksa data URL'den ayır
-  const base64 = f.buffer ? arrayBufferToBase64(f.buffer) : f.data.split(',')[1];
-
-  // PDF → PDF.js ile metin çıkar, text olarak gönder
-  if(ext === 'pdf'){
-    try {
-      const pdfData = f.buffer ? new Uint8Array(f.buffer) : Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
-      let fullText = '';
-      const maxPages = Math.min(pdf.numPages, 30); // max 30 sayfa
-      for(let i = 1; i <= maxPages; i++){
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += `[Sayfa ${i}]
-${pageText}
-
-`;
-      }
-      if(pdf.numPages > 30) fullText += `
-[Not: PDF ${pdf.numPages} sayfa, ilk 30 sayfa analiz edildi]`;
-      return { type: 'text', content: fullText.substring(0, 12000) };
-    } catch(e) {
-      // PDF.js başarısız olursa base64 ile dene
-      return { type: 'pdf', base64, mediaType: 'application/pdf' };
-    }
-  }
-  // Görsel → Claude vision
-  if(['jpg','jpeg','png','gif','webp'].includes(ext)){
-    const mediaType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
-    return { type: 'image', base64, mediaType };
-  }
-  // Word (.docx) → mammoth ile metin çıkar
-  if(['doc','docx'].includes(ext)){
-    try {
-      const arr = base64ToArrayBuffer(base64);
-      const result = await mammoth.extractRawText({arrayBuffer: arr});
-      return { type: 'text', content: result.value };
-    } catch(e) {
-      return { type: 'text', content: '[Word dosyası okunamadı, lütfen metni elle yapıştır]' };
-    }
-  }
-  // Metin dosyaları → direkt oku
-  if(['txt','md','csv','json','js','py','java','cpp','c','html','css'].includes(ext)){
-    const text = atob(base64);
-    return { type: 'text', content: text.substring(0, 8000) };
-  }
-  // PPT/PPTX/XLS/XLSX → içerik okunamıyor, kullanıcıya bildir
-  if(['ppt','pptx','xls','xlsx'].includes(ext)){
-    return { type: 'text', content: `[${f.name} dosyası (${ext.toUpperCase()}) otomatik okunamıyor. Slayt veya tablo içeriğini kopyalayıp metin kutusuna yapıştırın, ardından analiz edin.]` };
-  }
-  // Diğer → desteklenmiyor
-  return { type: 'text', content: `[${f.name} dosyası desteklenmiyor. İçeriği metin olarak yapıştırın.]` };
-}
-
-function base64ToArrayBuffer(base64){
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
-
-function arrayBufferToBase64(buffer){
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  const CHUNK = 8192;
-  for(let i = 0; i < bytes.length; i += CHUNK){
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return btoa(binary);
-}
-
-
-// ===== AI ÖZETLERİ KAYDET =====
-function summariesKey(){
-  const u = safeSessionStorage('guser', null);
-  return u ? 'ai_summaries_' + u.email : 'ai_summaries_guest';
-}
-
-function loadSummaries(){ return safeLocalStorage(summariesKey(), []); }
-
-function saveSummaries(arr){
-  try { localStorage.setItem(summariesKey(), JSON.stringify(arr)); } catch(e){}
-}
-
-let currentSummaryHTML = '';
-let currentSummaryTitle = '';
-let currentSummaryCourse = '';
-let currentSummaryMatIdx = null;
-
-function saveAiSummary(){
-  if(!currentSummaryHTML) return;
-  const summaries = loadSummaries();
-  summaries.unshift({
-    id: Date.now(),
-    title: currentSummaryTitle,
-    course: currentSummaryCourse,
-    matIdx: currentSummaryMatIdx,
-    matTitle: currentSummaryTitle,
-    html: currentSummaryHTML,
-    date: new Date().toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})
-  });
-  saveSummaries(summaries);
-  sbSaveSummary(currentUserEmail, {title:currentSummaryTitle, course:currentSummaryCourse, html:currentSummaryHTML});
-  document.getElementById('ai-save-bar').classList.remove('visible');
-  showToast('✅ Özet kaydedildi!');
-  renderSavedSummaries();
-}
-
-async function deleteSummary(id){
-  const summaries = loadSummaries();
-  const toDelete = summaries.find(s => s.id === id);
-  if(toDelete && toDelete.title) await sbDeleteSummary(toDelete.title);
-  saveSummaries(summaries.filter(s => s.id !== id));
-  renderSavedSummaries();
-}
-
-function toggleSummaryBody(id){
-  const el = document.getElementById('sum-body-' + id);
-  if(el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
-function renderSavedSummaries(){
-  const allSummaries = loadSummaries();
-  // Sadece bu materyale ait özetleri göster
-  const summaries = currentSummaryTitle
-    ? allSummaries.filter(s => s.matTitle === currentSummaryTitle || s.title === currentSummaryTitle)
-    : allSummaries;
-  const section = document.getElementById('saved-summaries-section');
-  const list = document.getElementById('saved-summaries-list');
-  if(!section || !list) return;
-  if(!summaries.length){ section.style.display = 'none'; return; }
-  section.style.display = 'block';
-  list.innerHTML = summaries.map(s => `
-    <div class="saved-summary-card">
-      <div class="saved-summary-header">
-        <div>
-          <div class="saved-summary-title">${escHtml(s.title)}</div>
-          <div class="saved-summary-meta">${escHtml(s.course||'')} ${s.course?'·':''} ${escHtml(s.date)}</div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="mat-link" style="font-size:11px;padding:4px 10px;border:none;cursor:pointer" onclick="toggleSummaryBody(${s.id})">👁 Göster/Gizle</button>
-          <button class="signout-btn" onclick="deleteSummary(${s.id})" title="Sil">✕</button>
-        </div>
-      </div>
-      <div class="saved-summary-body" id="sum-body-${s.id}" style="display:none">${s.html}</div>
-    </div>
-  `).join('');
-}
-
-function closeAiModal(){
-  document.getElementById('ai-modal').classList.remove('open');
-  aiCurrentFileData = null;
-}
-
-function toggleKeyVisibility(){
-  const inp = document.getElementById('ai-key-input');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-const AI_PROMPT = (title) => `Sen deneyimli bir akademik asistan ve öğretmensin. Sana verilen ders materyalini Türkçe olarak kapsamlı ve derinlemesine analiz et. Her bölümü mümkün olduğunca ayrıntılı doldur — öğrenci bu özete bakarak konuyu tam anlayabilmeli.
-
-Materyal: ${title}
-
----
-
-## 📌 Genel Özet
-Bu materyalin tüm içeriğini kapsayan, en az 4-5 cümlelik detaylı bir özet yaz. Konunun bağlamını, amacını ve önemini belirt.
-
-## 🎯 Ana Konular ve Açıklamaları
-Her ana konuyu başlık olarak yaz ve altına en az 2-3 cümle açıklama ekle. Konular arasındaki ilişkileri de belirt.
-
-## 📖 Temel Kavramlar ve Tanımlar
-Materyalde geçen tüm önemli kavramları, terimleri ve tanımları listele. Her birini kendi cümlelerinle açıkla.
-
-## ⚡ Önemli Noktalar ve Detaylar
-- Altı çizilmesi gereken kritik bilgiler
-- Formüller, kurallar, istisnalar
-- Sık karıştırılan veya dikkat edilmesi gereken noktalar
-- Varsa sayısal veriler, tarihler, isimler
-
-## 🔗 Konular Arası İlişkiler
-Bu materyaldeki konuların birbiriyle ve daha önce görülmüş konularla nasıl bağlantılı olduğunu açıkla.
-
-## 📝 Muhtemel Sınav Konuları
-Hem klasik hem de test tipi sorular için:
-- Kesinlikle çıkabilecek konular (neden çıkabileceğini de belirt)
-- Örnek soru tipleri
-- Dikkat edilmesi gereken ince noktalar
-
-## 💡 Pratik Uygulama ve Örnekler
-Bu bilgilerin gerçek hayatta veya problemlerde nasıl kullanılacağını somut örneklerle açıkla.
-
-Tüm bölümleri eksiksiz doldur. Kısa ve yüzeysel cevaplardan kaçın.`;
-
-async function runAiSummary(){
-  const extraText = document.getElementById('ai-text-input').value.trim();
-  const title = document.getElementById('ai-modal-title').textContent;
-
-  if(!aiCurrentFileData && !extraText){ alert('Lütfen bir dosya yükleyin veya metin yapıştırın.'); return; }
-
-  const btn = document.getElementById('ai-run-btn');
-  btn.disabled = true;
-  document.getElementById('ai-loading').classList.add('visible');
-  document.getElementById('ai-result').classList.remove('visible');
-
-  // Mesaj içeriğini oluştur
-  let messageContent = [];
-  const prompt = AI_PROMPT(title) + (extraText ? '\n\nEk not: ' + extraText : '');
-
-  if(aiCurrentFileData){
-    const fd = aiCurrentFileData;
-    if(fd.type === 'pdf'){
-      messageContent = [
-        { type: 'document', source: { type: 'base64', media_type: fd.mediaType, data: fd.base64 } },
-        { type: 'text', text: prompt }
-      ];
-      document.getElementById('ai-loading-text').textContent = 'PDF analiz ediliyor...';
-    } else if(fd.type === 'image'){
-      messageContent = [
-        { type: 'image', source: { type: 'base64', media_type: fd.mediaType, data: fd.base64 } },
-        { type: 'text', text: prompt }
-      ];
-      document.getElementById('ai-loading-text').textContent = 'Görsel analiz ediliyor...';
-    } else if(fd.type === 'text'){
-      messageContent = [{ type: 'text', text: prompt + '\n\nİçerik:\n' + fd.content }];
-      document.getElementById('ai-loading-text').textContent = 'Metin analiz ediliyor...';
-    } else {
-      messageContent = [{ type: 'text', text: prompt + (extraText ? '' : '\n\n[Desteklenmeyen dosya türü — lütfen içeriği elle yapıştır]') }];
-    }
-  } else {
-    messageContent = [{ type: 'text', text: prompt + '\n\nİçerik:\n' + extraText.substring(0, 6000) }];
-  }
-
-  try {
-    const response = await fetch('https://oevvwezbsquxlmgnfydb.supabase.co/functions/v1/anthropic-proxy', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ldnZ3ZXpic3F1eGxtZ25meWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODc3OTAsImV4cCI6MjA4ODk2Mzc5MH0.REume7XGJrUFwH69NwKIwLYUuqNFreT7aI2MHx80amA'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: messageContent }]
-      })
-    });
-
-    if(!response.ok){
-      const err = await response.json();
-      throw new Error(err.error?.message || 'API hatası: ' + response.status);
-    }
-
-    const data = await response.json();
-    const result = data.content?.map(c => c.text || '').join('') || 'Yanıt alınamadı.';
-
-    const html = result
-      .replace(/## (.+)/g, '<h3>$1</h3>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^- (.+)/gm, '<li>$1</li>')
-      .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, m => '<ul>' + m + '</ul>')
-      .replace(/\n/g, '<br>');
-
-    document.getElementById('ai-result').innerHTML = html;
-    document.getElementById('ai-result').classList.add('visible');
-    currentSummaryHTML = html;
-    document.getElementById('ai-save-title-preview').textContent = currentSummaryTitle;
-    document.getElementById('ai-save-bar').classList.add('visible');
-
-  } catch(e) {
-    document.getElementById('ai-result').innerHTML = '<span style="color:var(--red)">❌ Hata: ' + escHtml(e.message) + '</span>';
-    document.getElementById('ai-result').classList.add('visible');
-  } finally {
-    btn.disabled = false;
-    document.getElementById('ai-loading').classList.remove('visible');
-    document.getElementById('ai-loading-text').textContent = 'Claude analiz ediyor...';
-  }
-}
-
-// Esc ile kapat
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeAiModal(); });
 
 
 // ===== TEMA GEÇİŞİ =====
@@ -3519,62 +3273,6 @@ window.addEventListener('load',()=>{
   renderCourses();
 });
 </script>
-
-  <!-- AI ÖZET MODAL -->
-  <div class="ai-modal-overlay" id="ai-modal">
-    <div class="ai-modal">
-      <button class="ai-modal-close" onclick="closeAiModal()">✕</button>
-      <div class="ai-modal-header">
-        <div class="ai-modal-icon">✨</div>
-        <div>
-          <div class="ai-modal-title" id="ai-modal-title">Materyal Özeti</div>
-          <div class="ai-modal-sub" id="ai-modal-sub">Claude AI ile analiz</div>
-        </div>
-      </div>
-
-      <!-- API Key gizlendi - proxy kullanılıyor -->
-      <input type="hidden" id="ai-key-input" value="proxy">
-
-      <!-- Yüklenen dosya varsa önizleme -->
-      <div id="ai-file-preview" style="display:none;margin-bottom:16px">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px">Dosya</div>
-        <div class="file-selected" id="ai-file-info"></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:8px" id="ai-file-status">⏳ Dosya işleniyor...</div>
-      </div>
-
-      <!-- Metin alanı (dosya yoksa veya ek not eklemek için) -->
-      <div class="ai-text-section" id="ai-text-section">
-        <label id="ai-text-label">Ders Notu veya Metin <span style="color:var(--muted);text-transform:none;letter-spacing:0">(içeriği buraya yapıştır)</span></label>
-        <textarea class="ai-textarea" id="ai-text-input" placeholder="Özetlenmesini istediğin ders notunu veya metni buraya yapıştır..."></textarea>
-      </div>
-
-      <button class="add-btn" style="width:100%;justify-content:center" onclick="runAiSummary()" id="ai-run-btn">
-        ✨ Özetle ve Analiz Et
-      </button>
-
-      <div class="ai-loading" id="ai-loading">
-        <div class="ai-loading-dots"><span></span><span></span><span></span></div>
-        <span id="ai-loading-text">Claude analiz ediyor...</span>
-      </div>
-
-      <div class="ai-result" id="ai-result"></div>
-
-      <!-- Kaydet butonu — özet çıkınca görünür -->
-      <div class="ai-save-bar" id="ai-save-bar">
-        <div class="ai-save-bar-left">
-          <strong id="ai-save-title-preview"></strong>
-          <div>için özet hazır</div>
-        </div>
-        <button class="add-btn" style="padding:7px 16px;font-size:12px" onclick="saveAiSummary()">💾 Kaydet</button>
-      </div>
-
-      <!-- Kaydedilen özetler -->
-      <div class="saved-summaries-section" id="saved-summaries-section" style="display:none">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px;margin-top:4px">📚 Kaydedilen Özetler</div>
-        <div id="saved-summaries-list"></div>
-      </div>
-    </div>
-  </div>
 
 
   <!-- DOSYA GÖRÜNTÜLEYİCİ MODAL -->
