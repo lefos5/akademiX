@@ -3047,12 +3047,17 @@ async function matCallAI(userText){
     messageContent=[{type:'text',text:prompt}];
   }
 
+  const sessionId = localStorage.getItem('akademix_session');
+
   const msgs = [...matChatHistory, {role:'user',content:messageContent}];
 
   try{
-    const resp = await fetch('https://oevvwezbsquxlmgnfydb.supabase.co/functions/v1/anthropic-proxy',{
+    const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ldnZ3ZXpic3F1eGxtZ25meWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODc3OTAsImV4cCI6MjA4ODk2Mzc5MH0.REume7XGJrUFwH69NwKIwLYUuqNFreT7aI2MHx80amA'},
+      headers:{
+        'Content-Type':'application/json',
+        'x-session-id': sessionId || ''
+      },
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:msgs})
     });
     const data = await resp.json();
