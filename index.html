@@ -1072,7 +1072,7 @@
   <!-- CALENDAR -->
   <div class="page" id="page-calendar">
     <div class="page-header">
-      <div><h2>Takvim</h2><p>Ödevler ve ders etkinlikleri</p></div>
+      <div><h2>Takvim</h2><p>Ödevler ve sınav etkinlikleri</p></div>
     </div>
     <div class="cal-top">
       <div class="cal-nav">
@@ -1081,7 +1081,6 @@
         <button onclick="calNext()">›</button>
       </div>
     </div>
-  </div>
     <div id="cal-monthly">
       <div class="cal-grid">
         <div class="cal-weekdays">
@@ -1885,14 +1884,12 @@ function getMyExams(){
 
 function renderExams(){
   const myExams = getMyExams();
-  // Manuel eklenmiş sınavları da yükle
   const manualExams = safeLocalStorage('manual_exams', []);
   const allExams = [...myExams, ...manualExams].sort((a,b) => new Date(a.date) - new Date(b.date));
 
   const container = document.getElementById('exams-content');
   if(!container) return;
 
-  // Badge güncelle
   const badge = document.getElementById('badge-exam');
   if(badge){ badge.textContent = allExams.length; badge.style.display = allExams.length ? 'inline-block' : 'none'; }
 
@@ -1906,48 +1903,42 @@ function renderExams(){
     '2026-04-10':'Cuma, 10 Nisan',
   };
 
-  // Manuel ekleme formu
+  // Programa eklenmeyen sınavları bul (dropdown için)
+  const myExamCodes = new Set(myExams.map(e => e.code));
+  const manualCodes = new Set(manualExams.map(e => e.code));
+  const missingExams = EXAM_SCHEDULE.filter(e => !myExamCodes.has(e.code) && !manualCodes.has(e.code));
+
+  // Sınav ekleme — sadece programda olmayan sınavları dropdown'da listele
   const addFormHTML = `
     <div id="exam-add-section" style="margin-bottom:24px;">
       <button class="mat-ws-action" id="exam-add-toggle" onclick="toggleExamAddForm()" style="display:flex;align-items:center;gap:6px;font-size:13px;padding:8px 14px;">
         ＋ Sınav Ekle
       </button>
       <div id="exam-add-form" style="display:none;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Ders Kodu</label>
-            <input id="exam-add-code" type="text" placeholder="örn. INF110" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Ders Adı</label>
-            <input id="exam-add-name" type="text" placeholder="örn. İşletim Sistemleri" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Tarih</label>
-            <input id="exam-add-date" type="date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Saat (örn. 09:00-11:00)</label>
-            <input id="exam-add-time" type="text" placeholder="09:00-11:00" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
-          </div>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Salon</label>
-          <input id="exam-add-room" type="text" placeholder="örn. C201" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="add-btn" onclick="saveManualExam()" style="flex:1;justify-content:center;">Kaydet</button>
-          <button class="mat-ws-action" onclick="toggleExamAddForm()">İptal</button>
-        </div>
+        ${missingExams.length === 0
+          ? '<p style="font-size:13px;color:var(--muted);">Programdaki tüm sınavlar zaten eklenmiş.</p>'
+          : `<div style="margin-bottom:12px;">
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Sınav Seç</label>
+              <select id="exam-add-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;">
+                <option value="">— Sınav seç —</option>
+                ${missingExams.map(e =>
+                  `<option value="${escHtml(e.code)}">${escHtml(e.code)} · ${escHtml(e.name)} · ${dayNames[e.date]||e.date} ${e.time} · ${escHtml(e.room)}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="add-btn" onclick="saveManualExam()" style="flex:1;justify-content:center;">Ekle</button>
+              <button class="mat-ws-action" onclick="toggleExamAddForm()">İptal</button>
+            </div>`
+        }
       </div>
     </div>`;
 
   if(!allExams.length){
-    container.innerHTML = addFormHTML + '<div class="empty-state"><div class="icon">🎓</div><p>Kayıtlı derslerine ait ara sınav bulunamadı.<br>Yukarıdan manuel ekleyebilirsin.</p></div>';
+    container.innerHTML = addFormHTML + '<div class="empty-state"><div class="icon">🎓</div><p>Kayıtlı derslerine ait ara sınav bulunamadı.<br>Yukarıdan ekleyebilirsin.</p></div>';
     return;
   }
 
-  // Tarihe göre grupla
   const grouped = {};
   allExams.forEach(e => { if(!grouped[e.date]) grouped[e.date]=[]; grouped[e.date].push(e); });
 
@@ -1959,7 +1950,8 @@ function renderExams(){
     const label = dayNames[date] || d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
     html += `
       <div style="margin-bottom:24px;">
-        <div style="font-size:12px;font-weight:700;color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
+        <div style="font-size:12px;font-weight:700;
+          color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
           text-transform:uppercase;letter-spacing:0.8px;padding:8px 0;
           border-bottom:2px solid ${isToday?'var(--accent)':'var(--border)'};
           margin-bottom:12px;display:flex;align-items:center;gap:8px;">
@@ -1974,18 +1966,18 @@ function renderExams(){
               border-radius:12px;padding:14px 18px;
               display:flex;align-items:center;gap:16px;opacity:${isPast?'0.55':'1'};">
               <div style="flex-shrink:0;min-width:56px;text-align:center;">
-                <div style="font-size:13px;font-weight:700;color:var(--red);">${exam.time ? exam.time.split('-')[0] : '—'}</div>
-                <div style="font-size:10px;color:var(--muted);">${exam.time ? '–'+exam.time.split('-')[1] : ''}</div>
+                <div style="font-size:13px;font-weight:700;color:var(--red);">${exam.time?exam.time.split('-')[0]:'—'}</div>
+                <div style="font-size:10px;color:var(--muted);">${exam.time?'–'+exam.time.split('-')[1]:''}</div>
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="margin-bottom:3px;">
+                <div style="margin-bottom:3px;display:flex;align-items:center;gap:6px;">
                   <span style="background:rgba(248,113,113,0.1);color:var(--red);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;">${escHtml(exam.code)}</span>
-                  ${exam._manual?'<span style="background:rgba(59,130,246,0.1);color:var(--accent2);font-size:10px;padding:2px 6px;border-radius:4px;margin-left:4px;">Manuel</span>':''}
+                  ${exam._manual?'<span style="background:rgba(59,130,246,0.1);color:var(--accent2);font-size:10px;padding:2px 6px;border-radius:4px;">Manuel</span>':''}
                 </div>
                 <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${escHtml(exam.name)}</div>
                 <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room||'—')}</div>
               </div>
-              ${exam._manual?`<button class="mat-list-del" style="opacity:1;" onclick="deleteManualExam('${exam._id}')" title="Sil">✕</button>`:''}
+              ${exam._manual?`<button class="mat-list-del" style="opacity:1;flex-shrink:0;" onclick="deleteManualExam('${exam._id}')" title="Sil">✕</button>`:''}
             </div>`).join('')}
         </div>
       </div>`;
@@ -2000,16 +1992,14 @@ function toggleExamAddForm(){
 }
 
 function saveManualExam(){
-  const code = document.getElementById('exam-add-code').value.trim();
-  const name = document.getElementById('exam-add-name').value.trim();
-  const date = document.getElementById('exam-add-date').value;
-  const time = document.getElementById('exam-add-time').value.trim();
-  const room = document.getElementById('exam-add-room').value.trim();
-  if(!code || !name || !date){ showToast('❌ Ders kodu, adı ve tarih zorunludur.'); return; }
+  const select = document.getElementById('exam-add-select');
+  if(!select || !select.value){ showToast('❌ Lütfen bir sınav seçin.'); return; }
+  const exam = EXAM_SCHEDULE.find(e => e.code === select.value);
+  if(!exam){ showToast('❌ Sınav bulunamadı.'); return; }
   const exams = safeLocalStorage('manual_exams', []);
-  exams.push({ code, name, date, time, room, _manual: true, _id: Date.now().toString() });
+  exams.push({ ...exam, _manual: true, _id: Date.now().toString() });
   try{ localStorage.setItem('manual_exams', JSON.stringify(exams)); }catch(e){}
-  showToast('✅ Sınav eklendi!');
+  showToast('✅ ' + exam.code + ' sınavı eklendi!');
   renderExams();
   renderCalendar();
 }
