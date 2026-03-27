@@ -1865,23 +1865,25 @@ function showPage(id) {
 // SCHEDULE
 function timeToMinutes(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
 function baseCode(code){
-  // Sadece VL, UE, L ders tipi suffix'ini kes — sayıları ve grup harflerini koru
-  // INF110VL → INF110 | INF110UE → INF110 | INF110L → INF110
-  // ISG002-A → ISG002 | ISG002-B → ISG002
-  return code
-    .replace(/\s+/g, '')
-    .replace(/(VL|UE|L)$/i, '')
-    .replace(/[-–][A-B]$/i, '')   // sadece -A ve -B grup suffix'i (ISG002-A gibi)
-    .trim();
+  // Sadece ders tipi suffix'ini kes: VL, UE, L
+  // INF110VL → INF110 | MAT204-AVL → MAT204-A | ISG002-AVL → ISG002-A
+  return code.replace(/\s+/g,'').replace(/(VL|UE|L)$/i,'').trim();
 }
 
 function getMyExams(){
+  const enrolledBases = new Set([...enrolled].map(baseCode));
+
   return EXAM_SCHEDULE.filter(exam => {
+    // 1. Tam eşleşme
+    if(enrolled.has(exam.code)) return true;
+    // 2. Base eşleşme: INF110VL→INF110 === INF110
+    if(enrolledBases.has(exam.code)) return true;
+    // 3. Sınav kodunun base'i enrolled base'lerinde var mı?
+    //    ISG002 → ISG002, enrolled'da ISG002-B→ISG002-B base var ama
+    //    aynı zamanda ISG002-B'nin "-B" olmayan hali ISG002 da aranmalı
     const examBase = baseCode(exam.code);
-    return [...enrolled].some(code => {
-      const eb = baseCode(code);
-      return code === exam.code || eb === examBase || eb === exam.code;
-    });
+    if([...enrolledBases].some(eb => eb === examBase || eb.startsWith(examBase + '-'))) return true;
+    return false;
   }).sort((a,b) => new Date(a.date) - new Date(b.date));
 }
 
