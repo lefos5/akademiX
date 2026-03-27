@@ -2984,10 +2984,21 @@ async function matCallAI(userText){
     // Özet modunda kaydet butonu göster
     if(currentMatMode === 'summary' && !userText){
       const saveBar = document.createElement('div');
-      saveBar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:8px 12px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:8px;font-size:12px;';
-      saveBar.innerHTML = `
-        <span style="color:var(--muted)">Bu özeti kaydet</span>
-        <button class="add-btn" style="padding:5px 12px;font-size:11px" onclick="matSaveCurrentSummary(this,'${escHtml(m.title)}','${escHtml(m.course||'')}',${JSON.stringify(html).replace(/'/g,'&#39;')})">💾 Kaydet</button>`;
+      saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'add-btn';
+      saveBtn.style.cssText = 'padding:6px 14px;font-size:12px;flex-shrink:0;';
+      saveBtn.textContent = '💾 Kaydet';
+      // HTML'i dataset'e koy — onclick attribute'una gömmek tırnak sorunlarına yol açar
+      saveBtn._summaryHtml = html;
+      saveBtn._summaryTitle = m.title;
+      saveBtn._summaryCourse = m.course || '';
+      saveBtn.onclick = function(){ matSaveCurrentSummary(this); };
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size:12px;color:var(--muted);';
+      label.textContent = 'Bu özeti daha sonra görmek için kaydet';
+      saveBar.appendChild(saveBtn);
+      saveBar.appendChild(label);
       msgEl.querySelector('.mat-msg-body').appendChild(saveBar);
     }
   }catch(e){
@@ -2999,7 +3010,11 @@ async function matCallAI(userText){
   }
 }
 
-function matSaveCurrentSummary(btn, title, course, html){
+function matSaveCurrentSummary(btn){
+  const html = btn._summaryHtml;
+  const title = btn._summaryTitle;
+  const course = btn._summaryCourse;
+  if(!html) return;
   const summaries = loadSummaries();
   summaries.unshift({
     id: Date.now(),
@@ -3012,6 +3027,8 @@ function matSaveCurrentSummary(btn, title, course, html){
   sbSaveSummary(currentUserEmail, {title, course, html});
   btn.textContent = '✅ Kaydedildi';
   btn.disabled = true;
+  btn.style.background = 'var(--surface3)';
+  btn.style.boxShadow = 'none';
   showToast('✅ Özet kaydedildi!');
 }
 
@@ -3221,16 +3238,40 @@ function closeMatModal(e){if(!e||e.target===document.getElementById('mat-modal')
 async function deleteMaterial(idx){
   if(!confirm('Bu materyali silmek istiyor musun?')) return;
   const m = materials[idx];
-  // Supabase Storage'dan sil
-  if(m && m.filePath && sb){
-    try{ await sb.storage.from('materials').remove([m.filePath]); }catch(e){}
+
+  // Storage'dan sil (backend üzerinden — Vercel service key ile)
+  if(m && m.filePath){
+    const sessionId = localStorage.getItem('akademix_session');
+    if(sessionId){
+      try{
+        await fetch(BACKEND_URL + '/api/upload?action=delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+          body: JSON.stringify({ filePath: m.filePath })
+        });
+      }catch(e){ console.warn('Storage silme hatası:', e); }
+    }
   }
+
   if(m && m._sbId) await sbDeleteMaterial(m._sbId);
   if(m && m.title) await sbDeleteSummary(m.title);
-  const allSums = loadSummaries();
-  saveSummaries(allSums.filter(s => s.title !== m.title));
-  materials.splice(idx,1);
+  saveSummaries(loadSummaries().filter(s => s.title !== m.title));
+
+  materials.splice(idx, 1);
   saveMaterials();
+
+  // Silinen materyal aktifse workspace'i sıfırla
+  if(currentMatIdx === idx){
+    currentMatIdx = null;
+    matFileData = null;
+    matChatHistory = [];
+    document.getElementById('mat-welcome').style.display = 'flex';
+    document.getElementById('mat-workspace').style.display = 'none';
+  } else if(currentMatIdx !== null && currentMatIdx > idx){
+    // Üstteki bir materyal silindiyse idx kayar, güncelle
+    currentMatIdx--;
+  }
+
   renderMaterials();
 }
 
