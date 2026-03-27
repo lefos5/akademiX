@@ -1845,28 +1845,45 @@ function renderSchedule(){
 function renderCourses(){
   const depts=[...new Set(rawCourses.map(c=>c.dept))].sort();
   const fd=document.getElementById('dept-filters');
-  fd.innerHTML=`<button class="filter-btn ${activeFilter==='ALL'?'active':''}" onclick="setFilter('ALL')">Tümü</button>`;
-  depts.forEach(d=>fd.innerHTML+=`<button class="filter-btn ${activeFilter===d?'active':''}" onclick="setFilter('${d}')">${d}</button>`);
+  fd.innerHTML='';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-btn' + (activeFilter==='ALL'?' active':'');
+  allBtn.dataset.dept = 'ALL';
+  allBtn.textContent = 'Tümü';
+  fd.appendChild(allBtn);
+  depts.forEach(d=>{
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (activeFilter===d?' active':'');
+    btn.dataset.dept = d;
+    btn.textContent = d;
+    fd.appendChild(btn);
+  });
+
   const q=(document.getElementById('search-input')||{}).value?.toLowerCase()||'';
   const filtered=rawCourses.filter(c=>(activeFilter==='ALL'||c.dept===activeFilter)&&(!q||c.name.toLowerCase().includes(q)||c.code.toLowerCase().includes(q)||c.instructor.toLowerCase().includes(q)));
-  const grid=document.getElementById('courses-grid');grid.innerHTML='';
+  const grid=document.getElementById('courses-grid');
+  grid.innerHTML='';
   filtered.forEach(c=>{
+    const idx = rawCourses.indexOf(c);
     const tm=c.code.match(/(VL|UE|L)$/);const type=tm?tm[1]:'';const ie=enrolled.has(c.code);
     const chips=Object.entries(c.schedule).map(([d,s])=>{const[t,r]=s.split('|');return`<span class="schedule-chip">${DAY_TR[d]} ${t} · ${r}</span>`;}).join('');
-    grid.innerHTML+=`<div class="course-card" onclick="openModal(rawCourses[${rawCourses.indexOf(c)}])">
-      <div class="card-header"><span class="code-badge">${c.code}</span>
+    const card = document.createElement('div');
+    card.className = 'course-card';
+    card.dataset.courseIdx = idx;
+    card.innerHTML = `
+      <div class="card-header"><span class="code-badge">${escHtml(c.code)}</span>
         <div style="display:flex;gap:5px;align-items:center">
           ${ie?'<span class="enrolled-badge">✓ Kayıtlı</span>':''}
           ${type?`<span class="type-badge type-${type}">${type==='VL'?'Ders':type==='UE'?'Uygulama':'Lab'}</span>`:''}
         </div>
       </div>
-      <h3>${c.name}</h3>
+      <h3>${escHtml(c.name)}</h3>
       <div class="meta">
-        <div class="meta-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${c.instructor}</div>
-        ${c.shared?`<div class="meta-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1-3-3.87"/></svg>${c.shared}</div>`:''}
+        <div class="meta-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escHtml(c.instructor)}</div>
+        ${c.shared?`<div class="meta-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1-3-3.87"/></svg>${escHtml(c.shared)}</div>`:''}
       </div>
-      <div class="schedule-chips">${chips}</div>
-    </div>`;
+      <div class="schedule-chips">${chips}</div>`;
+    grid.appendChild(card);
   });
 }
 function setFilter(f){activeFilter=f;renderCourses();}
@@ -1887,7 +1904,7 @@ function openModal(c){
     <div class="modal-section"><label>Ders Saatleri</label><div class="modal-schedules">${rows}</div></div>
     ${c.classroom?`<div class="modal-section"><label>Google Classroom</label><a class="classroom-link" href="${c.classroom}" target="_blank">🎓 Classroom'a Git</a></div>`:''}
     <div style="margin-top:20px">
-      <button class="add-btn" style="${ie?'background:#ef4444':''}" onclick="toggleEnroll('${c.code}')">
+      <button class="add-btn" data-enroll-code="${escHtml(c.code)}" style="${ie?'background:#ef4444':''}">
         ${ie?'✕ Dersten Çık':'+ Programa Ekle'}
       </button>
     </div>`;
@@ -2069,7 +2086,7 @@ function renderClCourses(){
   if(!clData.courses.length){p.innerHTML='<div class="empty-state"><div class="icon">📚</div><p>Aktif ders bulunamadı.</p></div>';return;}
   p.innerHTML=`<div class="cl-courses-grid">${clData.courses.map((c,i)=>{
     const col=BANNER_COLORS[i%BANNER_COLORS.length];
-    return`<div class="cl-course-card" onclick="window.open(safeUrl('${c.alternateLink}'),'_blank','noopener,noreferrer')">
+    return`<div class="cl-course-card" data-cl-link="${escHtml(c.alternateLink||'')}">
       <div class="cl-course-banner" style="background:linear-gradient(135deg,${col}bb,${col})"><h3>${escHtml(c.name)}</h3></div>
       <div class="cl-course-body">
         ${c.section?`<div class="cl-course-section">📂 ${escHtml(c.section)}</div>`:''}
@@ -2170,8 +2187,19 @@ function openCourseSetup(){
 function renderSetupDepts(){
   const depts = [...new Set(rawCourses.map(c=>c.dept))].sort();
   const el = document.getElementById('setup-dept-filters');
-  el.innerHTML = `<button class="setup-dept-btn ${setupFilter==='ALL'?'active':''}" onclick="setSetupFilter('ALL')">Tümü</button>`;
-  depts.forEach(d => el.innerHTML += `<button class="setup-dept-btn ${setupFilter===d?'active':''}" onclick="setSetupFilter('${d}')">${d}</button>`);
+  el.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'setup-dept-btn' + (setupFilter==='ALL'?' active':'');
+  allBtn.dataset.setupDept = 'ALL';
+  allBtn.textContent = 'Tümü';
+  el.appendChild(allBtn);
+  depts.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'setup-dept-btn' + (setupFilter===d?' active':'');
+    btn.dataset.setupDept = d;
+    btn.textContent = d;
+    el.appendChild(btn);
+  });
 }
 
 function setSetupFilter(f){ setupFilter=f; renderSetupDepts(); renderSetupCourses(); }
@@ -2591,13 +2619,13 @@ function buildNoteCard(n, courseCode){
     <div class="note-mat-card" id="note-card-${n.id}">
       <div class="mat-card-top">
         <div class="mat-type-icon" style="background:rgba(245,158,11,0.15)">📝</div>
-        <button class="mat-del" onclick="deleteNoteConfirm('${escHtml(courseCode)}',${n.id})" title="Sil">✕</button>
+        <button class="mat-del" data-note-del="${n.id}" data-note-course="${escHtml(courseCode)}" title="Sil">✕</button>
       </div>
       <h4>${escHtml(n.title || 'Not')}</h4>
       <div class="mat-course-tag" style="color:rgba(245,158,11,0.9)">${escHtml(n.date)}</div>
       <div class="note-body-text">${escHtml(preview)}</div>
       <div style="display:flex;gap:6px;margin-top:10px;flex-direction:column">
-        <button class="mat-link" style="justify-content:center;border:none;cursor:pointer" onclick="openNoteViewer('${escHtml(courseCode)}',${n.id})">📖 Görüntüle / Düzenle</button>
+        <button class="mat-link" style="justify-content:center;border:none;cursor:pointer" data-note-view="${n.id}" data-note-course="${escHtml(courseCode)}">📖 Görüntüle / Düzenle</button>
       </div>
     </div>`;
 }
@@ -3373,6 +3401,56 @@ window.addEventListener('load',()=>{
   initTokenClient();
   renderSchedule();
   renderCourses();
+
+  // ── Delegated event listeners ──
+  // Ders kartları (courses grid)
+  document.getElementById('courses-grid').addEventListener('click', e => {
+    const card = e.target.closest('[data-course-idx]');
+    if(card) openModal(rawCourses[parseInt(card.dataset.courseIdx)]);
+  });
+
+  // Bölüm filtreleri (dept-filters)
+  document.getElementById('dept-filters').addEventListener('click', e => {
+    const btn = e.target.closest('[data-dept]');
+    if(btn) setFilter(btn.dataset.dept);
+  });
+
+  // Modal içi kayıt butonu (data-enroll-code)
+  document.getElementById('modal').addEventListener('click', e => {
+    const btn = e.target.closest('[data-enroll-code]');
+    if(btn) toggleEnroll(btn.dataset.enrollCode);
+  });
+
+  // Setup bölüm filtreleri
+  document.getElementById('setup-dept-filters').addEventListener('click', e => {
+    const btn = e.target.closest('[data-setup-dept]');
+    if(btn) setSetupFilter(btn.dataset.setupDept);
+  });
+
+  // Classroom kurs kartları
+  document.getElementById('tab-courses').addEventListener('click', e => {
+    const card = e.target.closest('[data-cl-link]');
+    if(card && !e.target.closest('a')) {
+      const url = safeUrl(card.dataset.clLink);
+      if(url !== '#') window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  });
+
+  // Not kartları (mat-messages ve notes alanları) — event delegation
+  document.body.addEventListener('click', e => {
+    // Not sil
+    const delBtn = e.target.closest('[data-note-del]');
+    if(delBtn){
+      deleteNoteConfirm(delBtn.dataset.noteCourse, parseInt(delBtn.dataset.noteDel));
+      return;
+    }
+    // Not görüntüle
+    const viewBtn = e.target.closest('[data-note-view]');
+    if(viewBtn){
+      openNoteViewer(viewBtn.dataset.noteCourse, parseInt(viewBtn.dataset.noteView));
+      return;
+    }
+  });
 });
 </script>
 
