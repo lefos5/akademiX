@@ -3010,6 +3010,12 @@ async function matCallAI(userText){
   }
 }
 
+function summariesKey(){
+  return currentUserEmail ? 'ai_summaries_' + currentUserEmail : 'ai_summaries_guest';
+}
+function loadSummaries(){ return safeLocalStorage(summariesKey(), []); }
+function saveSummaries(arr){ try{ localStorage.setItem(summariesKey(), JSON.stringify(arr)); }catch(e){} }
+
 function matSaveCurrentSummary(btn){
   const html = btn._summaryHtml;
   const title = btn._summaryTitle;
