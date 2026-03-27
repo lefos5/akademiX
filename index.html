@@ -2836,6 +2836,59 @@ async function selectMat(idx){
       matFileData = await prepareFileForClaude(fakeF);
     }catch(e){ console.warn('Dosya hazırlanamadı:', e); }
   }
+
+  // Kaydedilen özetleri chat'in üstünde göster
+  renderMatSavedSummaries(m.title);
+}
+
+function renderMatSavedSummaries(matTitle){
+  const msgs = document.getElementById('mat-messages');
+  const existing = document.getElementById('mat-saved-summaries');
+  if(existing) existing.remove();
+
+  const relevant = loadSummaries().filter(s => s.matTitle === matTitle || s.title === matTitle);
+  if(!relevant.length) return;
+
+  const section = document.createElement('div');
+  section.id = 'mat-saved-summaries';
+  section.style.cssText = 'border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:8px;';
+  section.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+      <span>📚</span> Kaydedilen Özetler (${relevant.length})
+    </div>
+    ${relevant.map(s => `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;">
+          <div style="min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(s.title)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${escHtml(s.date||'')}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="mat-ws-action" onclick="toggleMatSummaryBody(${s.id},this)">👁 Göster</button>
+            <button class="mat-ws-action" style="color:var(--red);" onclick="deleteMatSummary(${s.id},'${escHtml(matTitle)}')">✕ Sil</button>
+          </div>
+        </div>
+        <div id="mat-sum-body-${s.id}" style="display:none;font-size:12px;line-height:1.7;color:var(--text2);border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">${s.html}</div>
+      </div>`).join('')}`;
+  msgs.prepend(section);
+}
+
+function toggleMatSummaryBody(id, btn){
+  const el = document.getElementById('mat-sum-body-' + id);
+  if(!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  if(btn) btn.textContent = isOpen ? '👁 Göster' : '🙈 Gizle';
+}
+
+async function deleteMatSummary(id, matTitle){
+  if(!confirm('Bu özeti silmek istiyor musun?')) return;
+  const summaries = loadSummaries();
+  const toDelete = summaries.find(s => s.id === id);
+  if(toDelete?.title) await sbDeleteSummary(toDelete.title);
+  saveSummaries(summaries.filter(s => s.id !== id));
+  renderMatSavedSummaries(matTitle);
+  showToast('🗑️ Özet silindi.');
 }
 
 function setMatMode(mode, btn){
@@ -3036,6 +3089,8 @@ function matSaveCurrentSummary(btn){
   btn.style.background = 'var(--surface3)';
   btn.style.boxShadow = 'none';
   showToast('✅ Özet kaydedildi!');
+  // Listeyi anında güncelle
+  renderMatSavedSummaries(title);
 }
 
 function matAnalyze(){ matCallAI(''); }
