@@ -3268,16 +3268,6 @@ function setMatMode(mode, btn){
 }
 
 
-  // Non-chat: hide input, show option cards
-  inputBar.style.display = 'none';
-
-  // Re-render saved summaries at top
-  if(m) renderMatSavedSummaries(m.title);
-
-  if(mode === 'summary'){
-    matAddMsg('ai', `<strong>How would you like the summary?</strong>
-
-
 async function matRunVariant(mode, variant){
   // Disable all option buttons
   document.querySelectorAll('.mat-option-btn').forEach(b=>{ b.disabled=true; b.style.opacity='0.5'; });
