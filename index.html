@@ -1865,10 +1865,13 @@ function showPage(id) {
 // SCHEDULE
 function timeToMinutes(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
 function baseCode(code){
+  // Sadece VL, UE, L ders tipi suffix'ini kes — sayıları ve grup harflerini koru
+  // INF110VL → INF110 | INF110UE → INF110 | INF110L → INF110
+  // ISG002-A → ISG002 | ISG002-B → ISG002
   return code
+    .replace(/\s+/g, '')
     .replace(/(VL|UE|L)$/i, '')
-    .replace(/[-–]?[A-Z]$/i, '')
-    .replace(/[-–]?\d+$/i, '')
+    .replace(/[-–][A-B]$/i, '')   // sadece -A ve -B grup suffix'i (ISG002-A gibi)
     .trim();
 }
 
