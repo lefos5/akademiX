@@ -3104,8 +3104,9 @@ function renderMaterials(){
 
 async function selectMat(idx){
   currentMatIdx = idx;
+  // Yeni materyal seçilince tüm mod durumlarını sıfırla
+  Object.keys(matModeState).forEach(k => matModeState[k] = null);
   matChatHistory = [];
-  matFileData = null;
 
   document.querySelectorAll('.mat-list-item').forEach(el=>{
     el.classList.toggle('active', parseInt(el.dataset.idx)===idx);
@@ -3219,29 +3220,48 @@ async function deleteMatSummary(id, matTitle){
   showToast('🗑️ Özet silindi.');
 }
 
+// Her mod için içerik durumunu sakla
+const matModeState = { summary: null, quiz: null, flashcard: null, chat: null };
+
 function setMatMode(mode, btn){
   currentMatMode = mode;
-  matChatHistory = [];
   document.querySelectorAll('.mat-mode-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 
   const inputBar = document.getElementById('mat-input-bar');
   const msgs = document.getElementById('mat-messages');
-  msgs.innerHTML = '';
-
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
 
   if(mode === 'chat'){
     inputBar.style.display = 'flex';
     document.getElementById('mat-input').placeholder = 'Bu materyal hakkında bir şey sor...';
     document.getElementById('mat-input').value = '';
-    if(m){
-      matAddMsg('ai', `<strong>Sohbet Modu</strong><br>Materyal yüklendi. <em>${escHtml(m.title)}</em> hakkında istediğini sorabilirsin.`);
+
+    // Chat geçmişi varsa geri yükle
+    if(matModeState.chat){
+      msgs.innerHTML = matModeState.chat;
+    } else {
+      msgs.innerHTML = '';
+      matChatHistory = [];
+      if(m){
+        matAddMsg('ai', `<strong>Sohbet Modu</strong><br>Materyal yüklendi. <em>${escHtml(m.title)}</em> hakkında istediğini sorabilirsin.`);
+        matModeState.chat = msgs.innerHTML;
+      }
     }
     return;
   }
 
   inputBar.style.display = 'none';
+
+  // Bu modun kayıtlı içeriği varsa geri yükle
+  if(matModeState[mode]){
+    msgs.innerHTML = matModeState[mode];
+    return;
+  }
+
+  // İlk kez açılıyor — seçenek kartlarını göster
+  msgs.innerHTML = '';
+  matChatHistory = [];
 
   if(mode === 'summary'){
     if(m) renderMatSavedSummaries(m.title);
@@ -3265,6 +3285,9 @@ function setMatMode(mode, btn){
         <button class="mat-option-btn" onclick="matRunVariant('flashcard',null)">🃏 Oluştur — AI en kritik noktaları seçer</button>
       </div>`);
   }
+
+  // Anlık durumu kaydet
+  matModeState[mode] = msgs.innerHTML;
 }
 
 
@@ -3430,8 +3453,6 @@ async function matCallAI(userText, opts={}){
     matHideTyping();
     const html = (mode==='flashcard') ? matBuildFlashcards(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
-
-    // Save button for summary
     if(mode === 'summary'){
       const saveBar = document.createElement('div');
       saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
@@ -3450,7 +3471,13 @@ async function matCallAI(userText, opts={}){
       saveBar.appendChild(label);
       msgEl.querySelector('.mat-msg-body').appendChild(saveBar);
     }
-  }catch(e){
+    // Mevcut mod içeriğini kaydet — sekme değiştirince geri yüklensin
+    if(opts.forcePrompt){
+      setTimeout(() => {
+        const msgs = document.getElementById('mat-messages');
+        if(msgs) matModeState[mode] = msgs.innerHTML;
+      }, 0);
+    }
     matHideTyping();
     matAddMsg('ai',`<span style="color:var(--red)">❌ Hata: ${escHtml(e.message)}</span>`);
   }finally{
@@ -3495,6 +3522,9 @@ function matSend(){
   if(!txt) return;
   matAddMsg('user', escHtml(txt));
   inp.value = ''; inp.style.height='auto';
+  // Chat state'ini güncelle
+  const msgs = document.getElementById('mat-messages');
+  if(msgs) matModeState.chat = msgs.innerHTML;
   matCallAI(txt);
 }
 
