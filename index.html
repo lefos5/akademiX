@@ -1450,35 +1450,94 @@ async function sbDeleteNote(sbId){
   catch(e){ console.warn('Supabase not silme hatası:', e); }
 }
 
-async function sbLoadSummaries(email){
-  if(!sb || !email) return null;
-  try{
-    const { data, error } = await sb.from('summaries').select('*').eq('user_email', email).order('created_at', { ascending: false });
-    if(error) throw error;
-    return data.map(r => ({
-      id: r.id, _sbId: r.id,
-      title: r.mat_title, course: r.course, html: r.html,
-      date: new Date(r.created_at).toLocaleDateString('tr-TR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})
-    }));
-  }catch(e){ console.warn('Supabase özet yükleme hatası:', e); return null; }
-}
+// ═══════════════════════════════════════
+// AI OUTPUTS — summary, exam, flashcard
+// ═══════════════════════════════════════
 
-async function sbSaveSummary(email, summary){
-  if(!sb || !email) return null;
+async function sbSaveAiOutput(materialId, type, content, metadata={}){
+  if(!sb || !currentUserEmail || !materialId) return null;
   try{
-    const { data, error } = await sb.from('summaries').insert({
-      user_email: email, mat_title: summary.title, course: summary.course, html: summary.html
-    }).select().single();
+    const { data, error } = await sb.from('ai_outputs').insert({
+      material_id: materialId,
+      user_email: currentUserEmail,
+      type,
+      content,
+      metadata
+    }).select('id').single();
     if(error) throw error;
     return data.id;
-  }catch(e){ console.warn('Supabase özet kaydetme hatası:', e); return null; }
+  }catch(e){ console.warn('[ai_outputs] Kayıt hatası:', e.message); return null; }
 }
 
-async function sbDeleteSummary(matTitle){
-  if(!sb || !matTitle) return;
-  try{ await sb.from('summaries').delete().eq('mat_title', matTitle); }
-  catch(e){ console.warn('Supabase özet silme hatası:', e); }
+async function sbLoadAiOutputs(materialId, type=null){
+  if(!sb || !materialId) return [];
+  try{
+    let q = sb.from('ai_outputs')
+      .select('*')
+      .eq('material_id', materialId)
+      .eq('user_email', currentUserEmail)
+      .order('created_at', { ascending: false });
+    if(type) q = q.eq('type', type);
+    const { data, error } = await q;
+    if(error) throw error;
+    return data || [];
+  }catch(e){ console.warn('[ai_outputs] Yükleme hatası:', e.message); return []; }
 }
+
+async function sbDeleteAiOutput(id){
+  if(!sb || !id) return;
+  try{ await sb.from('ai_outputs').delete().eq('id', id); }
+  catch(e){ console.warn('[ai_outputs] Silme hatası:', e.message); }
+}
+
+// ═══════════════════════════════════════
+// CHAT MESSAGES
+// ═══════════════════════════════════════
+
+async function sbSaveChatMessage(materialId, role, content){
+  if(!sb || !currentUserEmail || !materialId) return null;
+  try{
+    const { data, error } = await sb.from('chat_messages').insert({
+      material_id: materialId,
+      user_email: currentUserEmail,
+      role,
+      content
+    }).select('id').single();
+    if(error) throw error;
+    return data.id;
+  }catch(e){ console.warn('[chat_messages] Kayıt hatası:', e.message); return null; }
+}
+
+async function sbLoadChatMessages(materialId){
+  if(!sb || !materialId) return [];
+  try{
+    const { data, error } = await sb.from('chat_messages')
+      .select('*')
+      .eq('material_id', materialId)
+      .eq('user_email', currentUserEmail)
+      .order('created_at', { ascending: true });
+    if(error) throw error;
+    return data || [];
+  }catch(e){ console.warn('[chat_messages] Yükleme hatası:', e.message); return []; }
+}
+
+async function sbDeleteChatHistory(materialId){
+  if(!sb || !materialId) return;
+  try{ await sb.from('chat_messages').delete()
+    .eq('material_id', materialId).eq('user_email', currentUserEmail); }
+  catch(e){ console.warn('[chat_messages] Silme hatası:', e.message); }
+}
+
+// Eski summary fonksiyonları — geriye dönük uyumluluk için korunuyor
+async function sbSaveSummary(email, summary){
+  // Artık ai_outputs üzerinden çalışıyor — material_id gerektiriyor
+  // Yeni akış matSaveCurrentSummary içinde doğrudan sbSaveAiOutput kullanıyor
+  return null;
+}
+async function sbDeleteSummary(matTitle){ /* no-op */ }
+async function sbLoadSummaries(email){ return null; }
+
+
 
 const BACKEND_URL = 'https://akademix-backend.vercel.app';
 let accessToken = null, currentUserEmail = null;
@@ -3161,13 +3220,79 @@ async function selectMat(idx){
     }catch(e){ console.warn('Dosya hazırlanamadı:', e); }
   }
 
-  // Auto-trigger summary mode (active by default)
+  // Önceki AI çıktılarını ve chat geçmişini Supabase'den yükle
+  if(m._sbId) loadMatHistory(m._sbId);
+
+  // Summary modunu göster (varsayılan)
   const summaryBtn = document.querySelector('.mat-mode-btn[data-mode="summary"]');
   if(summaryBtn) setMatMode('summary', summaryBtn);
+}
 
-  // Aktif modu otomatik tetikle (seçenek kartlarını göster)
-  const activeBtn = document.querySelector('.mat-mode-btn.active');
-  if(activeBtn) setMatMode(currentMatMode, activeBtn);
+async function loadMatHistory(materialId){
+  if(!materialId || !currentUserEmail) return;
+
+  // Her mod için önceki çıktıları paralel çek
+  const [outputs, chatMsgs] = await Promise.all([
+    sbLoadAiOutputs(materialId),
+    sbLoadChatMessages(materialId)
+  ]);
+
+  // Tip bazında grupla
+  const byType = { summary:[], exam:[], flashcard:[] };
+  outputs.forEach(o => { if(byType[o.type]) byType[o.type].push(o); });
+
+  // Her mod için state hazırla — en son çıktıyı göster
+  ['summary','quiz','flashcard'].forEach(mode => {
+    const list = byType[mode === 'quiz' ? 'exam' : mode];
+    if(!list?.length) return;
+    const latest = list[0]; // en yeni (descending order)
+
+    // Geçici bir div'e render et
+    const tmp = document.createElement('div');
+    const html = mode === 'flashcard'
+      ? matBuildFlashcards(latest.content)
+      : matMd(latest.content);
+
+    // Summary için kaydet butonu ekle
+    if(mode === 'summary'){
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'mat-msg ai';
+      msgDiv.innerHTML = `<div class="mat-msg-avatar ai">✨</div><div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
+      const saveBar = document.createElement('div');
+      saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
+      saveBar.innerHTML = `<span style="font-size:12px;color:var(--muted);">📅 ${new Date(latest.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</span>`;
+      msgDiv.querySelector('.mat-msg-body').appendChild(saveBar);
+      tmp.appendChild(msgDiv);
+      matModeState['summary'] = tmp.innerHTML;
+    } else {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'mat-msg ai';
+      msgDiv.innerHTML = `<div class="mat-msg-avatar ai">✨</div><div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
+      tmp.appendChild(msgDiv);
+      matModeState[mode] = tmp.innerHTML;
+    }
+  });
+
+  // Chat geçmişini yükle
+  if(chatMsgs.length){
+    matChatHistory = chatMsgs.map(msg => ({
+      role: msg.role,
+      content: [{type:'text', text: msg.content}]
+    }));
+    // Chat state'ini de hazırla
+    const tmp = document.createElement('div');
+    chatMsgs.forEach(msg => {
+      const div = document.createElement('div');
+      div.className = 'mat-msg ' + msg.role;
+      const avatar = msg.role === 'assistant' ? '✨' : '👤';
+      div.innerHTML = `<div class="mat-msg-avatar ${msg.role === 'assistant' ? 'ai' : ''}">${avatar}</div>
+        <div class="mat-msg-body"><div class="mat-msg-bubble">${msg.role === 'assistant' ? matMd(msg.content) : escHtml(msg.content)}</div></div>`;
+      tmp.appendChild(div);
+    });
+    matModeState.chat = tmp.innerHTML;
+  }
+
+  console.log(`[History] ${outputs.length} AI çıktı, ${chatMsgs.length} chat mesajı yüklendi.`);
 }
 
 function renderMatSavedSummaries(matTitle){
@@ -3240,8 +3365,9 @@ function setMatMode(mode, btn){
     // Chat geçmişi varsa geri yükle
     if(matModeState.chat){
       msgs.innerHTML = matModeState.chat;
+      // Temizle butonu ekle
+      addClearChatBtn();
     } else {
-      msgs.innerHTML = '';
       matChatHistory = [];
       if(m){
         matAddMsg('ai', `<strong>Sohbet Modu</strong><br>Materyal yüklendi. <em>${escHtml(m.title)}</em> hakkında istediğini sorabilirsin.`);
@@ -3448,6 +3574,11 @@ async function matCallAI(userText, opts={}){
     if(!opts.forcePrompt){
       matChatHistory.push({role:'user',content:messageContent});
       matChatHistory.push({role:'assistant',content:result});
+      // Chat mesajlarını Supabase'e kaydet
+      if(m._sbId){
+        sbSaveChatMessage(m._sbId, 'user', typeof messageContent === 'string' ? messageContent : (messageContent[messageContent.length-1]?.text || userText));
+        sbSaveChatMessage(m._sbId, 'assistant', result);
+      }
     }
 
     matHideTyping();
@@ -3473,6 +3604,10 @@ async function matCallAI(userText, opts={}){
     }
     // Mevcut mod içeriğini kaydet — sekme değiştirince geri yüklensin
     if(opts.forcePrompt){
+      // Supabase'e kaydet
+      if(m._sbId){
+        sbSaveAiOutput(m._sbId, mode, result, { variant: opts.variant || null });
+      }
       setTimeout(() => {
         const msgs = document.getElementById('mat-messages');
         if(msgs) matModeState[mode] = msgs.innerHTML;
@@ -3496,23 +3631,46 @@ function matSaveCurrentSummary(btn){
   const title = btn._summaryTitle;
   const course = btn._summaryCourse;
   if(!html) return;
+
+  // localStorage'a kaydet
   const summaries = loadSummaries();
   summaries.unshift({
-    id: Date.now(),
-    title, course,
-    matTitle: title,
-    html,
+    id: Date.now(), title, course, matTitle: title, html,
     date: new Date().toLocaleDateString('tr-TR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})
   });
   saveSummaries(summaries);
-  sbSaveSummary(currentUserEmail, {title, course, html});
+
+  // Supabase ai_outputs'a kaydet
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(m?._sbId) sbSaveAiOutput(m._sbId, 'summary', html, { title, course });
+
   btn.textContent = '✅ Kaydedildi';
   btn.disabled = true;
   btn.style.background = 'var(--surface3)';
   btn.style.boxShadow = 'none';
   showToast('✅ Özet kaydedildi!');
-  // Listeyi anında güncelle
   renderMatSavedSummaries(title);
+}
+
+function addClearChatBtn(){
+  const msgs = document.getElementById('mat-messages');
+  if(!msgs || msgs.querySelector('.clear-chat-btn')) return;
+  const bar = document.createElement('div');
+  bar.style.cssText = 'display:flex;justify-content:flex-end;padding:4px 0 8px;';
+  bar.innerHTML = '<button class="clear-chat-btn mat-ws-action" style="font-size:11px;padding:4px 10px;color:var(--muted);" onclick="clearChatHistory()">🗑️ Geçmişi temizle</button>';
+  msgs.prepend(bar);
+}
+
+async function clearChatHistory(){
+  if(!confirm('Sohbet geçmişini silmek istiyor musun?')) return;
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  matChatHistory = [];
+  matModeState.chat = null;
+  if(m?._sbId) await sbDeleteChatHistory(m._sbId);
+  const msgs = document.getElementById('mat-messages');
+  msgs.innerHTML = '';
+  if(m) matAddMsg('ai', `<strong>Sohbet Modu</strong><br>Geçmiş temizlendi. <em>${escHtml(m.title)}</em> hakkında yeni bir konuşma başlatabilirsin.`);
+  showToast('🗑️ Sohbet geçmişi silindi.');
 }
 
 function matSend(){
@@ -3522,6 +3680,7 @@ function matSend(){
   if(!txt) return;
   matAddMsg('user', escHtml(txt));
   inp.value = ''; inp.style.height='auto';
+  addClearChatBtn();
   // Chat state'ini güncelle
   const msgs = document.getElementById('mat-messages');
   if(msgs) matModeState.chat = msgs.innerHTML;
