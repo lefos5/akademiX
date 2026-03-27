@@ -3221,7 +3221,7 @@ async function selectMat(idx){
   }
 
   // Önceki AI çıktılarını ve chat geçmişini Supabase'den yükle
-  if(m._sbId) loadMatHistory(m._sbId);
+  if(m._sbId) await loadMatHistory(m._sbId);
 
   // Summary modunu göster (varsayılan)
   const summaryBtn = document.querySelector('.mat-mode-btn[data-mode="summary"]');
@@ -3231,68 +3231,73 @@ async function selectMat(idx){
 async function loadMatHistory(materialId){
   if(!materialId || !currentUserEmail) return;
 
-  // Her mod için önceki çıktıları paralel çek
-  const [outputs, chatMsgs] = await Promise.all([
-    sbLoadAiOutputs(materialId),
-    sbLoadChatMessages(materialId)
-  ]);
+  try{
+    const [outputs, chatMsgs] = await Promise.all([
+      sbLoadAiOutputs(materialId),
+      sbLoadChatMessages(materialId)
+    ]);
 
-  // Tip bazında grupla
-  const byType = { summary:[], exam:[], flashcard:[] };
-  outputs.forEach(o => { if(byType[o.type]) byType[o.type].push(o); });
-
-  // Her mod için state hazırla — en son çıktıyı göster
-  ['summary','quiz','flashcard'].forEach(mode => {
-    const list = byType[mode === 'quiz' ? 'exam' : mode];
-    if(!list?.length) return;
-    const latest = list[0]; // en yeni (descending order)
-
-    // Geçici bir div'e render et
-    const tmp = document.createElement('div');
-    const html = mode === 'flashcard'
-      ? matBuildFlashcards(latest.content)
-      : matMd(latest.content);
-
-    // Summary için kaydet butonu ekle
-    if(mode === 'summary'){
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'mat-msg ai';
-      msgDiv.innerHTML = `<div class="mat-msg-avatar ai">✨</div><div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
-      const saveBar = document.createElement('div');
-      saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
-      saveBar.innerHTML = `<span style="font-size:12px;color:var(--muted);">📅 ${new Date(latest.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</span>`;
-      msgDiv.querySelector('.mat-msg-body').appendChild(saveBar);
-      tmp.appendChild(msgDiv);
-      matModeState['summary'] = tmp.innerHTML;
-    } else {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'mat-msg ai';
-      msgDiv.innerHTML = `<div class="mat-msg-avatar ai">✨</div><div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
-      tmp.appendChild(msgDiv);
-      matModeState[mode] = tmp.innerHTML;
-    }
-  });
-
-  // Chat geçmişini yükle
-  if(chatMsgs.length){
-    matChatHistory = chatMsgs.map(msg => ({
-      role: msg.role,
-      content: [{type:'text', text: msg.content}]
-    }));
-    // Chat state'ini de hazırla
-    const tmp = document.createElement('div');
-    chatMsgs.forEach(msg => {
-      const div = document.createElement('div');
-      div.className = 'mat-msg ' + msg.role;
-      const avatar = msg.role === 'assistant' ? '✨' : '👤';
-      div.innerHTML = `<div class="mat-msg-avatar ${msg.role === 'assistant' ? 'ai' : ''}">${avatar}</div>
-        <div class="mat-msg-body"><div class="mat-msg-bubble">${msg.role === 'assistant' ? matMd(msg.content) : escHtml(msg.content)}</div></div>`;
-      tmp.appendChild(div);
+    // AI çıktılarını tip bazında en yeniden en eskiye sırala
+    const byType = { summary:[], quiz:[], flashcard:[] };
+    outputs.forEach(o => {
+      // 'exam' tipi quiz moduna karşılık gelir
+      const key = o.type === 'exam' ? 'quiz' : o.type;
+      if(byType[key]) byType[key].push(o);
     });
-    matModeState.chat = tmp.innerHTML;
-  }
 
-  console.log(`[History] ${outputs.length} AI çıktı, ${chatMsgs.length} chat mesajı yüklendi.`);
+    // Her mod için state'i hazırla (sadece en son çıktı)
+    ['summary','quiz','flashcard'].forEach(mode => {
+      const list = byType[mode];
+      if(!list.length) return;
+      const latest = list[0];
+      const html = mode === 'flashcard'
+        ? matBuildFlashcards(latest.content)
+        : matMd(latest.content);
+
+      // Tek bir AI mesaj baloncuğu oluştur
+      const wrapper = document.createElement('div');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'mat-msg ai';
+      msgDiv.innerHTML = `<div class="mat-msg-avatar ai">✨</div>
+        <div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
+
+      if(mode === 'summary'){
+        // Tarih bilgisi ekle
+        const dateBadge = document.createElement('div');
+        dateBadge.style.cssText = 'font-size:11px;color:var(--muted);padding:4px 0 8px;text-align:right;';
+        dateBadge.textContent = '📅 ' + new Date(latest.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        wrapper.appendChild(dateBadge);
+      }
+
+      wrapper.appendChild(msgDiv);
+      matModeState[mode] = wrapper.innerHTML;
+    });
+
+    // Chat geçmişini yükle
+    if(chatMsgs.length){
+      matChatHistory = chatMsgs.map(msg => ({
+        role: msg.role,
+        content: [{type:'text', text: msg.content}]
+      }));
+
+      const wrapper = document.createElement('div');
+      chatMsgs.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = 'mat-msg ' + (msg.role === 'assistant' ? 'ai' : 'user');
+        const avatar = msg.role === 'assistant' ? '✨' : '👤';
+        div.innerHTML = `<div class="mat-msg-avatar ${msg.role === 'assistant' ? 'ai' : ''}">${avatar}</div>
+          <div class="mat-msg-body"><div class="mat-msg-bubble">${
+            msg.role === 'assistant' ? matMd(msg.content) : escHtml(msg.content)
+          }</div></div>`;
+        wrapper.appendChild(div);
+      });
+      matModeState.chat = wrapper.innerHTML;
+    }
+
+    console.log(`[History] ${outputs.length} AI çıktı, ${chatMsgs.length} chat mesajı yüklendi.`);
+  }catch(e){
+    console.warn('[loadMatHistory] Hata:', e.message);
+  }
 }
 
 function renderMatSavedSummaries(matTitle){
@@ -3382,6 +3387,7 @@ function setMatMode(mode, btn){
   // Bu modun kayıtlı içeriği varsa geri yükle
   if(matModeState[mode]){
     msgs.innerHTML = matModeState[mode];
+    if(mode === 'summary' && m) renderMatSavedSummaries(m.title);
     return;
   }
 
@@ -3574,9 +3580,9 @@ async function matCallAI(userText, opts={}){
     if(!opts.forcePrompt){
       matChatHistory.push({role:'user',content:messageContent});
       matChatHistory.push({role:'assistant',content:result});
-      // Chat mesajlarını Supabase'e kaydet
+      // Chat mesajlarını Supabase'e kaydet — userText string olarak
       if(m._sbId){
-        sbSaveChatMessage(m._sbId, 'user', typeof messageContent === 'string' ? messageContent : (messageContent[messageContent.length-1]?.text || userText));
+        sbSaveChatMessage(m._sbId, 'user', userText);
         sbSaveChatMessage(m._sbId, 'assistant', result);
       }
     }
