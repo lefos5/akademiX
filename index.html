@@ -1872,15 +1872,12 @@ function baseCode(code){
 
 function getMyExams(){
   const enrolledBases = new Set([...enrolled].map(baseCode));
+  const removed = new Set(safeLocalStorage('removed_exams', []));
 
   return EXAM_SCHEDULE.filter(exam => {
-    // 1. Tam eşleşme
+    if(removed.has(exam.code)) return false;
     if(enrolled.has(exam.code)) return true;
-    // 2. Base eşleşme: INF110VL→INF110 === INF110
     if(enrolledBases.has(exam.code)) return true;
-    // 3. Sınav kodunun base'i enrolled base'lerinde var mı?
-    //    ISG002 → ISG002, enrolled'da ISG002-B→ISG002-B base var ama
-    //    aynı zamanda ISG002-B'nin "-B" olmayan hali ISG002 da aranmalı
     const examBase = baseCode(exam.code);
     if([...enrolledBases].some(eb => eb === examBase || eb.startsWith(examBase + '-'))) return true;
     return false;
@@ -1908,9 +1905,9 @@ function renderExams(){
     '2026-04-10':'Cuma, 10 Nisan',
   };
 
-  // Programa eklenmeyen sınavları bul (dropdown için)
   const myExamCodes = new Set(myExams.map(e => e.code));
   const manualCodes = new Set(manualExams.map(e => e.code));
+  // Henüz listede olmayan VE silinmiş sınavların tamamını dropdown'da göster
   const missingExams = EXAM_SCHEDULE.filter(e => !myExamCodes.has(e.code) && !manualCodes.has(e.code));
 
   // Sınav ekleme — sadece programda olmayan sınavları dropdown'da listele
@@ -1975,14 +1972,14 @@ function renderExams(){
                 <div style="font-size:10px;color:var(--muted);">${exam.time?'–'+exam.time.split('-')[1]:''}</div>
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="margin-bottom:3px;display:flex;align-items:center;gap:6px;">
+                <div style="margin-bottom:3px;">
                   <span style="background:rgba(248,113,113,0.1);color:var(--red);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;">${escHtml(exam.code)}</span>
-                  ${exam._manual?'<span style="background:rgba(59,130,246,0.1);color:var(--accent2);font-size:10px;padding:2px 6px;border-radius:4px;">Manuel</span>':''}
                 </div>
                 <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${escHtml(exam.name)}</div>
                 <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room||'—')}</div>
               </div>
-              ${exam._manual?`<button class="mat-list-del" style="opacity:1;flex-shrink:0;" onclick="deleteManualExam('${exam._id}')" title="Sil">✕</button>`:''}
+              <button class="mat-list-del" style="opacity:1;flex-shrink:0;" title="Sil"
+                onclick="${exam._manual?`deleteManualExam('${exam._id}')`:`deleteScheduledExam('${exam.code}')`}">✕</button>
             </div>`).join('')}
         </div>
       </div>`;
@@ -2001,12 +1998,31 @@ function saveManualExam(){
   if(!select || !select.value){ showToast('❌ Lütfen bir sınav seçin.'); return; }
   const exam = EXAM_SCHEDULE.find(e => e.code === select.value);
   if(!exam){ showToast('❌ Sınav bulunamadı.'); return; }
+
+  // Daha önce silinmişse removed listesinden çıkar
+  const removed = safeLocalStorage('removed_exams', []).filter(c => c !== exam.code);
+  try{ localStorage.setItem('removed_exams', JSON.stringify(removed)); }catch(e){}
+
+  // Manuel listeye ekle (eğer zaten removed'dan geliyorsa ekstra kayıt gerekmez)
   const exams = safeLocalStorage('manual_exams', []);
-  exams.push({ ...exam, _manual: true, _id: Date.now().toString() });
-  try{ localStorage.setItem('manual_exams', JSON.stringify(exams)); }catch(e){}
+  if(!exams.find(e => e.code === exam.code)){
+    exams.push({ ...exam, _manual: true, _id: Date.now().toString() });
+    try{ localStorage.setItem('manual_exams', JSON.stringify(exams)); }catch(e){}
+  }
+
   showToast('✅ ' + exam.code + ' sınavı eklendi!');
   renderExams();
   renderCalendar();
+}
+
+function deleteScheduledExam(code){
+  if(!confirm('Bu sınavı listeden kaldırmak istiyor musun?\nDaha sonra "＋ Sınav Ekle" ile geri ekleyebilirsin.')) return;
+  const removed = safeLocalStorage('removed_exams', []);
+  if(!removed.includes(code)) removed.push(code);
+  try{ localStorage.setItem('removed_exams', JSON.stringify(removed)); }catch(e){}
+  renderExams();
+  renderCalendar();
+  showToast('🗑️ Sınav kaldırıldı. Geri eklemek için ＋ Sınav Ekle butonunu kullan.');
 }
 
 function deleteManualExam(id){
