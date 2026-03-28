@@ -1308,12 +1308,14 @@
             <button class="mat-mode-btn active" data-mode="summary" onclick="setMatMode('summary',this)">📝 Özet</button>
             <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Sınav</button>
             <button class="mat-mode-btn" data-mode="flashcard" onclick="setMatMode('flashcard',this)">🃏 Flashcard</button>
+            <button class="mat-mode-btn" data-mode="rag" onclick="setMatMode('rag',this)">🔍 Kaynaktan Sor</button>
             <button class="mat-mode-btn" data-mode="chat" onclick="setMatMode('chat',this)">💬 Sohbet</button>
           </div>
           <!-- Her mod için ayrı container — display:none ile gizlenir -->
           <div class="mat-messages" id="mat-panel-summary" style="display:flex;flex-direction:column"></div>
           <div class="mat-messages" id="mat-panel-quiz" style="display:none;flex-direction:column"></div>
           <div class="mat-messages" id="mat-panel-flashcard" style="display:none;flex-direction:column"></div>
+          <div class="mat-messages" id="mat-panel-rag" style="display:none;flex-direction:column"></div>
           <div class="mat-messages" id="mat-panel-chat" style="display:none;flex-direction:column"></div>
           <!-- Geriye uyumluluk için alias -->
           <div id="mat-messages" style="display:none"></div>
@@ -3688,7 +3690,7 @@ async function selectMat(idx){
   // Yeni materyal seçilince tüm mod durumlarını sıfırla
   // Yeni materyal — tüm panelleri sıfırla
   Object.keys(matModeReady).forEach(k => matModeReady[k] = false);
-  ['summary','quiz','flashcard','chat'].forEach(m => {
+  ['summary','quiz','flashcard','rag','chat'].forEach(m => {
     const p = getPanel(m); if(p) p.innerHTML = '';
   });
   matChatHistory = [];
@@ -3894,14 +3896,14 @@ function getPanel(mode){
 }
 
 function showPanel(mode){
-  ['summary','quiz','flashcard','chat'].forEach(m => {
+  ['summary','quiz','flashcard','rag','chat'].forEach(m => {
     const p = getPanel(m);
     if(p) p.style.display = m === mode ? 'flex' : 'none';
   });
 }
 
 // Her mod için "ilk kez mi açılıyor" takibi
-const matModeReady = { summary: false, quiz: false, flashcard: false, chat: false };
+const matModeReady = { summary: false, quiz: false, flashcard: false, rag: false, chat: false };
 
 function setMatMode(mode, btn){
   currentMatMode = mode;
@@ -3913,6 +3915,28 @@ function setMatMode(mode, btn){
 
   // Paneli göster
   showPanel(mode);
+
+  if(mode === 'rag'){
+    inputBar.style.display = 'flex';
+    document.getElementById('mat-input').placeholder = '📚 Materyale dayalı soru sor...';
+    document.getElementById('mat-input').value = '';
+    const ragPanel = getPanel('rag');
+    if(!matModeReady.rag && ragPanel && !ragPanel.children.length){
+      matModeReady.rag = true;
+      if(m?._sbId){
+        ragIsIndexed(m._sbId).then(indexed => {
+          if(indexed){
+            matAddMsgToPanel('rag','ai','<strong>🔍 Kaynaktan Sor</strong><br>Bu materyal indekslenmiş. Sadece materyaldeki bilgilere dayalı sorular sorabilirsin.');
+          } else {
+            matAddMsgToPanel('rag','ai',`<strong>🔍 Kaynaktan Sor</strong><br>Bu materyal henüz indekslenmemiş.<br><br><button class="mat-option-btn" onclick="ragManualIndex()">⚡ Şimdi İndeksle</button>`);
+          }
+        });
+      } else {
+        matAddMsgToPanel('rag','ai','Bu özellik yüklenmiş PDF dosyaları için çalışır.');
+      }
+    }
+    return;
+  }
 
   if(mode === 'chat'){
     inputBar.style.display = 'flex';
@@ -4052,6 +4076,72 @@ function matBuildFlashcards(text){
       <div class="fc-divider"></div>
       <div class="fc-a">${escHtml(p.a)}</div>
     </div>`).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════
+// RAG — PDF Indexleme + Kaynak Arama
+// ═══════════════════════════════════════
+
+/**
+ * PDF'den metin çıkar (pdfjs ile) ve backend'e gönder
+ */
+async function ragIndexMaterial(materialSbId, file){
+  // pdfjs ile metin çıkar
+  let text = '';
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pageTexts = [];
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      pageTexts.push(content.items.map(s => s.str).join(' '));
+    }
+    text = pageTexts.join('\n\n');
+  }catch(e){
+    console.warn('[RAG] PDF metin çıkarma hatası:', e.message);
+    return 0;
+  }
+
+  if(text.trim().length < 100){ console.warn('[RAG] Metin çok kısa'); return 0; }
+
+  const sessionId = localStorage.getItem('akademix_session');
+  const resp = await fetch(BACKEND_URL + '/api/embed?action=index', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'x-session-id': sessionId },
+    body: JSON.stringify({ material_id: materialSbId, text })
+  });
+  const data = await resp.json();
+  if(!resp.ok) throw new Error(data.error || 'İndeksleme başarısız');
+  return data.indexed || 0;
+}
+
+/**
+ * Soruyu embedding'e çevir, ilgili chunk'ları çek, AI ile cevapla
+ */
+async function ragQuery(question, materialSbIds){
+  const sessionId = localStorage.getItem('akademix_session');
+  const resp = await fetch(BACKEND_URL + '/api/embed?action=query', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'x-session-id': sessionId },
+    body: JSON.stringify({ material_ids: materialSbIds, question })
+  });
+  const data = await resp.json();
+  if(!resp.ok) throw new Error(data.error || 'Arama başarısız');
+  return data; // { answer, chunks }
+}
+
+/**
+ * Materyalin index'lenip indexlenmediğini kontrol et
+ */
+async function ragIsIndexed(materialSbId){
+  if(!sb || !materialSbId) return false;
+  try{
+    const { count } = await sb.from('document_chunks')
+      .select('id', { count:'exact', head:true })
+      .eq('material_id', materialSbId);
+    return (count || 0) > 0;
+  }catch(e){ return false; }
 }
 
 async function prepareFileForClaude(f){
@@ -4253,6 +4343,7 @@ async function clearChatHistory(){
 }
 
 function matSend(){
+  if(currentMatMode === 'rag') return ragSend();
   if(currentMatMode !== 'chat') return;
   const inp = document.getElementById('mat-input');
   const txt = inp.value.trim();
@@ -4261,6 +4352,67 @@ function matSend(){
   inp.value = ''; inp.style.height='auto';
   addClearChatBtn();
   matCallAI(txt);
+}
+
+async function ragSend(){
+  const inp = document.getElementById('mat-input');
+  const question = inp.value.trim();
+  if(!question) return;
+  inp.value = ''; inp.style.height='auto';
+
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(!m?._sbId){ showToast('❌ Materyal bulunamadı.'); return; }
+
+  matAddMsgToPanel('rag', 'user', escHtml(question));
+
+  // Typing
+  const typing = document.createElement('div');
+  typing.className = 'mat-msg ai'; typing.id = 'rag-typing';
+  typing.innerHTML = `<div class="mat-msg-avatar ai">🔍</div><div class="mat-msg-body"><div class="mat-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div></div>`;
+  getPanel('rag').appendChild(typing);
+  getPanel('rag').scrollTop = getPanel('rag').scrollHeight;
+
+  try{
+    const result = await ragQuery(question, [m._sbId]);
+    typing.remove();
+
+    // Kaynakları göster
+    const sourceHTML = result.chunks?.length
+      ? `<details style="margin-top:10px;font-size:11px;color:var(--muted);">
+          <summary style="cursor:pointer;">📎 ${result.chunks.length} kaynak bölüm</summary>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+            ${result.chunks.map((c,i) => `
+              <div style="background:var(--surface2);border-radius:6px;padding:8px 10px;font-size:11px;line-height:1.5;color:var(--text2);">
+                <span style="font-weight:700;color:var(--accent2);">[${i+1}]</span> ${escHtml(c.content.slice(0,200))}${c.content.length>200?'…':''}
+              </div>`).join('')}
+          </div>
+        </details>` : '';
+
+    matAddMsgToPanel('rag','ai', matMd(result.answer) + sourceHTML);
+  }catch(e){
+    typing.remove();
+    matAddMsgToPanel('rag','ai',`<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
+  }
+}
+
+async function ragManualIndex(){
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(!m?._sbId || !m.fileUrl){ showToast('❌ Dosya bulunamadı.'); return; }
+
+  matAddMsgToPanel('rag','ai','⏳ İndeksleniyor, lütfen bekle...');
+  try{
+    // Dosyayı indir
+    const resp = await fetch(m.fileUrl);
+    const blob = await resp.blob();
+    const file = new File([blob], m.fileName || 'file.pdf', { type: blob.type });
+    const count = await ragIndexMaterial(m._sbId, file);
+    matModeReady.rag = false;
+    const ragBtn = document.querySelector('.mat-mode-btn[data-mode="rag"]');
+    if(ragBtn){ getPanel('rag').innerHTML = ''; setMatMode('rag', ragBtn); }
+    showToast(`✅ ${count} bölüm indekslendi!`);
+  }catch(e){
+    matAddMsgToPanel('rag','ai',`<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
+  }
 }
 
 
@@ -4431,7 +4583,14 @@ async function saveMaterial(){
       saveMaterials();
       closeMatModal();
       renderMaterials();
-      showToast('✅ Dosya yüklendi!');
+      showToast('✅ Dosya yüklendi! İndeksleniyor...');
+
+      // PDF ise arka planda RAG indexle
+      if(sbId && selectedFile && selectedFile.name.toLowerCase().endsWith('.pdf')){
+        ragIndexMaterial(sbId, selectedFile).then(count => {
+          if(count > 0) showToast(`✅ ${count} bölüm indekslendi — kaynak araması aktif!`);
+        }).catch(e => console.warn('[RAG index]', e.message));
+      }
     }catch(e){
       console.error('[saveMaterial]', e);
       alert('Dosya kaydedilemedi:\n' + e.message);
