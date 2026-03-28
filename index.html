@@ -735,7 +735,30 @@
   .mat-option-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent2); background: var(--accent-glow); }
   .mat-option-btn:disabled { cursor: not-allowed; }
 
-  /* ── AI STUDIO ─────────────────────────────── */
+  /* ── RAG sidebar ── */
+  .rag-sidebar {
+    width:180px; flex-shrink:0;
+    border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+    background:var(--surface);
+  }
+  .rag-sidebar-top {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 12px 8px; border-bottom:1px solid var(--border);
+  }
+  #rag-conv-list { flex:1; overflow-y:auto; padding:6px; }
+  .rag-conv-item {
+    padding:7px 8px; border-radius:7px; cursor:pointer;
+    transition:background 0.12s; margin-bottom:2px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .rag-conv-item:hover { background:var(--surface2); }
+  .rag-conv-item.active { background:var(--accent-glow); }
+  .rag-conv-item-title { font-size:11px; font-weight:500; color:var(--text2); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rag-conv-del { opacity:0; font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; padding:1px 3px; flex-shrink:0; }
+  .rag-conv-item:hover .rag-conv-del { opacity:1; }
+  .rag-main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+  #rag-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
   .studio-layout { display:flex; height:100%; overflow:hidden; }
 
   .studio-sidebar {
@@ -1309,13 +1332,36 @@
             <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Sınav</button>
             <button class="mat-mode-btn" data-mode="flashcard" onclick="setMatMode('flashcard',this)">🃏 Flashcard</button>
             <button class="mat-mode-btn" data-mode="rag" onclick="setMatMode('rag',this)">🔍 Kaynaktan Sor</button>
-            <button class="mat-mode-btn" data-mode="chat" onclick="setMatMode('chat',this)">💬 Sohbet</button>
           </div>
           <!-- Her mod için ayrı container — display:none ile gizlenir -->
           <div class="mat-messages" id="mat-panel-summary" style="display:flex;flex-direction:column"></div>
           <div class="mat-messages" id="mat-panel-quiz" style="display:none;flex-direction:column"></div>
           <div class="mat-messages" id="mat-panel-flashcard" style="display:none;flex-direction:column"></div>
-          <div class="mat-messages" id="mat-panel-rag" style="display:none;flex-direction:column"></div>
+          <div id="mat-panel-rag" style="display:none;flex:1;overflow:hidden;flex-direction:row">
+            <!-- RAG sol sidebar -->
+            <div class="rag-sidebar">
+              <div class="rag-sidebar-top">
+                <span style="font-size:12px;font-weight:700;color:var(--text);">Sohbetler</span>
+                <button class="studio-new-btn" onclick="ragNewConv()" title="Yeni Sohbet">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+              </div>
+              <div id="rag-conv-list"></div>
+            </div>
+            <!-- RAG sağ panel -->
+            <div class="rag-main">
+              <div class="studio-messages" id="rag-messages"></div>
+              <div class="mat-input-bar" id="rag-input-bar" style="display:flex;border-top:1px solid var(--border);padding:10px 12px;">
+                <textarea id="rag-input" placeholder="📚 Materyale dayalı soru sor..." rows="1"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();ragSend()}"
+                  oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+                  style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:none;min-height:36px;"></textarea>
+                <button class="studio-send-btn" onclick="ragSend()" style="margin-left:8px;">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="mat-messages" id="mat-panel-chat" style="display:none;flex-direction:column"></div>
           <!-- Geriye uyumluluk için alias -->
           <div id="mat-messages" style="display:none"></div>
@@ -1349,16 +1395,6 @@
     <h2 style="margin-bottom:20px">Materyal Ekle</h2>
     <div class="mat-form">
       <div>
-        <label>Kaynak Türü</label>
-        <div class="mat-type-tabs">
-          <button class="mat-type-tab active" onclick="setMatType('drive',this)">📁 Drive</button>
-          <button class="mat-type-tab" onclick="setMatType('youtube',this)">▶️ YouTube</button>
-          <button class="mat-type-tab" onclick="setMatType('web',this)">🔗 Web</button>
-          <button class="mat-type-tab" onclick="setMatType('other',this)">📎 Diğer</button>
-          <button class="mat-type-tab" onclick="setMatType('file',this)">💾 Dosya</button>
-        </div>
-      </div>
-      <div>
         <label>Başlık</label>
         <input type="text" id="mat-title" placeholder="Materyal başlığı">
       </div>
@@ -1366,27 +1402,23 @@
         <label>Ders</label>
         <select id="mat-course-sel"></select>
       </div>
-      <!-- Link alanı (dosya değilse) -->
-      <div id="mat-url-section">
-        <label>Link</label>
-        <input type="url" id="mat-url" placeholder="https://...">
-      </div>
-      <!-- Dosya yükleme alanı -->
-      <div id="mat-file-section" style="display:none">
-        <label>Dosya</label>
+      <!-- Dosya yükleme -->
+      <div id="mat-file-section">
+        <label>Dosya <span style="font-size:11px;color:var(--muted);font-weight:400;">(PDF, Word, vb.)</span></label>
         <div class="file-drop-zone" id="file-drop-zone">
           <input type="file" id="mat-file-input" style="display:none">
           <div id="file-drop-content">
             <div style="font-size:32px;margin-bottom:8px">📂</div>
             <div style="font-size:13px;font-weight:600;color:var(--text2)">Dosya seçmek için tıkla</div>
             <div style="font-size:11px;color:var(--muted);margin-top:4px">veya sürükle bırak</div>
-            <div style="font-size:10px;color:var(--muted2);margin-top:8px">Tüm dosya türleri desteklenir</div>
           </div>
         </div>
       </div>
-      <div>
-        <label>Açıklama (isteğe bağlı)</label>
-        <textarea id="mat-note" placeholder="Kısa not..."></textarea>
+      <!-- ya da link -->
+      <div style="text-align:center;font-size:12px;color:var(--muted);padding:4px 0;">— ya da —</div>
+      <div id="mat-url-section">
+        <label>Link <span style="font-size:11px;color:var(--muted);font-weight:400;">(Drive, YouTube, Web...)</span></label>
+        <input type="url" id="mat-url" placeholder="https://...">
       </div>
       <button class="add-btn" style="align-self:flex-end" onclick="saveMaterial()">Kaydet</button>
     </div>
@@ -1794,6 +1826,67 @@ async function sbLoadStudioMessages(conversationId){
     if(error) throw error;
     return data || [];
   }catch(e){ console.warn('[studio] Mesajlar yüklenemedi:', e.message); return []; }
+}
+
+// ═══════════════════════════════════════
+// RAG CONVERSATIONS (Supabase)
+// ═══════════════════════════════════════
+
+async function sbCreateRagConversation(materialId, title){
+  if(!sb || !currentUserEmail) return null;
+  try{
+    const { data, error } = await sb.from('rag_conversations').insert({
+      material_id: materialId, user_email: currentUserEmail, title
+    }).select('id,title,created_at').single();
+    if(error) throw error;
+    return data;
+  }catch(e){ console.warn('[rag_conv] oluşturulamadı:', e.message); return null; }
+}
+
+async function sbLoadRagConversations(materialId){
+  if(!sb || !materialId) return [];
+  try{
+    const { data, error } = await sb.from('rag_conversations')
+      .select('id,title,created_at')
+      .eq('material_id', materialId)
+      .eq('user_email', currentUserEmail)
+      .order('created_at', { ascending: false });
+    if(error) throw error;
+    return data || [];
+  }catch(e){ console.warn('[rag_conv] yüklenemedi:', e.message); return []; }
+}
+
+async function sbUpdateRagConvTitle(id, title){
+  if(!sb || !id) return;
+  try{ await sb.from('rag_conversations').update({ title }).eq('id', id); }
+  catch(e){ console.warn('[rag_conv] başlık güncellenemedi:', e.message); }
+}
+
+async function sbDeleteRagConversation(id){
+  if(!sb || !id) return;
+  try{
+    await sb.from('rag_messages').delete().eq('conversation_id', id);
+    await sb.from('rag_conversations').delete().eq('id', id);
+  }catch(e){ console.warn('[rag_conv] silinemedi:', e.message); }
+}
+
+async function sbSaveRagMessage(convId, role, content){
+  if(!sb || !convId) return;
+  try{
+    await sb.from('rag_messages').insert({ conversation_id: convId, user_email: currentUserEmail, role, content });
+  }catch(e){ console.warn('[rag_msg] kaydedilemedi:', e.message); }
+}
+
+async function sbLoadRagMessages(convId){
+  if(!sb || !convId) return [];
+  try{
+    const { data, error } = await sb.from('rag_messages')
+      .select('role,content')
+      .eq('conversation_id', convId)
+      .order('created_at', { ascending: true });
+    if(error) throw error;
+    return data || [];
+  }catch(e){ console.warn('[rag_msg] yüklenemedi:', e.message); return []; }
 }
 
 const BACKEND_URL = 'https://akademix-backend.vercel.app';
@@ -3896,10 +3989,13 @@ function getPanel(mode){
 }
 
 function showPanel(mode){
-  ['summary','quiz','flashcard','rag','chat'].forEach(m => {
+  ['summary','quiz','flashcard','chat'].forEach(m => {
     const p = getPanel(m);
     if(p) p.style.display = m === mode ? 'flex' : 'none';
   });
+  // RAG kendi layout'unu yönetiyor
+  const ragP = document.getElementById('mat-panel-rag');
+  if(ragP) ragP.style.display = mode === 'rag' ? 'flex' : 'none';
 }
 
 // Her mod için "ilk kez mi açılıyor" takibi
@@ -3917,23 +4013,12 @@ function setMatMode(mode, btn){
   showPanel(mode);
 
   if(mode === 'rag'){
-    inputBar.style.display = 'flex';
-    document.getElementById('mat-input').placeholder = '📚 Materyale dayalı soru sor...';
-    document.getElementById('mat-input').value = '';
-    const ragPanel = getPanel('rag');
-    if(!matModeReady.rag && ragPanel && !ragPanel.children.length){
+    inputBar.style.display = 'none'; // RAG kendi input'unu kullanır
+    const ragPanel = document.getElementById('mat-panel-rag');
+    if(ragPanel) ragPanel.style.display = 'flex';
+    if(!matModeReady.rag){
       matModeReady.rag = true;
-      if(m?._sbId){
-        ragIsIndexed(m._sbId).then(indexed => {
-          if(indexed){
-            matAddMsgToPanel('rag','ai','<strong>🔍 Kaynaktan Sor</strong><br>Bu materyal indekslenmiş. Sadece materyaldeki bilgilere dayalı sorular sorabilirsin.');
-          } else {
-            matAddMsgToPanel('rag','ai',`<strong>🔍 Kaynaktan Sor</strong><br>Bu materyal henüz indekslenmemiş.<br><br><button class="mat-option-btn" onclick="ragManualIndex()">⚡ Şimdi İndeksle</button>`);
-          }
-        });
-      } else {
-        matAddMsgToPanel('rag','ai','Bu özellik yüklenmiş PDF dosyaları için çalışır.');
-      }
+      setMatModeRag(m);
     }
     return;
   }
@@ -4343,7 +4428,6 @@ async function clearChatHistory(){
 }
 
 function matSend(){
-  if(currentMatMode === 'rag') return ragSend();
   if(currentMatMode !== 'chat') return;
   const inp = document.getElementById('mat-input');
   const txt = inp.value.trim();
@@ -4354,48 +4438,150 @@ function matSend(){
   matCallAI(txt);
 }
 
+// ── RAG conversation state ──
+let ragConvId = null;
+let ragConvList = [];
+
+async function setMatModeRag(m){
+  // Sohbet listesini yükle
+  ragConvList = m?._sbId ? await sbLoadRagConversations(m._sbId) : [];
+  renderRagConvList(m);
+  // İlk sohbet varsa aç, yoksa yeni başlat
+  if(ragConvList.length){
+    await ragOpenConv(ragConvList[0].id, m);
+  } else {
+    ragNewConv(m);
+  }
+}
+
+function renderRagConvList(m){
+  const list = document.getElementById('rag-conv-list');
+  if(!list) return;
+  if(!ragConvList.length){
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px;">Henüz sohbet yok</div>';
+    return;
+  }
+  list.innerHTML = ragConvList.map(c => `
+    <div class="rag-conv-item ${c.id === ragConvId ? 'active' : ''}" onclick="ragOpenConv('${c.id}')">
+      <div class="rag-conv-item-title">${escHtml(c.title||'Sohbet')}</div>
+      <button class="rag-conv-del" onclick="event.stopPropagation();ragDeleteConv('${c.id}')" title="Sil">✕</button>
+    </div>`).join('');
+}
+
+function ragNewConv(m){
+  ragConvId = null;
+  const msgs = document.getElementById('rag-messages');
+  if(msgs){
+    msgs.innerHTML = '';
+    const mat = m || (currentMatIdx !== null ? materials[currentMatIdx] : null);
+    addRagMsg('ai', `<strong>🔍 Kaynaktan Sor</strong><br><em>${escHtml(mat?.title||'')}</em> materyaline dayalı sorularını yanıtlarım.`);
+  }
+  renderRagConvList(m);
+  document.getElementById('rag-input')?.focus();
+}
+
+async function ragOpenConv(id, m){
+  ragConvId = id;
+  const msgs = document.getElementById('rag-messages');
+  if(!msgs) return;
+  msgs.innerHTML = '';
+  renderRagConvList(m);
+
+  const history = await sbLoadRagMessages(id);
+  history.forEach(msg => {
+    addRagMsg(msg.role === 'assistant' ? 'ai' : 'user',
+      msg.role === 'assistant' ? matMd(msg.content) : escHtml(msg.content));
+  });
+}
+
+async function ragDeleteConv(id){
+  if(!confirm('Bu sohbeti silmek istiyor musun?')) return;
+  await sbDeleteRagConversation(id);
+  ragConvList = ragConvList.filter(c => c.id !== id);
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(ragConvId === id){
+    ragConvId = null;
+    ragNewConv(m);
+  } else {
+    renderRagConvList(m);
+  }
+  showToast('🗑️ Sohbet silindi.');
+}
+
+function addRagMsg(role, html){
+  const msgs = document.getElementById('rag-messages');
+  if(!msgs) return;
+  const div = document.createElement('div');
+  div.className = 'studio-msg ' + (role === 'ai' ? 'ai' : 'user');
+  const avatar = role === 'ai' ? '🔍' : '👤';
+  div.innerHTML = `<div class="studio-msg-avatar ${role === 'ai' ? 'ai' : ''}">${avatar}</div>
+    <div class="studio-msg-bubble">${html}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
 async function ragSend(){
-  const inp = document.getElementById('mat-input');
-  const question = inp.value.trim();
+  const inp = document.getElementById('rag-input');
+  const question = inp?.value.trim();
   if(!question) return;
-  inp.value = ''; inp.style.height='auto';
+  inp.value = ''; inp.style.height = 'auto';
 
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   if(!m?._sbId){ showToast('❌ Materyal bulunamadı.'); return; }
 
-  matAddMsgToPanel('rag', 'user', escHtml(question));
+  addRagMsg('user', escHtml(question));
+
+  // Yeni sohbetse oluştur
+  if(!ragConvId){
+    const conv = await sbCreateRagConversation(m._sbId, '...');
+    if(!conv){ showToast('❌ Sohbet oluşturulamadı.'); return; }
+    ragConvId = conv.id;
+    ragConvList.unshift(conv);
+    renderRagConvList(m);
+  }
+
+  // Kullanıcı mesajını kaydet
+  sbSaveRagMessage(ragConvId, 'user', question);
 
   // Typing
+  const msgs = document.getElementById('rag-messages');
   const typing = document.createElement('div');
-  typing.className = 'mat-msg ai'; typing.id = 'rag-typing';
-  typing.innerHTML = `<div class="mat-msg-avatar ai">🔍</div><div class="mat-msg-body"><div class="mat-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div></div>`;
-  getPanel('rag').appendChild(typing);
-  getPanel('rag').scrollTop = getPanel('rag').scrollHeight;
+  typing.className = 'studio-msg ai'; typing.id = 'rag-typing';
+  typing.innerHTML = `<div class="studio-msg-avatar ai">🔍</div><div class="studio-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
 
   try{
     const result = await ragQuery(question, [m._sbId]);
     typing.remove();
 
-    // Kaynakları göster
     const sourceHTML = result.chunks?.length
-      ? `<details style="margin-top:10px;font-size:11px;color:var(--muted);">
-          <summary style="cursor:pointer;">📎 ${result.chunks.length} kaynak bölüm</summary>
-          <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+      ? `<details style="margin-top:10px;">
+          <summary style="cursor:pointer;font-size:11px;color:var(--muted);">📎 ${result.chunks.length} kaynak bölüm</summary>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
             ${result.chunks.map((c,i) => `
-              <div style="background:var(--surface2);border-radius:6px;padding:8px 10px;font-size:11px;line-height:1.5;color:var(--text2);">
-                <span style="font-weight:700;color:var(--accent2);">[${i+1}]</span> ${escHtml(c.content.slice(0,200))}${c.content.length>200?'…':''}
+              <div style="background:var(--surface2);border-radius:6px;padding:6px 10px;font-size:11px;line-height:1.5;color:var(--text2);">
+                <strong style="color:var(--accent2);">[${i+1}]</strong> ${escHtml(c.content.slice(0,180))}${c.content.length>180?'…':''}
               </div>`).join('')}
           </div>
         </details>` : '';
 
-    matAddMsgToPanel('rag','ai', matMd(result.answer) + sourceHTML);
+    addRagMsg('ai', matMd(result.answer) + sourceHTML);
+    sbSaveRagMessage(ragConvId, 'assistant', result.answer);
+
+    // İlk mesajsa başlık üret
+    const conv = ragConvList.find(c => c.id === ragConvId);
+    if(conv && conv.title === '...'){
+      const title = question.slice(0, 40) + (question.length > 40 ? '…' : '');
+      conv.title = title;
+      await sbUpdateRagConvTitle(ragConvId, title);
+      renderRagConvList(m);
+    }
   }catch(e){
     typing.remove();
-    matAddMsgToPanel('rag','ai',`<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
+    addRagMsg('ai', `<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
   }
 }
-
-async function ragManualIndex(){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   if(!m?._sbId || !m.fileUrl){ showToast('❌ Dosya bulunamadı.'); return; }
 
@@ -4438,55 +4624,34 @@ function setMatType(type, btn){
 }
 
 function openMatModal(){
-  // populate course select
-  const sel=document.getElementById('mat-course-sel');
-  sel.innerHTML='';
-  const my=rawCourses.filter(c=>enrolled.has(c.code));
-  if(!my.length) rawCourses.forEach(c=>sel.innerHTML+=`<option value="${c.code}">${c.code} — ${c.name}</option>`);
-  else my.forEach(c=>sel.innerHTML+=`<option value="${c.code}">${c.code} — ${c.name}</option>`);
-  document.getElementById('mat-title').value='';
-  document.getElementById('mat-url').value='';
-  document.getElementById('mat-note').value='';
-  selectedFile=null;
-  document.getElementById('mat-url-section').style.display='block';
-  document.getElementById('mat-file-section').style.display='none';
-  document.querySelectorAll('.mat-type-tab').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.mat-type-tab').classList.add('active');
-  currentMatType='drive';
+  const sel = document.getElementById('mat-course-sel');
+  sel.innerHTML = '';
+  const my = rawCourses.filter(c => enrolled.has(c.code));
+  const list = my.length ? my : rawCourses;
+  list.forEach(c => sel.innerHTML += `<option value="${c.code}">${c.code} — ${c.name}</option>`);
+  document.getElementById('mat-title').value = '';
+  document.getElementById('mat-url').value = '';
+  selectedFile = null;
+  currentMatType = 'file'; // varsayılan dosya
   resetFileDropZone();
   document.getElementById('mat-modal').classList.add('open');
 
-  // Dosya input ve drag & drop — sadece bir kere bağla
   const zone = document.getElementById('file-drop-zone');
   const fileInput = document.getElementById('mat-file-input');
-
   if(zone && fileInput && !zone._ddReady){
     zone._ddReady = true;
-
-    // Tıklama → dosya seçici aç
     zone.addEventListener('click', (e) => {
-      // "✕ kaldır" butonuna tıklanırsa tetiklenmesin
       if(e.target.closest('.file-remove-btn')) return;
       fileInput.click();
     });
-
-    // Dosya seçilince preview göster
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if(file) handleFileSelect({ target: { files: [file] } });
     });
-
-    // Drag & drop
-    zone.addEventListener('dragover', e => {
-      e.preventDefault();
-      zone.classList.add('dragover');
-    });
-    zone.addEventListener('dragleave', e => {
-      if(!zone.contains(e.relatedTarget)) zone.classList.remove('dragover');
-    });
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
     zone.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.classList.remove('dragover');
+      e.preventDefault(); zone.classList.remove('drag-over');
       const file = e.dataTransfer.files[0];
       if(file) handleFileSelect({ target: { files: [file] } });
     });
@@ -4535,23 +4700,16 @@ function resetFileDropZone(){
 async function saveMaterial(){
   const title = document.getElementById('mat-title').value.trim();
   const course = document.getElementById('mat-course-sel').value;
-  const note = document.getElementById('mat-note').value.trim();
+  const url = document.getElementById('mat-url').value.trim();
 
-  if(currentMatType === 'file'){
-    if(!selectedFile){ alert('Lütfen bir dosya seçin.'); return; }
+  // Dosya yükleme
+  if(selectedFile){
     if(!title){ alert('Başlık zorunludur.'); return; }
-    if(!currentUserEmail){ alert('Dosya yükleyebilmek için Google hesabınızla giriş yapmalısınız.'); return; }
-
-    const MAX_MB = 50;
-    if(selectedFile.size > MAX_MB * 1024 * 1024){
-      alert(`Dosya boyutu ${MAX_MB} MB sınırını aşıyor (${(selectedFile.size/1024/1024).toFixed(1)} MB).`);
-      return;
-    }
+    if(!currentUserEmail){ alert('Dosya yükleyebilmek için Google hesabınızla giriş yapın.'); return; }
+    if(selectedFile.size > 50 * 1024 * 1024){ alert('Dosya 50 MB sınırını aşıyor.'); return; }
 
     try{
       showToast('⏳ Dosya yükleniyor...');
-
-      // Vercel backend üzerinden yükle (CORS/RLS sorunu yok, service key backend'de)
       const sessionId = localStorage.getItem('akademix_session');
       if(!sessionId){ alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.'); return; }
 
@@ -4559,24 +4717,14 @@ async function saveMaterial(){
       formData.append('file', selectedFile, selectedFile.name);
 
       const uploadResp = await fetch(BACKEND_URL + '/api/upload', {
-        method: 'POST',
-        headers: { 'x-session-id': sessionId },
-        body: formData,
+        method: 'POST', headers: { 'x-session-id': sessionId }, body: formData,
       });
-
       const uploadResult = await uploadResp.json();
       if(!uploadResp.ok) throw new Error(uploadResult.error || 'Yükleme başarısız');
 
       const { fileUrl, filePath, fileName, fileSize } = uploadResult;
-
-      const newMat = {
-        title, course, note, type: 'file',
-        fileName, fileSize, fileUrl, filePath,
-        addedAt: new Date().toISOString()
-      };
-
-      // DB'ye kaydet
-      const sbId = await sbSaveMaterial(currentUserEmail, { title, course, note, type:'file', fileName, fileUrl });
+      const newMat = { title, course, type:'file', fileName, fileSize, fileUrl, filePath, addedAt: new Date().toISOString() };
+      const sbId = await sbSaveMaterial(currentUserEmail, { title, course, note:'', type:'file', fileName, fileUrl });
       if(sbId) newMat._sbId = sbId;
 
       materials.push(newMat);
@@ -4585,8 +4733,7 @@ async function saveMaterial(){
       renderMaterials();
       showToast('✅ Dosya yüklendi! İndeksleniyor...');
 
-      // PDF ise arka planda RAG indexle
-      if(sbId && selectedFile && selectedFile.name.toLowerCase().endsWith('.pdf')){
+      if(sbId && selectedFile.name.toLowerCase().endsWith('.pdf')){
         ragIndexMaterial(sbId, selectedFile).then(count => {
           if(count > 0) showToast(`✅ ${count} bölüm indekslendi — kaynak araması aktif!`);
         }).catch(e => console.warn('[RAG index]', e.message));
@@ -4598,11 +4745,16 @@ async function saveMaterial(){
     return;
   }
 
-  const url = document.getElementById('mat-url').value.trim();
+  // Link ekleme — URL'den tipi otomatik algıla
   if(!title || !url){ alert('Başlık ve link zorunludur.'); return; }
-  if(safeUrl(url) === '#'){ alert('Geçersiz URL. Lütfen https:// ile başlayan bir link girin.'); return; }
-  const newMat2 = {title, url, course, note, type:currentMatType, addedAt:new Date().toISOString()};
-  const sbId2 = await sbSaveMaterial(currentUserEmail, {title, url, course, note, type:currentMatType});
+  if(safeUrl(url) === '#'){ alert('Geçersiz URL.'); return; }
+
+  let type = 'web';
+  if(url.includes('drive.google.com')) type = 'drive';
+  else if(url.includes('youtube.com') || url.includes('youtu.be')) type = 'youtube';
+
+  const newMat2 = { title, url, course, type, addedAt: new Date().toISOString() };
+  const sbId2 = await sbSaveMaterial(currentUserEmail, { title, url, course, note:'', type });
   if(sbId2) newMat2._sbId = sbId2;
   materials.push(newMat2);
   saveMaterials();
