@@ -4582,22 +4582,23 @@ async function ragSend(){
     addRagMsg('ai', `<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
   }
 }
+
+async function ragManualIndex(){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   if(!m?._sbId || !m.fileUrl){ showToast('❌ Dosya bulunamadı.'); return; }
 
-  matAddMsgToPanel('rag','ai','⏳ İndeksleniyor, lütfen bekle...');
+  addRagMsg('ai', '⏳ İndeksleniyor, lütfen bekle...');
   try{
-    // Dosyayı indir
     const resp = await fetch(m.fileUrl);
     const blob = await resp.blob();
     const file = new File([blob], m.fileName || 'file.pdf', { type: blob.type });
     const count = await ragIndexMaterial(m._sbId, file);
     matModeReady.rag = false;
-    const ragBtn = document.querySelector('.mat-mode-btn[data-mode="rag"]');
-    if(ragBtn){ getPanel('rag').innerHTML = ''; setMatMode('rag', ragBtn); }
+    ragConvId = null;
+    setMatModeRag(m);
     showToast(`✅ ${count} bölüm indekslendi!`);
   }catch(e){
-    matAddMsgToPanel('rag','ai',`<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
+    addRagMsg('ai', `<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
   }
 }
 
