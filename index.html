@@ -1128,18 +1128,24 @@
         <div class="mat-workspace" id="mat-workspace" style="display:none">
           <div class="mat-workspace-header" id="mat-workspace-header"></div>
           <div class="mat-ai-bar">
-            <button class="mat-mode-btn active" data-mode="summary" onclick="setMatMode('summary',this)">📝 Summary</button>
-            <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Exam</button>
+            <button class="mat-mode-btn active" data-mode="summary" onclick="setMatMode('summary',this)">📝 Özet</button>
+            <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Sınav</button>
             <button class="mat-mode-btn" data-mode="flashcard" onclick="setMatMode('flashcard',this)">🃏 Flashcard</button>
-            <button class="mat-mode-btn" data-mode="chat" onclick="setMatMode('chat',this)">💬 Chat</button>
+            <button class="mat-mode-btn" data-mode="chat" onclick="setMatMode('chat',this)">💬 Sohbet</button>
           </div>
-          <div class="mat-messages" id="mat-messages"></div>
+          <!-- Her mod için ayrı container — display:none ile gizlenir -->
+          <div class="mat-messages" id="mat-panel-summary" style="display:flex;flex-direction:column"></div>
+          <div class="mat-messages" id="mat-panel-quiz" style="display:none;flex-direction:column"></div>
+          <div class="mat-messages" id="mat-panel-flashcard" style="display:none;flex-direction:column"></div>
+          <div class="mat-messages" id="mat-panel-chat" style="display:none;flex-direction:column"></div>
+          <!-- Geriye uyumluluk için alias -->
+          <div id="mat-messages" style="display:none"></div>
           <div class="mat-input-bar" id="mat-input-bar" style="display:none">
-            <textarea id="mat-input" placeholder="Ask something about this material..." rows="1"
+            <textarea id="mat-input" placeholder="Bu materyal hakkında bir şey sor..." rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();matSend()}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
             <div class="mat-input-actions">
-              <button class="mat-send-btn" id="mat-send-btn" onclick="matSend()" title="Send">
+              <button class="mat-send-btn" id="mat-send-btn" onclick="matSend()" title="Gönder">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
             </div>
@@ -3164,7 +3170,11 @@ function renderMaterials(){
 async function selectMat(idx){
   currentMatIdx = idx;
   // Yeni materyal seçilince tüm mod durumlarını sıfırla
-  Object.keys(matModeState).forEach(k => matModeState[k] = null);
+  // Yeni materyal — tüm panelleri sıfırla
+  Object.keys(matModeReady).forEach(k => matModeReady[k] = false);
+  ['summary','quiz','flashcard','chat'].forEach(m => {
+    const p = getPanel(m); if(p) p.innerHTML = '';
+  });
   matChatHistory = [];
 
   document.querySelectorAll('.mat-list-item').forEach(el=>{
@@ -3198,7 +3208,7 @@ async function selectMat(idx){
     <div class="mat-ws-actions">${actions}</div>`;
 
   // Clear chat
-  document.getElementById('mat-messages').innerHTML = '';
+  // paneller selectMat başında zaten temizleniyor
   document.getElementById('mat-input') && (document.getElementById('mat-input').value = '');
 
   document.getElementById('mat-welcome').style.display = 'none';
@@ -3237,15 +3247,14 @@ async function loadMatHistory(materialId){
       sbLoadChatMessages(materialId)
     ]);
 
-    // AI çıktılarını tip bazında en yeniden en eskiye sırala
+    // Tip bazında grupla
     const byType = { summary:[], quiz:[], flashcard:[] };
     outputs.forEach(o => {
-      // 'exam' tipi quiz moduna karşılık gelir
       const key = o.type === 'exam' ? 'quiz' : o.type;
       if(byType[key]) byType[key].push(o);
     });
 
-    // Her mod için state'i hazırla (sadece en son çıktı)
+    // AI çıktılarını panellere yaz
     ['summary','quiz','flashcard'].forEach(mode => {
       const list = byType[mode];
       if(!list.length) return;
@@ -3254,23 +3263,19 @@ async function loadMatHistory(materialId){
         ? matBuildFlashcards(latest.content)
         : matMd(latest.content);
 
-      // Tek bir AI mesaj baloncuğu oluştur
-      const wrapper = document.createElement('div');
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'mat-msg ai';
-      msgDiv.innerHTML = `<div class="mat-msg-avatar ai">✨</div>
-        <div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
+      const panel = getPanel(mode);
+      if(!panel) return;
+      panel.innerHTML = '';
 
       if(mode === 'summary'){
-        // Tarih bilgisi ekle
         const dateBadge = document.createElement('div');
         dateBadge.style.cssText = 'font-size:11px;color:var(--muted);padding:4px 0 8px;text-align:right;';
         dateBadge.textContent = '📅 ' + new Date(latest.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-        wrapper.appendChild(dateBadge);
+        panel.appendChild(dateBadge);
       }
 
-      wrapper.appendChild(msgDiv);
-      matModeState[mode] = wrapper.innerHTML;
+      matAddMsgToPanel(mode, 'ai', html);
+      matModeReady[mode] = true;
     });
 
     // Chat geçmişini yükle
@@ -3279,19 +3284,15 @@ async function loadMatHistory(materialId){
         role: msg.role,
         content: [{type:'text', text: msg.content}]
       }));
-
-      const wrapper = document.createElement('div');
-      chatMsgs.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = 'mat-msg ' + (msg.role === 'assistant' ? 'ai' : 'user');
-        const avatar = msg.role === 'assistant' ? '✨' : '👤';
-        div.innerHTML = `<div class="mat-msg-avatar ${msg.role === 'assistant' ? 'ai' : ''}">${avatar}</div>
-          <div class="mat-msg-body"><div class="mat-msg-bubble">${
-            msg.role === 'assistant' ? matMd(msg.content) : escHtml(msg.content)
-          }</div></div>`;
-        wrapper.appendChild(div);
-      });
-      matModeState.chat = wrapper.innerHTML;
+      const chatPanel = getPanel('chat');
+      if(chatPanel){
+        chatPanel.innerHTML = '';
+        chatMsgs.forEach(msg => {
+          matAddMsgToPanel('chat', msg.role === 'assistant' ? 'ai' : 'user',
+            msg.role === 'assistant' ? matMd(msg.content) : escHtml(msg.content));
+        });
+        matModeReady.chat = true;
+      }
     }
 
     console.log(`[History] ${outputs.length} AI çıktı, ${chatMsgs.length} chat mesajı yüklendi.`);
@@ -3300,9 +3301,13 @@ async function loadMatHistory(materialId){
   }
 }
 
-function renderMatSavedSummaries(matTitle){
-  const msgs = document.getElementById('mat-messages');
-  const existing = document.getElementById('mat-saved-summaries');
+function renderMatSavedSummaries(matTitle, targetPanel){
+  // targetPanel verilmişse onu, yoksa summary panelini kullan
+  const panel = targetPanel || getPanel('summary');
+  if(!panel) return;
+
+  // Önceki saved summaries bölümünü kaldır
+  const existing = panel.querySelector('#mat-saved-summaries');
   if(existing) existing.remove();
 
   const relevant = loadSummaries().filter(s => s.matTitle === matTitle || s.title === matTitle);
@@ -3329,7 +3334,7 @@ function renderMatSavedSummaries(matTitle){
         </div>
         <div id="mat-sum-body-${s.id}" style="display:none;font-size:12px;line-height:1.7;color:var(--text2);border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">${s.html}</div>
       </div>`).join('')}`;
-  msgs.prepend(section);
+  panel.prepend(section);
 }
 
 function toggleMatSummaryBody(id, btn){
@@ -3350,8 +3355,20 @@ async function deleteMatSummary(id, matTitle){
   showToast('🗑️ Özet silindi.');
 }
 
-// Her mod için içerik durumunu sakla
-const matModeState = { summary: null, quiz: null, flashcard: null, chat: null };
+// Panel yardımcısı — aktif paneli göster, diğerlerini gizle
+function getPanel(mode){
+  return document.getElementById('mat-panel-' + mode);
+}
+
+function showPanel(mode){
+  ['summary','quiz','flashcard','chat'].forEach(m => {
+    const p = getPanel(m);
+    if(p) p.style.display = m === mode ? 'flex' : 'none';
+  });
+}
+
+// Her mod için "ilk kez mi açılıyor" takibi
+const matModeReady = { summary: false, quiz: false, flashcard: false, chat: false };
 
 function setMatMode(mode, btn){
   currentMatMode = mode;
@@ -3359,52 +3376,50 @@ function setMatMode(mode, btn){
   btn.classList.add('active');
 
   const inputBar = document.getElementById('mat-input-bar');
-  const msgs = document.getElementById('mat-messages');
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+
+  // Paneli göster
+  showPanel(mode);
 
   if(mode === 'chat'){
     inputBar.style.display = 'flex';
     document.getElementById('mat-input').placeholder = 'Bu materyal hakkında bir şey sor...';
-    document.getElementById('mat-input').value = '';
-
-    // Chat geçmişi varsa geri yükle
-    if(matModeState.chat){
-      msgs.innerHTML = matModeState.chat;
-      // Temizle butonu ekle
-      addClearChatBtn();
-    } else {
+    // İlk açılışta karşılama mesajı
+    const panel = getPanel('chat');
+    if(!matModeReady.chat && panel && !panel.children.length){
       matChatHistory = [];
-      if(m){
-        matAddMsg('ai', `<strong>Sohbet Modu</strong><br>Materyal yüklendi. <em>${escHtml(m.title)}</em> hakkında istediğini sorabilirsin.`);
-        matModeState.chat = msgs.innerHTML;
-      }
+      matAddMsgToPanel('chat', 'ai',
+        `<strong>Sohbet Modu</strong><br><em>${escHtml(m?.title||'')}</em> hakkında istediğini sorabilirsin.`);
+      matModeReady.chat = true;
     }
     return;
   }
 
   inputBar.style.display = 'none';
 
-  // Bu modun kayıtlı içeriği varsa geri yükle
-  if(matModeState[mode]){
-    msgs.innerHTML = matModeState[mode];
-    if(mode === 'summary' && m) renderMatSavedSummaries(m.title);
-    return;
+  // Zaten içerik varsa (panel doluysa) göster — seçenek kartlarını yeniden çizme
+  const panel = getPanel(mode);
+  if(!panel) return;
+
+  if(matModeReady[mode] && panel.children.length){
+    return; // Mevcut içeriği koru
   }
 
-  // İlk kez açılıyor — seçenek kartlarını göster
-  msgs.innerHTML = '';
-  matChatHistory = [];
+  // İlk kez açılıyor — paneli temizle ve seçenek kartlarını göster
+  panel.innerHTML = '';
+  matModeReady[mode] = true;
 
   if(mode === 'summary'){
-    if(m) renderMatSavedSummaries(m.title);
-    matAddMsg('ai', `<strong>Özet türünü seç:</strong>
+    // Kaydedilen özetleri en üstte göster
+    if(m) renderMatSavedSummaries(m.title, panel);
+    matAddMsgToPanel('summary', 'ai', `<strong>Özet türünü seç:</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('summary','short')">⚡ Kısa — sadece ana noktalar</button>
         <button class="mat-option-btn" onclick="matRunVariant('summary','detailed')">📚 Detaylı — bölümlü kapsamlı analiz</button>
         <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Sayfa sayfa — bölüm bölüm özet</button>
       </div>`);
   } else if(mode === 'quiz'){
-    matAddMsg('ai', `<strong>Nasıl sorular oluşturayım?</strong>
+    matAddMsgToPanel('quiz', 'ai', `<strong>Nasıl sorular oluşturayım?</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('quiz','easy_mc')">🟢 Kolay — çoktan seçmeli</button>
         <button class="mat-option-btn" onclick="matRunVariant('quiz','hard_mc')">🔴 Zor — çoktan seçmeli</button>
@@ -3412,23 +3427,45 @@ function setMatMode(mode, btn){
         <button class="mat-option-btn" onclick="matRunVariant('quiz','mixed')">🎯 Karışık — tüm türler</button>
       </div>`);
   } else if(mode === 'flashcard'){
-    matAddMsg('ai', `<strong>Flashcard oluştur:</strong>
+    matAddMsgToPanel('flashcard', 'ai', `<strong>Flashcard oluştur:</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('flashcard',null)">🃏 Oluştur — AI en kritik noktaları seçer</button>
       </div>`);
   }
+}
 
-  // Anlık durumu kaydet
-  matModeState[mode] = msgs.innerHTML;
+// Panel'e mesaj ekle (matAddMsg'nin panel-aware versiyonu)
+function matAddMsgToPanel(panelMode, role, html){
+  const panel = getPanel(panelMode);
+  if(!panel) return null;
+  const div = document.createElement('div');
+  div.className = 'mat-msg ' + (role === 'ai' ? 'ai' : 'user');
+  const avatar = role === 'ai' ? '✨' : '👤';
+  div.innerHTML = `
+    <div class="mat-msg-avatar ${role === 'ai' ? 'ai' : ''}">${avatar}</div>
+    <div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+  return div;
+}
+
+// Yeni oluştur — paneli sıfırla ve seçenek kartlarını göster
+function matResetMode(mode){
+  const panel = getPanel(mode);
+  if(panel) panel.innerHTML = '';
+  matModeReady[mode] = false;
+  const btn = document.querySelector(`.mat-mode-btn[data-mode="${mode}"]`);
+  if(btn) setMatMode(mode, btn);
 }
 
 
 async function matRunVariant(mode, variant){
-  // Disable all option buttons
-  document.querySelectorAll('.mat-option-btn').forEach(b=>{ b.disabled=true; b.style.opacity='0.5'; });
+  // Sadece aktif paneldeki seçenek butonlarını devre dışı bırak
+  const panel = getPanel(mode);
+  if(panel) panel.querySelectorAll('.mat-option-btn').forEach(b=>{ b.disabled=true; b.style.opacity='0.5'; });
 
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
-  if(!m){ showToast('❌ Bir materyal seçin first.'); return; }
+  if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
 
   // Build prompt
   let promptFn;
@@ -3441,25 +3478,18 @@ async function matRunVariant(mode, variant){
 }
 
 function matAddMsg(role, html){
-  const msgs = document.getElementById('mat-messages');
-  const div = document.createElement('div');
-  div.className = 'mat-msg ' + role;
-  const avatar = role==='ai'?'✨':'👤';
-  div.innerHTML = `
-    <div class="mat-msg-avatar ${role}">${avatar}</div>
-    <div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-  return div;
+  // Aktif modun paneline yaz
+  return matAddMsgToPanel(currentMatMode, role, html);
 }
 
 function matShowTyping(){
-  const msgs = document.getElementById('mat-messages');
+  const panel = getPanel(currentMatMode);
+  if(!panel) return;
   const div = document.createElement('div');
   div.className = 'mat-msg ai'; div.id = 'mat-typing';
   div.innerHTML = `<div class="mat-msg-avatar ai">✨</div><div class="mat-msg-body"><div class="mat-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div></div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
 }
 function matHideTyping(){ const t=document.getElementById('mat-typing'); if(t) t.remove(); }
 
@@ -3590,6 +3620,7 @@ async function matCallAI(userText, opts={}){
     matHideTyping();
     const html = (mode==='flashcard') ? matBuildFlashcards(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
+
     if(mode === 'summary'){
       const saveBar = document.createElement('div');
       saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
@@ -3608,17 +3639,25 @@ async function matCallAI(userText, opts={}){
       saveBar.appendChild(label);
       msgEl.querySelector('.mat-msg-body').appendChild(saveBar);
     }
-    // Mevcut mod içeriğini kaydet — sekme değiştirince geri yüklensin
+
+    // Yeniden Oluştur butonu — tüm AI modlarında (forcePrompt olanlar)
     if(opts.forcePrompt){
+      const resetBar = document.createElement('div');
+      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;';
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'mat-ws-action';
+      resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+      resetBtn.textContent = '↺ Yeniden Oluştur';
+      resetBtn.onclick = () => matResetMode(mode);
+      resetBar.appendChild(resetBtn);
+      const panel = getPanel(mode);
+      if(panel) panel.appendChild(resetBar);
+
       // Supabase'e kaydet
-      if(m._sbId){
-        sbSaveAiOutput(m._sbId, mode, result, { variant: opts.variant || null });
-      }
-      setTimeout(() => {
-        const msgs = document.getElementById('mat-messages');
-        if(msgs) matModeState[mode] = msgs.innerHTML;
-      }, 0);
+      if(m._sbId) sbSaveAiOutput(m._sbId, mode, result, { variant: opts.variant || null });
     }
+
+  }catch(e){
     matHideTyping();
     matAddMsg('ai',`<span style="color:var(--red)">❌ Hata: ${escHtml(e.message)}</span>`);
   }finally{
@@ -3659,23 +3698,24 @@ function matSaveCurrentSummary(btn){
 }
 
 function addClearChatBtn(){
-  const msgs = document.getElementById('mat-messages');
-  if(!msgs || msgs.querySelector('.clear-chat-btn')) return;
+  const panel = getPanel('chat');
+  if(!panel || panel.querySelector('.clear-chat-btn')) return;
   const bar = document.createElement('div');
   bar.style.cssText = 'display:flex;justify-content:flex-end;padding:4px 0 8px;';
   bar.innerHTML = '<button class="clear-chat-btn mat-ws-action" style="font-size:11px;padding:4px 10px;color:var(--muted);" onclick="clearChatHistory()">🗑️ Geçmişi temizle</button>';
-  msgs.prepend(bar);
+  panel.prepend(bar);
 }
 
 async function clearChatHistory(){
   if(!confirm('Sohbet geçmişini silmek istiyor musun?')) return;
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   matChatHistory = [];
-  matModeState.chat = null;
+  matModeReady.chat = false;
   if(m?._sbId) await sbDeleteChatHistory(m._sbId);
-  const msgs = document.getElementById('mat-messages');
-  msgs.innerHTML = '';
-  if(m) matAddMsg('ai', `<strong>Sohbet Modu</strong><br>Geçmiş temizlendi. <em>${escHtml(m.title)}</em> hakkında yeni bir konuşma başlatabilirsin.`);
+  const chatPanel = getPanel('chat');
+  if(chatPanel) chatPanel.innerHTML = '';
+  matModeReady.chat = true;
+  if(m) matAddMsgToPanel('chat', 'ai', `<strong>Sohbet Modu</strong><br>Geçmiş temizlendi. <em>${escHtml(m.title)}</em> hakkında yeni bir konuşma başlatabilirsin.`);
   showToast('🗑️ Sohbet geçmişi silindi.');
 }
 
@@ -3684,12 +3724,9 @@ function matSend(){
   const inp = document.getElementById('mat-input');
   const txt = inp.value.trim();
   if(!txt) return;
-  matAddMsg('user', escHtml(txt));
+  matAddMsgToPanel('chat', 'user', escHtml(txt));
   inp.value = ''; inp.style.height='auto';
   addClearChatBtn();
-  // Chat state'ini güncelle
-  const msgs = document.getElementById('mat-messages');
-  if(msgs) matModeState.chat = msgs.innerHTML;
   matCallAI(txt);
 }
 
