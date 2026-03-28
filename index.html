@@ -3842,7 +3842,7 @@ async function selectMat(idx){
   }
 
   // Önceki AI çıktılarını ve chat geçmişini Supabase'den yükle
-  if(m._sbId) await loadMatHistory(m._sbId);
+  if(m._sbId || m.id) await loadMatHistory(m._sbId || m.id);
 
   // Summary modunu göster (varsayılan)
   const summaryBtn = document.querySelector('.mat-mode-btn[data-mode="summary"]');
@@ -4319,9 +4319,9 @@ async function matCallAI(userText, opts={}){
       matChatHistory.push({role:'user',content:messageContent});
       matChatHistory.push({role:'assistant',content:result});
       // Chat mesajlarını Supabase'e kaydet — userText string olarak
-      if(m._sbId){
-        sbSaveChatMessage(m._sbId, 'user', userText);
-        sbSaveChatMessage(m._sbId, 'assistant', result);
+      if((m._sbId || m.id)){
+        sbSaveChatMessage(m._sbId || m.id, 'user', userText);
+        sbSaveChatMessage(m._sbId || m.id, 'assistant', result);
       }
     }
 
@@ -4362,7 +4362,7 @@ async function matCallAI(userText, opts={}){
       if(panel) panel.appendChild(resetBar);
 
       // Supabase'e kaydet
-      if(m._sbId) sbSaveAiOutput(m._sbId, mode, result, { variant: opts.variant || null });
+      if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, result, { variant: opts.variant || null });
     }
 
   }catch(e){
@@ -4395,7 +4395,7 @@ function matSaveCurrentSummary(btn){
 
   // Supabase ai_outputs'a kaydet
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
-  if(m?._sbId) sbSaveAiOutput(m._sbId, 'summary', html, { title, course });
+  if(m?._sbId || m?.id) sbSaveAiOutput(m._sbId || m.id, 'summary', html, { title, course });
 
   btn.textContent = '✅ Kaydedildi';
   btn.disabled = true;
@@ -4419,7 +4419,7 @@ async function clearChatHistory(){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   matChatHistory = [];
   matModeReady.chat = false;
-  if(m?._sbId) await sbDeleteChatHistory(m._sbId);
+  if(m?._sbId || m?.id) await sbDeleteChatHistory(m._sbId || m.id);
   const chatPanel = getPanel('chat');
   if(chatPanel) chatPanel.innerHTML = '';
   matModeReady.chat = true;
@@ -4443,10 +4443,9 @@ let ragConvId = null;
 let ragConvList = [];
 
 async function setMatModeRag(m){
-  // Sohbet listesini yükle
-  ragConvList = m?._sbId ? await sbLoadRagConversations(m._sbId) : [];
+  const matId = m?._sbId || m?.id;
+  ragConvList = matId ? await sbLoadRagConversations(matId) : [];
   renderRagConvList(m);
-  // İlk sohbet varsa aç, yoksa yeni başlat
   if(ragConvList.length){
     await ragOpenConv(ragConvList[0].id, m);
   } else {
@@ -4527,13 +4526,13 @@ async function ragSend(){
   inp.value = ''; inp.style.height = 'auto';
 
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
-  if(!m?._sbId){ showToast('❌ Materyal bulunamadı.'); return; }
+  if(!m?._sbId && !m?.id){ showToast('❌ Materyal bulunamadı.'); return; }
 
   addRagMsg('user', escHtml(question));
 
   // Yeni sohbetse oluştur
   if(!ragConvId){
-    const conv = await sbCreateRagConversation(m._sbId, '...');
+    const conv = await sbCreateRagConversation(m._sbId || m.id, '...');
     if(!conv){ showToast('❌ Sohbet oluşturulamadı.'); return; }
     ragConvId = conv.id;
     ragConvList.unshift(conv);
@@ -4552,7 +4551,7 @@ async function ragSend(){
   msgs.scrollTop = msgs.scrollHeight;
 
   try{
-    const result = await ragQuery(question, [m._sbId]);
+    const result = await ragQuery(question, [m._sbId || m.id]);
     typing.remove();
 
     const sourceHTML = result.chunks?.length
@@ -4585,14 +4584,14 @@ async function ragSend(){
 
 async function ragManualIndex(){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
-  if(!m?._sbId || !m.fileUrl){ showToast('❌ Dosya bulunamadı.'); return; }
+  if((!m?._sbId && !m?.id) || !m.fileUrl){ showToast('❌ Dosya bulunamadı.'); return; }
 
   addRagMsg('ai', '⏳ İndeksleniyor, lütfen bekle...');
   try{
     const resp = await fetch(m.fileUrl);
     const blob = await resp.blob();
     const file = new File([blob], m.fileName || 'file.pdf', { type: blob.type });
-    const count = await ragIndexMaterial(m._sbId, file);
+    const count = await ragIndexMaterial(m._sbId || m.id, file);
     matModeReady.rag = false;
     ragConvId = null;
     setMatModeRag(m);
