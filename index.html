@@ -3783,9 +3783,16 @@ async function selectMat(idx){
   // Yeni materyal seçilince tüm mod durumlarını sıfırla
   // Yeni materyal — tüm panelleri sıfırla
   Object.keys(matModeReady).forEach(k => matModeReady[k] = false);
-  ['summary','quiz','flashcard','rag','chat'].forEach(m => {
+  ['summary','quiz','flashcard','chat'].forEach(m => {
     const p = getPanel(m); if(p) p.innerHTML = '';
   });
+  // RAG panelinin statik HTML yapısını silme — sadece içeriğini temizle
+  const ragMsgs = document.getElementById('rag-messages');
+  if(ragMsgs) ragMsgs.innerHTML = '';
+  const ragConvListEl = document.getElementById('rag-conv-list');
+  if(ragConvListEl) ragConvListEl.innerHTML = '';
+  ragConvId = null;
+  ragConvList = [];
   matChatHistory = [];
 
   document.querySelectorAll('.mat-list-item').forEach(el=>{
