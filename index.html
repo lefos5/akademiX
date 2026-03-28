@@ -3275,6 +3275,18 @@ async function loadMatHistory(materialId){
       }
 
       matAddMsgToPanel(mode, 'ai', html);
+
+      // Yeniden Oluştur butonu
+      const resetBar = document.createElement('div');
+      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;';
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'mat-ws-action';
+      resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+      resetBtn.textContent = '↺ Yeniden Oluştur';
+      resetBtn.onclick = () => matResetMode(mode);
+      resetBar.appendChild(resetBtn);
+      panel.appendChild(resetBar);
+
       matModeReady[mode] = true;
     });
 
@@ -3291,6 +3303,11 @@ async function loadMatHistory(materialId){
           matAddMsgToPanel('chat', msg.role === 'assistant' ? 'ai' : 'user',
             msg.role === 'assistant' ? matMd(msg.content) : escHtml(msg.content));
         });
+        // Geçmişi temizle butonu
+        const bar = document.createElement('div');
+        bar.style.cssText = 'display:flex;justify-content:flex-end;padding:4px 0 8px;order:-1;';
+        bar.innerHTML = '<button class="clear-chat-btn mat-ws-action" style="font-size:11px;padding:4px 10px;color:var(--muted);" onclick="clearChatHistory()">🗑️ Geçmişi temizle</button>';
+        chatPanel.prepend(bar);
         matModeReady.chat = true;
       }
     }
