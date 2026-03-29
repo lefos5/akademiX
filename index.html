@@ -5291,6 +5291,12 @@ async function saveMaterial(){
     if(!title){ alert('Başlık zorunludur.'); return; }
     if(!currentUserEmail){ alert('Dosya yükleyebilmek için Google hesabınızla giriş yapın.'); return; }
     if(selectedFile.size > 50 * 1024 * 1024){ alert('Dosya 50 MB sınırını aşıyor.'); return; }
+    if(selectedFile.size > 4 * 1024 * 1024){
+      showToast('⚠️ Büyük dosya (' + formatFileSize(selectedFile.size) + ') — yükleme biraz uzun sürebilir...');
+    }
+
+    const saveBtn = document.querySelector('#mat-modal .add-btn');
+    if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = '⏳ Yükleniyor...'; }
 
     try{
       showToast('⏳ Dosya yükleniyor...');
@@ -5303,34 +5309,54 @@ async function saveMaterial(){
       const uploadResp = await fetch(BACKEND_URL + '/api/upload', {
         method: 'POST', headers: { 'x-session-id': sessionId }, body: formData,
       });
-      const uploadResult = await uploadResp.json();
-      if(!uploadResp.ok) throw new Error(uploadResult.error || 'Yükleme başarısız');
+
+      let uploadResult;
+      try{ uploadResult = await uploadResp.json(); }
+      catch(parseErr){ throw new Error('Sunucu yanıtı okunamadı — dosya çok büyük olabilir (Vercel limiti). Daha küçük bir dosya deneyin.'); }
+
+      if(!uploadResp.ok) throw new Error(uploadResult.error || 'Yükleme başarısız (HTTP ' + uploadResp.status + ')');
 
       const { fileUrl, filePath, fileName, fileSize } = uploadResult;
+      if(!fileUrl) throw new Error('Sunucu dosya URL döndürmedi — yükleme tamamlanmamış olabilir.');
+
       const newMat = { title, course, type:'file', fileName, fileSize, fileUrl, filePath, addedAt: new Date().toISOString() };
       const sbId = await sbSaveMaterial(currentUserEmail, { title, course, note:'', type:'file', fileName, fileUrl });
-      if(sbId) newMat._sbId = sbId;
+      if(sbId){
+        newMat._sbId = sbId;
+      } else {
+        console.warn('[saveMaterial] Supabase kaydı başarısız — materyal sadece lokal kaydedildi.');
+      }
 
       materials.push(newMat);
       saveMaterials();
       closeMatModal();
       renderMaterials();
-      showToast('✅ Dosya yüklendi! İndeksleniyor...');
+      showToast('✅ Dosya yüklendi!');
 
       if(sbId && selectedFile.name.toLowerCase().endsWith('.pdf')){
+        showToast('⏳ PDF indeksleniyor...');
         ragIndexMaterial(sbId, selectedFile).then(count => {
           if(count > 0) showToast(`✅ ${count} bölüm indekslendi — kaynak araması aktif!`);
-        }).catch(e => console.warn('[RAG index]', e.message));
+          else showToast('ℹ️ PDF indekslenemedi — metin içeriği yetersiz olabilir.');
+        }).catch(e => {
+          console.warn('[RAG index]', e.message);
+          showToast('⚠️ PDF indeksleme başarısız: ' + e.message);
+        });
       }
     }catch(e){
       console.error('[saveMaterial]', e);
+      showToast('❌ Dosya kaydedilemedi: ' + e.message);
       alert('Dosya kaydedilemedi:\n' + e.message);
+    }finally{
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Kaydet'; }
     }
     return;
   }
 
   // Link ekleme — URL'den tipi otomatik algıla
-  if(!title || !url){ alert('Başlık ve link zorunludur.'); return; }
+  if(!title && !url){ alert('Bir dosya seçin veya link girin.'); return; }
+  if(!title){ alert('Başlık zorunludur.'); return; }
+  if(!url){ alert('Link zorunludur (veya dosya seçin).'); return; }
   if(safeUrl(url) === '#'){ alert('Geçersiz URL.'); return; }
 
   let type = 'web';
@@ -5339,7 +5365,11 @@ async function saveMaterial(){
 
   const newMat2 = { title, url, course, type, addedAt: new Date().toISOString() };
   const sbId2 = await sbSaveMaterial(currentUserEmail, { title, url, course, note:'', type });
-  if(sbId2) newMat2._sbId = sbId2;
+  if(sbId2){
+    newMat2._sbId = sbId2;
+  } else {
+    showToast('⚠️ Sunucuya kaydedilemedi — materyal sadece bu cihazda saklanacak.');
+  }
   materials.push(newMat2);
   saveMaterials();
   closeMatModal();
