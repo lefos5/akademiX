@@ -746,6 +746,18 @@
     color: var(--text2);
   }
 
+  /* SVG Diagram Container */
+  .md-svg-container {
+    margin: 14px 0; padding: 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; text-align: center;
+    overflow-x: auto;
+  }
+  .md-svg-container svg {
+    max-width: 100%; height: auto;
+    display: inline-block;
+  }
+
   /* ── Quiz Card Styles ── */
   .quiz-container { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
   .quiz-card {
@@ -4046,18 +4058,18 @@ let matFileData = null;
 
 const MAT_PROMPTS = {
   summary: {
-    short: (t) => `Bu materyali analiz et ve Türkçe kısa bir özet yaz. Maksimum 3 paragraf. Sadece ana noktaları kapsa. Markdown formatı kullan (## başlıklar, **kalın**, - listeler).\n\nMateryal: ${t}`,
-    detailed: (t) => `Bu materyali kapsamlı şekilde Türkçe analiz et. Markdown formatı kullan. Şu bölümleri dahil et:\n\n## 📌 Genel Bakış\nMateryalin neyi kapsadığını kısaca özetle.\n\n## 🎯 Ana Konular\nHer bir ana konuyu madde madde listele ve açıkla.\n\n## 📖 Temel Kavramlar ve Tanımlar\nÖnemli terimleri ve tanımlarını listele. Her birini **kalın** yap.\n\n## ⚡ Kritik Detaylar\nSınavda sorulabilecek spesifik bilgileri vurgula.\n\n## 🔗 Konular Arası Bağlantılar\nKonuların birbirleriyle nasıl ilişkili olduğunu açıkla.\n\n## 📝 Olası Sınav Konuları\nBu materyalden çıkabilecek soru tiplerini tahmin et.\n\n## 💡 Pratik Örnekler\nAnlamayı kolaylaştıracak örnekler ver.\n\nKapsamlı ol. Materyal: ${t}`,
-    paged: (t) => `Bu materyali sayfa sayfa Türkçe analiz et. Markdown formatı kullan.\n\nHer sayfa için şu formatı kullan:\n## 📄 Sayfa [numara]\nO sayfanın kısa ama bilgilendirici özetini yaz. Önemli kavramları **kalın** yap.\n\nMateryal: ${t}`,
+    short: (t) => `Bu materyali analiz et ve Türkçe kısa bir özet yaz. Maksimum 3 paragraf. Ana noktaları kapsa. Önemli terimleri **kalın** yap. Markdown formatı kullan.\n\nMateryal: ${t}`,
+    detailed: (t) => `Bu materyali kapsamlı şekilde Türkçe analiz et. Markdown formatını zengin kullan. Mümkünse konuyu görselleştiren bir SVG diagram da çiz (akış şeması, kavram haritası vb.).\n\nŞu bölümleri MUTLAKA dahil et ve her birini detaylı yaz:\n\n## 📌 Genel Bakış\nMateryalin neyi kapsadığını 2-3 cümleyle özetle.\n\n## 🎯 Ana Konular\nHer ana konuyu ayrı madde olarak listele. Her maddeyi en az 2-3 cümleyle açıkla. Yüzeysel geçme.\n\n## 📖 Temel Kavramlar ve Tanımlar\nTüm önemli terimleri ve tanımlarını listele. Her terimi **kalın** yap ve yanına açıklamasını yaz.\n\n## ⚡ Kritik Detaylar\nSınavda sorulabilecek spesifik formüller, tarihler, isimler, kurallar gibi ezber gerektiren bilgileri vurgula.\n\n## 🔗 Konular Arası Bağlantılar\nKonuların birbirleriyle nasıl ilişkili olduğunu açıkla.\n\n## 📝 Olası Sınav Konuları\nBu materyalden çıkabilecek soru tiplerini ve konuları tahmin et.\n\n## 💡 Örnekler ve Uygulamalar\nHer ana konu için en az bir somut örnek ver. Anlamayı kolaylaştıracak analojiler kullan.\n\nMateryal: ${t}`,
+    paged: (t) => `Bu materyali sayfa sayfa Türkçe analiz et.\n\nÇOK ÖNEMLİ KURALLAR:\n- Materyaldeki HER SAYFA için ayrı bir bölüm yaz. HİÇBİR SAYFAYI ATLAMA.\n- Her sayfayı en az 3-4 cümleyle özetle. Tek cümlelik özetler YASAK.\n- Önemli kavramları **kalın** yap.\n- Sayfa numaralarını doğru kullan.\n- "Benzer içerik devam ediyor" gibi atlamalar YAPMA.\n- Her sayfanın gerçek içeriğini analiz et.\n\nHer sayfa için bu formatı kullan:\n\n## 📄 Sayfa [numara]\n[O sayfanın detaylı özeti — en az 3-4 cümle, önemli terimler **kalın**]\n\nMateryal: ${t}`,
   },
   quiz: {
-    easy_mc: (t) => `Bu materyalden Türkçe 10 kolay çoktan seçmeli soru oluştur.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [kısa açıklama]\n\n---\n\nMateryal: ${t}`,
-    hard_mc: (t) => `Bu materyalden Türkçe 10 ZOR ve düşündürücü çoktan seçmeli soru oluştur. Sorular analiz, karşılaştırma ve uygulama gerektirsin.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [kısa açıklama]\n\n---\n\nMateryal: ${t}`,
-    open: (t) => `Bu materyalden Türkçe 8 açık uçlu sınav sorusu oluştur. Basit → zor sırasıyla. Her soru için bu formatı kullan:\n\nSOUR: [soru metni]\nMODEL_CEVAP: [kapsamlı model cevap]\n\n---\n\nMateryal: ${t}`,
-    mixed: (t) => `Bu materyalden Türkçe karışık bir sınav oluştur: 5 çoktan seçmeli, 3 doğru/yanlış, 3 açık uçlu soru.\n\nÇoktan seçmeli format:\nSOUR: [soru]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [harf]\nAÇIKLAMA: [açıklama]\n\n---\n\nDoğru/Yanlış format:\nSOUR: [ifade]\nCEVAP: Doğru/Yanlış\nAÇIKLAMA: [açıklama]\n\n---\n\nAçık uçlu format:\nSOUR: [soru]\nMODEL_CEVAP: [cevap]\n\n---\n\nMateryal: ${t}`,
+    easy_mc: (t) => `Bu materyalden Türkçe 10 kolay çoktan seçmeli soru oluştur. Sorular materyalin farklı bölümlerinden olsun.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [neden bu cevap doğru, kısa açıklama]\n\n---\n\nMateryal: ${t}`,
+    hard_mc: (t) => `Bu materyalden Türkçe 10 ZOR ve düşündürücü çoktan seçmeli soru oluştur. Sorular analiz, karşılaştırma, uygulama ve değerlendirme gerektirsin. Şıklar birbirine yakın ve yanıltıcı olsun.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [detaylı açıklama — neden diğer şıklar yanlış]\n\n---\n\nMateryal: ${t}`,
+    open: (t) => `Bu materyalden Türkçe 8 açık uçlu sınav sorusu oluştur. Kolay → orta → zor sırasıyla. Her sorunun model cevabı kapsamlı olsun (en az 3-4 cümle).\n\nHer soru için bu formatı kullan:\n\nSOUR: [soru metni]\nMODEL_CEVAP: [kapsamlı model cevap — en az 3-4 cümle]\n\n---\n\nMateryal: ${t}`,
+    mixed: (t) => `Bu materyalden Türkçe karışık bir sınav oluştur: 5 çoktan seçmeli, 3 doğru/yanlış, 3 açık uçlu soru.\n\nÇoktan seçmeli format:\nSOUR: [soru]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [harf]\nAÇIKLAMA: [açıklama]\n\n---\n\nDoğru/Yanlış format:\nSOUR: [ifade]\nCEVAP: Doğru/Yanlış\nAÇIKLAMA: [açıklama]\n\n---\n\nAçık uçlu format:\nSOUR: [soru]\nMODEL_CEVAP: [kapsamlı cevap]\n\n---\n\nMateryal: ${t}`,
   },
-  flashcard: (t) => `Bu materyalden Türkçe flashcard'lar oluştur. Her kart için bu formatı AYNEN kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım]\n\nEn kritik noktaları kapsayan en az 12 kart oluştur.\n\nMateryal: ${t}`,
-  chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatı kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
+  flashcard: (t) => `Bu materyalden Türkçe flashcard'lar oluştur. Her kart için bu formatı AYNEN kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım — kısa ve öz ama yeterli]\n\nEn kritik noktaları kapsayan en az 15 kart oluştur. Tüm önemli kavramları, tanımları, formülleri ve kuralları dahil et.\n\nMateryal: ${t}`,
+  chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
 };
 
 function renderMaterials(){
@@ -4566,12 +4578,27 @@ function matHideTyping(){ const t=document.getElementById('mat-typing'); if(t) t
 function matMd(text){
   if(!text) return '';
   let s = escHtml(text);
+
+  // SVG blokları — escape edilmiş SVG'yi geri çöz ve güvenli render et
+  s = s.replace(/```svg\n([\s\S]*?)```/g, (_, svgEscaped) => {
+    // Sadece SVG etiketlerini geri çöz, script/event handler'ları temizle
+    let svg = svgEscaped
+      .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
+      .replace(/&quot;/g,'"').replace(/&#039;/g,"'");
+    // Güvenlik: on* event handler'ları ve script etiketlerini kaldır
+    svg = svg.replace(/\bon\w+\s*=/gi, 'data-blocked=');
+    svg = svg.replace(/<script[\s\S]*?<\/script>/gi, '');
+    // SVG'yi validate et — açılış etiketi var mı?
+    if(!/<svg[\s>]/i.test(svg)) return `<div class="md-code-block"><div class="md-code-lang">svg</div><pre><code>${svgEscaped}</code></pre></div>`;
+    return `<div class="md-svg-container">${svg}</div>`;
+  });
+
   // Kod blokları (```)
   s = s.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
     `<div class="md-code-block"><div class="md-code-lang">${lang||'code'}</div><pre><code>${code.trim()}</code></pre></div>`);
   // Inline kod
   s = s.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
-  // Başlıklar (### → h4, ## → h3)
+  // Başlıklar
   s = s.replace(/^### (.+)/gm, '<h4 class="md-h4">$1</h4>');
   s = s.replace(/^## (.+)/gm, '<h3 class="md-h3">$1</h3>');
   // Bold + italic
@@ -4767,14 +4794,14 @@ async function prepareFileForClaude(f){
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
       let fullText = '';
-      const maxPages = Math.min(pdf.numPages, 30);
+      const maxPages = Math.min(pdf.numPages, 50);
       for(let i = 1; i <= maxPages; i++){
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         fullText += `[Sayfa ${i}]\n${textContent.items.map(item => item.str).join(' ')}\n\n`;
       }
-      if(pdf.numPages > 30) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 30 sayfa analiz edildi]`;
-      return { type: 'text', content: fullText.substring(0, 12000) };
+      if(pdf.numPages > 50) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 50 sayfa analiz edildi]`;
+      return { type: 'text', content: fullText.substring(0, 30000), pageCount: pdf.numPages };
     } catch(e) {
       return { type: 'pdf', base64, mediaType: 'application/pdf' };
     }
@@ -4803,9 +4830,27 @@ async function matCallAI(userText, opts={}){
   const m = currentMatIdx!==null ? materials[currentMatIdx] : null;
   if(!m){ showToast('❌ Önce bir materyal seç.'); return; }
 
-  // opts.forcePrompt = true means userText IS the full prompt (from option button)
-  const prompt = opts.forcePrompt ? userText : (MAT_PROMPTS.chat(m.title) + '\n\nQuestion: ' + userText);
+  const prompt = opts.forcePrompt ? userText : (MAT_PROMPTS.chat(m.title) + '\n\nSoru: ' + userText);
   const mode = opts.mode || currentMatMode;
+
+  // Mode'a göre max_tokens ayarla
+  const tokenLimits = { summary: 8000, quiz: 8000, flashcard: 6000, chat: 4000, rag: 4000 };
+  const maxTokens = tokenLimits[mode] || 4000;
+
+  // System prompt — AI'ın kalitesini artır
+  const systemPrompt = `Sen AkademiX platformunda çalışan uzman bir akademik asistansın. Görevin üniversite öğrencilerine materyallerini anlamalarında yardımcı olmak.
+
+Kuralların:
+- Her zaman Türkçe cevap ver.
+- Markdown formatını zengin şekilde kullan: ## başlıklar, **kalın** önemli terimler, *italik* vurgular, - ve 1. listeler, \`kod\`, > alıntılar.
+- Cevapların kapsamlı, detaylı ve eğitici olsun. Yüzeysel cevaplar verme.
+- Kavramları açıklarken örnekler ve analojiler kullan.
+- Gerektiğinde konuyu görselleştirmek için SVG diagram çiz. SVG'yi şu formatta ver:
+  \`\`\`svg
+  <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">...</svg>
+  \`\`\`
+  Diagram çizerken: akış şemaları, kavram haritaları, karşılaştırma tabloları, zaman çizelgeleri gibi akademik görseller oluştur. Renkleri kullan: #3b82f6 (mavi), #2dd4bf (teal), #f87171 (kırmızı), #fbbf24 (sarı), #34d399 (yeşil).
+- Sayfa sayfa özet yapıyorsan HER sayfayı atlamadan özetle. Hiçbir sayfayı "benzer içerik" diye geçme.`;
 
   const _sb=document.getElementById('mat-send-btn'); if(_sb) _sb.disabled=true;
   matShowTyping();
@@ -4837,7 +4882,7 @@ async function matCallAI(userText, opts={}){
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-session-id': sessionId},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:msgs})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,system:systemPrompt,messages:msgs})
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
