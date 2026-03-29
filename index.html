@@ -681,6 +681,162 @@
   .mat-msg-bubble strong { color: var(--text); }
   .mat-msg-bubble br + br { display: none; }
 
+  /* ── Rich Markdown Styles ── */
+  .md-h3 {
+    font-size: 14px !important; font-weight: 700 !important;
+    color: var(--accent2) !important; text-transform: none !important;
+    letter-spacing: 0 !important; margin: 18px 0 8px !important;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .md-h3:first-child { margin-top: 4px !important; }
+  .md-h4 {
+    font-size: 13px; font-weight: 700;
+    color: var(--text); margin: 14px 0 6px;
+  }
+  .md-em { color: var(--accent2); font-style: italic; }
+  .md-ul, .md-ol {
+    padding-left: 20px; margin: 8px 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .md-ul li { list-style-type: none; position: relative; padding-left: 14px; }
+  .md-ul li::before {
+    content: ''; position: absolute; left: 0; top: 8px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent2);
+  }
+  .md-ol { list-style: none; counter-reset: md-counter; }
+  .md-ol-item { counter-increment: md-counter; position: relative; padding-left: 28px; }
+  .md-ol-item::before {
+    content: attr(value); position: absolute; left: 0; top: 0;
+    width: 20px; height: 20px; border-radius: 6px;
+    background: var(--accent-glow); border: 1px solid rgba(59,130,246,0.2);
+    color: var(--accent2); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .md-code-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; margin: 10px 0; overflow: hidden;
+  }
+  .md-code-lang {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 6px 12px; border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .md-code-block pre {
+    margin: 0; padding: 12px; overflow-x: auto;
+    font-size: 12px; line-height: 1.6;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    color: var(--text2);
+  }
+  .md-inline-code {
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 5px; font-size: 12px;
+    font-family: 'Fira Code', monospace; color: var(--accent2);
+  }
+  .md-hr {
+    border: none; height: 1px; background: var(--border);
+    margin: 16px 0;
+  }
+  .md-quote {
+    border-left: 3px solid var(--accent); padding: 8px 14px;
+    margin: 10px 0; background: var(--accent-glow);
+    border-radius: 0 8px 8px 0; font-style: italic;
+    color: var(--text2);
+  }
+
+  /* ── Quiz Card Styles ── */
+  .quiz-container { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
+  .quiz-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden; transition: all 0.2s;
+  }
+  .quiz-card:hover { border-color: var(--border2); }
+  .quiz-card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; cursor: pointer; user-select: none;
+  }
+  .quiz-card-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; flex-shrink: 0;
+    font-family: 'Outfit', sans-serif;
+  }
+  .quiz-card-num.mc { background: rgba(59,130,246,0.15); color: var(--accent2); }
+  .quiz-card-num.tf { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .quiz-card-num.open { background: rgba(167,139,250,0.15); color: var(--blue); }
+  .quiz-card-question {
+    flex: 1; font-size: 13px; font-weight: 600;
+    color: var(--text); line-height: 1.5;
+  }
+  .quiz-card-toggle {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--surface3); border: none;
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; transition: all 0.2s; flex-shrink: 0;
+  }
+  .quiz-card.open .quiz-card-toggle { transform: rotate(180deg); color: var(--accent2); }
+  .quiz-options {
+    padding: 0 16px 4px 54px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .quiz-option {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 8px; font-size: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text2); transition: all 0.15s; cursor: pointer;
+  }
+  .quiz-option:hover { border-color: var(--accent); }
+  .quiz-option.correct {
+    background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.4);
+    color: var(--green);
+  }
+  .quiz-option-letter {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .quiz-option.correct .quiz-option-letter {
+    background: var(--green); color: #fff; border-color: var(--green);
+  }
+  .quiz-card-answer {
+    display: none; padding: 12px 16px 14px 54px;
+    border-top: 1px solid var(--border);
+    background: rgba(52,211,153,0.04);
+  }
+  .quiz-card.open .quiz-card-answer { display: block; }
+  .quiz-answer-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--green); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .quiz-answer-text { font-size: 12px; line-height: 1.7; color: var(--text2); }
+
+  /* ── Summary Page Thumbnails ── */
+  .summary-page-section {
+    display: flex; gap: 16px; margin: 14px 0;
+    padding: 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  .summary-page-thumb {
+    width: 80px; height: 110px; flex-shrink: 0;
+    border-radius: 6px; border: 1px solid var(--border);
+    background: #fff; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .summary-page-thumb canvas {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .summary-page-content { flex: 1; min-width: 0; }
+  .summary-page-label {
+    font-size: 10px; font-weight: 700; color: var(--accent2);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+  }
+  .summary-page-text { font-size: 12px; line-height: 1.7; color: var(--text2); }
+
   /* Typing indicator */
   .mat-typing {
     display: flex; gap: 5px; align-items: center; padding: 4px 2px;
@@ -3872,18 +4028,18 @@ let matFileData = null;
 
 const MAT_PROMPTS = {
   summary: {
-    short: (t) => `Analyze this material and write a concise summary in Turkish. Max 3 paragraphs. Cover the key points only.\n\nMaterial: ${t}`,
-    detailed: (t) => `Analyze this material thoroughly in Turkish. Include:\n\n## 📌 Overview\n## 🎯 Main Topics\n## 📖 Key Concepts & Definitions\n## ⚡ Important Details\n## 🔗 Connections Between Topics\n## 📝 Likely Exam Topics\n## 💡 Practical Examples\n\nBe thorough. Material: ${t}`,
-    paged: (t) => `Analyze this material page by page in Turkish. For each section/page write a short summary of what it covers. Material: ${t}`,
+    short: (t) => `Bu materyali analiz et ve Türkçe kısa bir özet yaz. Maksimum 3 paragraf. Sadece ana noktaları kapsa. Markdown formatı kullan (## başlıklar, **kalın**, - listeler).\n\nMateryal: ${t}`,
+    detailed: (t) => `Bu materyali kapsamlı şekilde Türkçe analiz et. Markdown formatı kullan. Şu bölümleri dahil et:\n\n## 📌 Genel Bakış\nMateryalin neyi kapsadığını kısaca özetle.\n\n## 🎯 Ana Konular\nHer bir ana konuyu madde madde listele ve açıkla.\n\n## 📖 Temel Kavramlar ve Tanımlar\nÖnemli terimleri ve tanımlarını listele. Her birini **kalın** yap.\n\n## ⚡ Kritik Detaylar\nSınavda sorulabilecek spesifik bilgileri vurgula.\n\n## 🔗 Konular Arası Bağlantılar\nKonuların birbirleriyle nasıl ilişkili olduğunu açıkla.\n\n## 📝 Olası Sınav Konuları\nBu materyalden çıkabilecek soru tiplerini tahmin et.\n\n## 💡 Pratik Örnekler\nAnlamayı kolaylaştıracak örnekler ver.\n\nKapsamlı ol. Materyal: ${t}`,
+    paged: (t) => `Bu materyali sayfa sayfa Türkçe analiz et. Markdown formatı kullan.\n\nHer sayfa için şu formatı kullan:\n## 📄 Sayfa [numara]\nO sayfanın kısa ama bilgilendirici özetini yaz. Önemli kavramları **kalın** yap.\n\nMateryal: ${t}`,
   },
   quiz: {
-    easy_mc: (t) => `Create 10 easy multiple-choice questions (4 options each) from this material in Turkish. Show the correct answer and brief explanation after each question.\n\nMaterial: ${t}`,
-    hard_mc: (t) => `Create 10 challenging multiple-choice questions (4 options each) from this material in Turkish. Show the correct answer and brief explanation after each question.\n\nMaterial: ${t}`,
-    open: (t) => `Create 8 open-ended exam questions from this material in Turkish, ranging from simple to complex. Include model answers.\n\nMaterial: ${t}`,
-    mixed: (t) => `Create a mixed exam from this material in Turkish: 5 multiple-choice, 3 true/false, 3 open-ended questions. Include answers for all.\n\nMaterial: ${t}`,
+    easy_mc: (t) => `Bu materyalden Türkçe 10 kolay çoktan seçmeli soru oluştur.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [kısa açıklama]\n\n---\n\nMateryal: ${t}`,
+    hard_mc: (t) => `Bu materyalden Türkçe 10 ZOR ve düşündürücü çoktan seçmeli soru oluştur. Sorular analiz, karşılaştırma ve uygulama gerektirsin.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [kısa açıklama]\n\n---\n\nMateryal: ${t}`,
+    open: (t) => `Bu materyalden Türkçe 8 açık uçlu sınav sorusu oluştur. Basit → zor sırasıyla. Her soru için bu formatı kullan:\n\nSOUR: [soru metni]\nMODEL_CEVAP: [kapsamlı model cevap]\n\n---\n\nMateryal: ${t}`,
+    mixed: (t) => `Bu materyalden Türkçe karışık bir sınav oluştur: 5 çoktan seçmeli, 3 doğru/yanlış, 3 açık uçlu soru.\n\nÇoktan seçmeli format:\nSOUR: [soru]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [harf]\nAÇIKLAMA: [açıklama]\n\n---\n\nDoğru/Yanlış format:\nSOUR: [ifade]\nCEVAP: Doğru/Yanlış\nAÇIKLAMA: [açıklama]\n\n---\n\nAçık uçlu format:\nSOUR: [soru]\nMODEL_CEVAP: [cevap]\n\n---\n\nMateryal: ${t}`,
   },
-  flashcard: (t) => `Create flashcards from this material in Turkish. Use this exact format for each:\nQ: [question or concept]\nA: [answer or definition]\n\nCreate at least 12 cards covering the most critical points.\n\nMaterial: ${t}`,
-  chat: (t) => `You are a knowledgeable teacher for this material. Answer the student's questions in Turkish based on the material. Consider previous messages for context.\n\nMaterial: ${t}`,
+  flashcard: (t) => `Bu materyalden Türkçe flashcard'lar oluştur. Her kart için bu formatı AYNEN kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım]\n\nEn kritik noktaları kapsayan en az 12 kart oluştur.\n\nMateryal: ${t}`,
+  chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatı kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
 };
 
 function renderMaterials(){
@@ -4032,6 +4188,8 @@ async function loadMatHistory(materialId){
       const latest = list[0];
       const html = mode === 'flashcard'
         ? matBuildFlashcards(latest.content)
+        : mode === 'quiz'
+        ? matBuildQuiz(latest.content)
         : matMd(latest.content);
 
       const panel = getPanel(mode);
@@ -4260,6 +4418,86 @@ function matResetMode(mode){
   if(btn) setMatMode(mode, btn);
 }
 
+// ── PDF Sayfa Thumbnail Render ──
+async function renderPdfPageThumbnail(pageNum, container){
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(!m || m.type !== 'file' || !(m.fileName||'').toLowerCase().endsWith('.pdf')) return;
+  const fileUrl = m.fileUrl || m.url;
+  if(!fileUrl) return;
+
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    // Cache pdf document
+    if(!window._pdfThumbCache) window._pdfThumbCache = {};
+    let pdf = window._pdfThumbCache[fileUrl];
+    if(!pdf){
+      const resp = await fetch(fileUrl);
+      const buf = await resp.arrayBuffer();
+      pdf = await pdfjsLib.getDocument({data: buf}).promise;
+      window._pdfThumbCache[fileUrl] = pdf;
+    }
+    if(pageNum > pdf.numPages) return;
+    const page = await pdf.getPage(pageNum);
+    const vp = page.getViewport({scale: 0.4});
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width;
+    canvas.height = vp.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({canvasContext: ctx, viewport: vp}).promise;
+    container.appendChild(canvas);
+  }catch(e){ console.warn('[PDF Thumb] Sayfa', pageNum, 'render hatası:', e.message); }
+}
+
+// Sayfa sayfa özet sonrası thumbnail'ları ekle
+function attachPageThumbnails(panelEl){
+  if(!panelEl) return;
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(!m || m.type !== 'file' || !(m.fileName||'').toLowerCase().endsWith('.pdf')) return;
+
+  // "Sayfa X" başlıklarını bul ve thumbnail ekle
+  const h3s = panelEl.querySelectorAll('.md-h3, h3');
+  h3s.forEach(h3 => {
+    const match = h3.textContent.match(/Sayfa\s+(\d+)/i);
+    if(!match) return;
+    const pageNum = parseInt(match[1]);
+    // Zaten thumbnail eklenmişse geç
+    if(h3.nextElementSibling && h3.nextElementSibling.classList.contains('summary-page-section')) return;
+
+    // Başlıktan sonraki metin içeriğini al
+    let contentText = '';
+    let sibling = h3.nextSibling;
+    while(sibling && !(sibling.nodeType === 1 && (sibling.tagName === 'H3' || sibling.classList?.contains('md-h3')))){
+      if(sibling.nodeType === 1) contentText += sibling.outerHTML;
+      else if(sibling.nodeType === 3) contentText += sibling.textContent;
+      sibling = sibling.nextSibling;
+    }
+
+    // Section oluştur
+    const section = document.createElement('div');
+    section.className = 'summary-page-section';
+    const thumbDiv = document.createElement('div');
+    thumbDiv.className = 'summary-page-thumb';
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'summary-page-content';
+    contentDiv.innerHTML = `<div class="summary-page-label">📄 Sayfa ${pageNum}</div><div class="summary-page-text">${contentText}</div>`;
+    section.appendChild(thumbDiv);
+    section.appendChild(contentDiv);
+
+    // Başlığı ve sonraki içeriği section ile değiştir
+    let toRemove = [];
+    sibling = h3.nextSibling;
+    while(sibling && !(sibling.nodeType === 1 && (sibling.tagName === 'H3' || sibling.classList?.contains('md-h3')))){
+      toRemove.push(sibling);
+      sibling = sibling.nextSibling;
+    }
+    toRemove.forEach(n => n.remove());
+    h3.replaceWith(section);
+
+    // Thumbnail'ı async render et
+    renderPdfPageThumbnail(pageNum, thumbDiv);
+  });
+}
+
 
 async function matRunVariant(mode, variant){
   // Sadece aktif paneldeki seçenek butonlarını devre dışı bırak
@@ -4297,15 +4535,34 @@ function matHideTyping(){ const t=document.getElementById('mat-typing'); if(t) t
 
 function matMd(text){
   if(!text) return '';
-  // Önce tüm HTML'i escape et
   let s = escHtml(text);
-  // Markdown dönüşümlerini escape edilmiş metin üzerinde uygula
-  s = s.replace(/## (.+)/g,'<h3>$1</h3>');
-  s = s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  s = s.replace(/^- (.+)/gm,'<li>$1</li>');
-  s = s.replace(/((?:<li>.*?<\/li>\s*)+)/g, '<ul>$1</ul>');
-  s = s.replace(/\n{2,}/g,'<br><br>');
-  s = s.replace(/\n/g,'<br>');
+  // Kod blokları (```)
+  s = s.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
+    `<div class="md-code-block"><div class="md-code-lang">${lang||'code'}</div><pre><code>${code.trim()}</code></pre></div>`);
+  // Inline kod
+  s = s.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+  // Başlıklar (### → h4, ## → h3)
+  s = s.replace(/^### (.+)/gm, '<h4 class="md-h4">$1</h4>');
+  s = s.replace(/^## (.+)/gm, '<h3 class="md-h3">$1</h3>');
+  // Bold + italic
+  s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*(.+?)\*/g, '<em class="md-em">$1</em>');
+  // Numaralı listeler
+  s = s.replace(/^(\d+)\. (.+)/gm, '<li class="md-ol-item" value="$1">$2</li>');
+  s = s.replace(/((?:<li class="md-ol-item"[^>]*>.*?<\/li>\s*)+)/g, '<ol class="md-ol">$1</ol>');
+  // Madde işaretli listeler
+  s = s.replace(/^- (.+)/gm, '<li>$1</li>');
+  s = s.replace(/((?:<li>.*?<\/li>\s*)+)/g, '<ul class="md-ul">$1</ul>');
+  // Yatay çizgi
+  s = s.replace(/^---$/gm, '<hr class="md-hr">');
+  // Blockquote
+  s = s.replace(/^&gt; (.+)/gm, '<blockquote class="md-quote">$1</blockquote>');
+  // Satır sonları
+  s = s.replace(/\n{2,}/g, '<br><br>');
+  s = s.replace(/\n/g, '<br>');
+  // İç içe ul/ol temizliği
+  s = s.replace(/<br><\/?(ul|ol)/g, '</$1');
   return s;
 }
 
@@ -4325,6 +4582,83 @@ function matBuildFlashcards(text){
       <div class="fc-divider"></div>
       <div class="fc-a">${escHtml(p.a)}</div>
     </div>`).join('')}</div>`;
+}
+
+function matBuildQuiz(text){
+  // Yapılandırılmış sınav formatını parse et
+  const blocks = text.split(/\n---\n|\n-{3,}\n/).filter(b => b.trim());
+  const questions = [];
+
+  blocks.forEach(block => {
+    const lines = block.trim().split('\n');
+    let q = { question:'', options:[], answer:'', explanation:'', modelAnswer:'', type:'open' };
+
+    for(const line of lines){
+      const l = line.trim();
+      if(/^SOUR:\s*/i.test(l)) q.question = l.replace(/^SOUR:\s*/i,'');
+      else if(/^[A-D]\)\s*/i.test(l)){
+        q.options.push(l);
+        q.type = 'mc';
+      }
+      else if(/^CEVAP:\s*/i.test(l)){
+        const ans = l.replace(/^CEVAP:\s*/i,'').trim();
+        q.answer = ans;
+        if(/^(Doğru|Yanlış)$/i.test(ans)) q.type = 'tf';
+      }
+      else if(/^AÇIKLAMA:\s*/i.test(l)) q.explanation = l.replace(/^AÇIKLAMA:\s*/i,'');
+      else if(/^MODEL_CEVAP:\s*/i.test(l)) q.modelAnswer = l.replace(/^MODEL_CEVAP:\s*/i,'');
+      else if(q.modelAnswer) q.modelAnswer += '\n' + l; // çok satırlı model cevap
+    }
+    if(q.question) questions.push(q);
+  });
+
+  // Parse başarısız olduysa fallback
+  if(!questions.length) return matMd(text);
+
+  let html = '<div class="quiz-container">';
+  questions.forEach((q, i) => {
+    const numClass = q.type === 'mc' ? 'mc' : q.type === 'tf' ? 'tf' : 'open';
+    const typeLabel = q.type === 'mc' ? 'Çoktan Seçmeli' : q.type === 'tf' ? 'Doğru/Yanlış' : 'Açık Uçlu';
+    const correctLetter = q.answer.trim().charAt(0).toUpperCase();
+
+    html += `<div class="quiz-card" onclick="this.classList.toggle('open')">
+      <div class="quiz-card-header">
+        <div class="quiz-card-num ${numClass}">${i+1}</div>
+        <div class="quiz-card-question">${escHtml(q.question)}</div>
+        <div class="quiz-card-toggle">▼</div>
+      </div>`;
+
+    // Seçenekler
+    if(q.options.length){
+      html += '<div class="quiz-options">';
+      q.options.forEach(opt => {
+        const letter = opt.charAt(0).toUpperCase();
+        const text = opt.replace(/^[A-D]\)\s*/i,'');
+        const isCorrect = letter === correctLetter;
+        html += `<div class="quiz-option ${isCorrect ? 'correct' : ''}">
+          <div class="quiz-option-letter">${escHtml(letter)}</div>
+          <span>${escHtml(text)}</span>
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    // Cevap alanı
+    html += '<div class="quiz-card-answer">';
+    if(q.type === 'tf'){
+      html += `<div class="quiz-answer-label">✅ Cevap</div>
+        <div class="quiz-answer-text"><strong>${escHtml(q.answer)}</strong></div>`;
+    } else if(q.type === 'mc'){
+      html += `<div class="quiz-answer-label">✅ Doğru Cevap: ${escHtml(q.answer)}</div>`;
+    } else {
+      html += '<div class="quiz-answer-label">📝 Model Cevap</div>';
+    }
+    if(q.explanation) html += `<div class="quiz-answer-text">${escHtml(q.explanation)}</div>`;
+    if(q.modelAnswer) html += `<div class="quiz-answer-text">${matMd(q.modelAnswer.trim())}</div>`;
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
 }
 
 // ═══════════════════════════════════════
@@ -4490,7 +4824,7 @@ async function matCallAI(userText, opts={}){
     }
 
     matHideTyping();
-    const html = (mode==='flashcard') ? matBuildFlashcards(result) : matMd(result);
+    const html = (mode==='flashcard') ? matBuildFlashcards(result) : (mode==='quiz') ? matBuildQuiz(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
 
     if(mode === 'summary'){
@@ -4530,6 +4864,12 @@ async function matCallAI(userText, opts={}){
 
       // Panel dolu olarak işaretle — sekme değiştirince kaybolmasın
       matModeReady[mode] = true;
+
+      // Sayfa sayfa özet ise PDF thumbnail'ları ekle
+      if(mode === 'summary' && opts.variant === 'paged'){
+        const panel = getPanel('summary');
+        if(panel) setTimeout(() => attachPageThumbnails(panel.querySelector('.mat-msg-bubble')), 100);
+      }
     }
 
   }catch(e){
