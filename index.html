@@ -737,28 +737,68 @@
 
   /* ── RAG sidebar ── */
   .rag-sidebar {
-    width:180px; flex-shrink:0;
+    width:190px; flex-shrink:0;
     border-right:1px solid var(--border);
     display:flex; flex-direction:column;
     background:var(--surface);
   }
   .rag-sidebar-top {
     display:flex; align-items:center; justify-content:space-between;
-    padding:10px 12px 8px; border-bottom:1px solid var(--border);
+    padding:12px 14px 10px; border-bottom:1px solid var(--border);
   }
   #rag-conv-list { flex:1; overflow-y:auto; padding:6px; }
   .rag-conv-item {
-    padding:7px 8px; border-radius:7px; cursor:pointer;
+    padding:8px 10px; border-radius:8px; cursor:pointer;
     transition:background 0.12s; margin-bottom:2px;
     display:flex; align-items:center; gap:6px;
   }
   .rag-conv-item:hover { background:var(--surface2); }
-  .rag-conv-item.active { background:var(--accent-glow); }
-  .rag-conv-item-title { font-size:11px; font-weight:500; color:var(--text2); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .rag-conv-del { opacity:0; font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; padding:1px 3px; flex-shrink:0; }
+  .rag-conv-item.active { background:var(--accent-glow); border-left:3px solid var(--accent); padding-left:7px; }
+  .rag-conv-item-title { font-size:12px; font-weight:500; color:var(--text2); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rag-conv-del { opacity:0; font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; padding:1px 3px; flex-shrink:0; border-radius:4px; }
   .rag-conv-item:hover .rag-conv-del { opacity:1; }
+  .rag-conv-del:hover { color:var(--red); background:rgba(248,113,113,0.1); }
   .rag-main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
-  #rag-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  #rag-messages { flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:16px; }
+
+  /* RAG mesaj baloncukları */
+  .rag-msg { display:flex; flex-direction:column; gap:4px; }
+  .rag-msg.user { align-items:flex-end; }
+  .rag-msg.ai { align-items:flex-start; }
+  .rag-msg-bubble {
+    max-width:85%; padding:10px 14px;
+    font-size:13px; line-height:1.7; color:var(--text2);
+    border-radius:12px;
+  }
+  .rag-msg.user .rag-msg-bubble {
+    background:var(--accent); color:#fff;
+    border-radius:12px 12px 2px 12px;
+  }
+  .rag-msg.ai .rag-msg-bubble {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:2px 12px 12px 12px;
+  }
+  .rag-msg.ai .rag-msg-bubble h3 { font-size:13px; font-weight:700; margin:6px 0 3px; }
+  .rag-msg.ai .rag-msg-bubble ul { padding-left:16px; margin:4px 0; }
+  .rag-msg.ai .rag-msg-bubble strong { color:var(--text); }
+  /* Kaynaklar */
+  .rag-sources {
+    margin-top:8px; padding:10px 12px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:8px; max-width:85%;
+  }
+  .rag-sources summary {
+    cursor:pointer; font-size:11px; font-weight:600;
+    color:var(--muted); user-select:none;
+    display:flex; align-items:center; gap:5px;
+  }
+  .rag-sources summary:hover { color:var(--text2); }
+  .rag-source-item {
+    margin-top:6px; padding:7px 10px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:6px; font-size:11px; line-height:1.5; color:var(--text2);
+  }
+  .rag-source-num { font-weight:700; color:var(--accent2); margin-right:4px; }
   .studio-layout { display:flex; height:100%; overflow:hidden; }
 
   .studio-sidebar {
@@ -2302,9 +2342,20 @@ let studioAttached = [];       // ekli materyal idx'leri
 let studioConversations = [];  // recents listesi
 
 async function renderStudio(){
+  // currentUserEmail henüz set olmamış olabilir — kısa bekle
+  if(!currentUserEmail){
+    const welcome = document.getElementById('studio-welcome');
+    if(welcome) welcome.style.display = 'flex';
+    const msgs = document.getElementById('studio-messages');
+    if(msgs) msgs.style.display = 'none';
+    // 1 sn sonra tekrar dene
+    setTimeout(() => {
+      if(currentUserEmail) renderStudio();
+    }, 1000);
+    return;
+  }
   studioConversations = await sbLoadConversations();
   renderStudioRecents();
-  // Aktif sohbet yoksa welcome göster
   if(!studioConvId){
     document.getElementById('studio-welcome').style.display = 'flex';
     document.getElementById('studio-messages').style.display = 'none';
@@ -4370,6 +4421,9 @@ async function matCallAI(userText, opts={}){
 
       // Supabase'e kaydet
       if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, result, { variant: opts.variant || null });
+
+      // Panel dolu olarak işaretle — sekme değiştirince kaybolmasın
+      matModeReady[mode] = true;
     }
 
   }catch(e){
@@ -4518,10 +4572,8 @@ function addRagMsg(role, html){
   const msgs = document.getElementById('rag-messages');
   if(!msgs) return;
   const div = document.createElement('div');
-  div.className = 'studio-msg ' + (role === 'ai' ? 'ai' : 'user');
-  const avatar = role === 'ai' ? '🔍' : '👤';
-  div.innerHTML = `<div class="studio-msg-avatar ${role === 'ai' ? 'ai' : ''}">${avatar}</div>
-    <div class="studio-msg-bubble">${html}</div>`;
+  div.className = 'rag-msg ' + (role === 'ai' ? 'ai' : 'user');
+  div.innerHTML = `<div class="rag-msg-bubble">${html}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -4561,18 +4613,22 @@ async function ragSend(){
     const result = await ragQuery(question, [m._sbId || m.id]);
     typing.remove();
 
-    const sourceHTML = result.chunks?.length
-      ? `<details style="margin-top:10px;">
-          <summary style="cursor:pointer;font-size:11px;color:var(--muted);">📎 ${result.chunks.length} kaynak bölüm</summary>
-          <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
-            ${result.chunks.map((c,i) => `
-              <div style="background:var(--surface2);border-radius:6px;padding:6px 10px;font-size:11px;line-height:1.5;color:var(--text2);">
-                <strong style="color:var(--accent2);">[${i+1}]</strong> ${escHtml(c.content.slice(0,180))}${c.content.length>180?'…':''}
-              </div>`).join('')}
-          </div>
-        </details>` : '';
+    addRagMsg('ai', matMd(result.answer));
 
-    addRagMsg('ai', matMd(result.answer) + sourceHTML);
+    // Kaynakları ayrı bir element olarak ekle
+    if(result.chunks?.length){
+      const msgs = document.getElementById('rag-messages');
+      const sources = document.createElement('details');
+      sources.className = 'rag-sources';
+      sources.innerHTML = `
+        <summary>📎 ${result.chunks.length} kaynak bölüm</summary>
+        ${result.chunks.map((c,i) => `
+          <div class="rag-source-item">
+            <span class="rag-source-num">[${i+1}]</span>${escHtml(c.content.slice(0,200))}${c.content.length>200?'…':''}
+          </div>`).join('')}`;
+      msgs.appendChild(sources);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
     sbSaveRagMessage(ragConvId, 'assistant', result.answer);
 
     // İlk mesajsa başlık üret
