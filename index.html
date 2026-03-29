@@ -1977,6 +1977,24 @@ async function sbDeleteAiOutput(id){
   catch(e){ console.warn('[ai_outputs] Silme hatası:', e.message); }
 }
 
+async function sbDeleteAiOutputsByType(materialId, type){
+  if(!sb || !materialId || !currentUserEmail) return;
+  const dbType = type === 'quiz' ? 'exam' : type;
+  try{
+    await sb.from('ai_outputs').delete()
+      .eq('material_id', materialId)
+      .eq('user_email', currentUserEmail)
+      .eq('type', dbType);
+    // quiz hem 'exam' hem 'quiz' olarak kaydedilmiş olabilir
+    if(type === 'quiz'){
+      await sb.from('ai_outputs').delete()
+        .eq('material_id', materialId)
+        .eq('user_email', currentUserEmail)
+        .eq('type', 'quiz');
+    }
+  }catch(e){ console.warn('[ai_outputs] Tür bazlı silme hatası:', e.message); }
+}
+
 // ═══════════════════════════════════════
 // CHAT MESSAGES
 // ═══════════════════════════════════════
@@ -4409,11 +4427,23 @@ function matAddMsgToPanel(panelMode, role, html){
   return div;
 }
 
-// Yeni oluştur — paneli sıfırla ve seçenek kartlarını göster
-function matResetMode(mode){
+// Yeni oluştur — paneli sıfırla, Supabase'den sil ve seçenek kartlarını göster
+async function matResetMode(mode){
   const panel = getPanel(mode);
   if(panel) panel.innerHTML = '';
   matModeReady[mode] = false;
+
+  // Supabase'den eski AI çıktısını sil
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  const matId = m?._sbId || m?.id;
+  if(matId) await sbDeleteAiOutputsByType(matId, mode);
+
+  // localStorage'daki kaydedilmiş özetleri de temizle (summary modunda)
+  if(mode === 'summary' && m){
+    const summaries = loadSummaries().filter(s => s.matTitle !== m.title && s.title !== m.title);
+    saveSummaries(summaries);
+  }
+
   const btn = document.querySelector(`.mat-mode-btn[data-mode="${mode}"]`);
   if(btn) setMatMode(mode, btn);
 }
