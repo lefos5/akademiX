@@ -5119,7 +5119,6 @@ async function ragSend(){
     renderRagConvList(m);
   }
 
-  // Kullanıcı mesajını kaydet
   sbSaveRagMessage(ragConvId, 'user', question);
 
   // Typing
@@ -5130,29 +5129,80 @@ async function ragSend(){
   msgs.appendChild(typing);
   msgs.scrollTop = msgs.scrollHeight;
 
+  // Geniş kapsamlı istek mi kontrol et (çeviri, özet, tamamı vb.)
+  const broadKeywords = /çevir|translate|tamamı|hepsini|tüm sayfa|tüm slayt|tüm içerik|bütün|full|entire|whole|özetle|tüm metin/i;
+  const isBroadQuery = broadKeywords.test(question);
+
   try{
-    const result = await ragQuery(question, [m._sbId || m.id]);
+    let answer = '';
+    let chunks = [];
+
+    if(isBroadQuery && matFileData?.content){
+      // Geniş kapsamlı istek — tüm materyal metniyle direkt AI'a git
+      const sessionId = localStorage.getItem('akademix_session');
+      if(!sessionId) throw new Error('Oturum gerekli.');
+
+      const fullPrompt = `Aşağıdaki materyale dayanarak kullanıcının isteğini yerine getir. Markdown formatı kullan.\n\nKullanıcı İsteği: ${question}\n\nMateryal İçeriği:\n${matFileData.content}`;
+      const resp = await fetch(BACKEND_URL + '/api/ai', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-session-id':sessionId},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens: 8000,
+          system: 'Sen bir akademik asistansın. Kullanıcının verdiği materyale dayanarak isteklerini Türkçe olarak yerine getir. Markdown formatını zengin kullan. Materyaldeki TÜM içeriği kapsa, hiçbir bölümü atlama.',
+          messages:[{role:'user',content:[{type:'text',text:fullPrompt}]}]
+        })
+      });
+      const data = await resp.json();
+      if(!resp.ok) throw new Error(data.error || 'AI hatası');
+      answer = data.content?.map(c=>c.text||'').join('') || 'Yanıt alınamadı.';
+    } else {
+      // Normal RAG akışı — chunk bazlı arama
+      const result = await ragQuery(question, [m._sbId || m.id]);
+      answer = result.answer;
+      chunks = result.chunks || [];
+
+      // RAG yeterli sonuç bulamadıysa ve matFileData varsa fallback
+      if((!answer || answer.includes('bulunamadı') || answer.includes('bilgi yok') || answer.includes('mevcut değil')) && matFileData?.content){
+        const sessionId = localStorage.getItem('akademix_session');
+        if(sessionId){
+          const fallbackPrompt = `Kullanıcı şu soruyu sordu: "${question}"\n\nAşağıdaki materyale dayanarak cevap ver. Markdown formatı kullan.\n\nMateryal:\n${matFileData.content.substring(0, 15000)}`;
+          const resp2 = await fetch(BACKEND_URL + '/api/ai', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','x-session-id':sessionId},
+            body:JSON.stringify({
+              model:'claude-sonnet-4-20250514',
+              max_tokens: 6000,
+              system: 'Sen bir akademik asistansın. Materyale dayanarak soruları Türkçe cevapla. Markdown kullan.',
+              messages:[{role:'user',content:[{type:'text',text:fallbackPrompt}]}]
+            })
+          });
+          const data2 = await resp2.json();
+          if(resp2.ok && data2.content){
+            answer = data2.content.map(c=>c.text||'').join('');
+            chunks = []; // Fallback'te chunk gösterme
+          }
+        }
+      }
+    }
+
     typing.remove();
+    addRagMsg('ai', matMd(answer));
 
-    addRagMsg('ai', matMd(result.answer));
-
-    // Kaynakları ayrı bir element olarak ekle
-    if(result.chunks?.length){
-      const msgs = document.getElementById('rag-messages');
-      const sources = document.createElement('details');
-      sources.className = 'rag-sources';
-      sources.innerHTML = `
-        <summary>📎 ${result.chunks.length} kaynak bölüm</summary>
-        ${result.chunks.map((c,i) => `
+    if(chunks.length){
+      const srcEl = document.createElement('details');
+      srcEl.className = 'rag-sources';
+      srcEl.innerHTML = `
+        <summary>📎 ${chunks.length} kaynak bölüm</summary>
+        ${chunks.map((c,i) => `
           <div class="rag-source-item">
             <span class="rag-source-num">[${i+1}]</span>${escHtml(c.content.slice(0,200))}${c.content.length>200?'…':''}
           </div>`).join('')}`;
-      msgs.appendChild(sources);
+      msgs.appendChild(srcEl);
       msgs.scrollTop = msgs.scrollHeight;
     }
-    sbSaveRagMessage(ragConvId, 'assistant', result.answer);
+    sbSaveRagMessage(ragConvId, 'assistant', answer);
 
-    // İlk mesajsa başlık üret
     const conv = ragConvList.find(c => c.id === ragConvId);
     if(conv && conv.title === '...'){
       const title = question.slice(0, 40) + (question.length > 40 ? '…' : '');
