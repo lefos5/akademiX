@@ -257,7 +257,7 @@
     pointer-events: none;
   }
   .course-block {
-    position: absolute; left: 3px; right: 3px;
+    position: absolute;
     border-radius: 8px; padding: 6px 8px; font-size: 11px;
     cursor: pointer; overflow: hidden;
     transition: filter 0.15s, transform 0.15s;
@@ -2329,7 +2329,7 @@ let enrolled = new Set();
 let activeFilter = "ALL";
 function enrolledKey(){ return currentUserEmail ? 'enrolled_'+currentUserEmail : 'enrolled_guest'; }
 function saveEnrolled(){
-  localStorage.setItem(enrolledKey(), JSON.stringify([...enrolled]));
+  try{ localStorage.setItem(enrolledKey(), JSON.stringify([...enrolled])); }catch(e){ console.warn('localStorage quota (enrolled):', e.message); }
   if(currentUserEmail && sb) sbSaveEnrolled(currentUserEmail, [...enrolled]);
 }
 async function loadEnrolled(){
@@ -2904,17 +2904,34 @@ function renderSchedule(){
       return a.course.name.localeCompare(b.course.name);
     });
 
-    // Ders bloklarını üst üste çiz (z-index ile sıralı)
-    sorted.forEach((m,i)=>{
-      const st=timeToMinutes(m.start);
-      const en=timeToMinutes(m.end);
-      const topPx=(st-startH*60)/60*ROW_H;
-      const heightPx=(en-st)/60*ROW_H;
-      const bl=document.createElement('div');
-      bl.className='course-block '+(DEPT_COLORS[m.course.dept]||'c-purple');
-      bl.style.cssText=`top:${topPx+2}px;height:${heightPx-4}px;left:3px;right:3px;z-index:${i+1};`;
-      bl.innerHTML=`<div class="code">${m.course.code}</div><div class="name">${m.course.name}</div><div class="room">${m.room} · ${m.start}–${m.end}</div>`;
-      bl.onclick=()=>openModal(m.course);
+    // Ders bloklarını çiz — çakışmaları yan yana göster
+    // Overlap gruplarını hesapla
+    const placed = [];
+    sorted.forEach(m => {
+      const st = timeToMinutes(m.start);
+      const en = timeToMinutes(m.end);
+      // Bu blokla çakışan önceki blokları bul
+      let col = 0;
+      const overlaps = placed.filter(p => !(en <= p.st || st >= p.en));
+      const usedCols = new Set(overlaps.map(p => p.col));
+      while(usedCols.has(col)) col++;
+      placed.push({ st, en, col, m });
+    });
+    // Her grubun max kolon sayısını belirle
+    placed.forEach(p => {
+      const overlaps = placed.filter(q => !(p.en <= q.st || p.st >= q.en));
+      p.totalCols = Math.max(...overlaps.map(q => q.col)) + 1;
+    });
+    placed.forEach((p, i) => {
+      const topPx = (p.st - startH*60)/60*ROW_H;
+      const heightPx = (p.en - p.st)/60*ROW_H;
+      const widthPct = 100 / p.totalCols;
+      const leftPct = p.col * widthPct;
+      const bl = document.createElement('div');
+      bl.className = 'course-block ' + (DEPT_COLORS[p.m.course.dept]||'c-purple');
+      bl.style.cssText = `top:${topPx+2}px;height:${heightPx-4}px;left:calc(${leftPct}% + 2px);width:calc(${widthPct}% - 4px);z-index:${i+1};`;
+      bl.innerHTML = `<div class="code">${escHtml(p.m.course.code)}</div><div class="name">${escHtml(p.m.course.name)}</div><div class="room">${escHtml(p.m.room)} · ${p.m.start}–${p.m.end}</div>`;
+      bl.onclick = () => openModal(p.m.course);
       col.appendChild(bl);
     });
     body.appendChild(col);
@@ -3238,7 +3255,9 @@ function switchTab(tab){
 
 async function signOut(){
   const sid = localStorage.getItem('akademix_session');
-  await fetch(BACKEND_URL + '/api/auth?action=logout' + (sid ? '&session='+sid : ''), { credentials: 'include' });
+  try{
+    await fetch(BACKEND_URL + '/api/auth?action=logout' + (sid ? '&session='+sid : ''), { credentials: 'include' });
+  }catch(e){ console.warn('Logout API hatası:', e); }
   localStorage.removeItem('akademix_session');
   accessToken=null;
   localStorage.removeItem('guser');
@@ -3558,7 +3577,9 @@ async function viewFile(idx){
       } else if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)){
         content.innerHTML = `<div style="padding:20px;text-align:center;background:var(--surface2);min-height:300px;display:flex;align-items:center;justify-content:center"><img src="${blobURL}" style="max-width:100%;max-height:75vh;border-radius:8px;" alt=""></div>`;
       } else {
-        content.innerHTML = `<div style="padding:60px;text-align:center;color:var(--muted)"><div style="font-size:48px;margin-bottom:16px">${getFileIcon(m.fileName||'')}</div><div style="font-size:14px;margin-bottom:20px">${escHtml(m.fileName||'')}</div><button class="add-btn" style="margin:0 auto" onclick="window.open('${m.fileUrl}','_blank')">↗ Yeni Sekmede Aç</button></div>`;
+        content.innerHTML = `<div style="padding:60px;text-align:center;color:var(--muted)"><div style="font-size:48px;margin-bottom:16px">${getFileIcon(m.fileName||'')}</div><div style="font-size:14px;margin-bottom:20px">${escHtml(m.fileName||'')}</div><button class="add-btn" style="margin:0 auto" id="fv-open-newtab">↗ Yeni Sekmede Aç</button></div>`;
+        const openBtn = document.getElementById('fv-open-newtab');
+        if(openBtn) openBtn.onclick = () => { const u = safeUrl(m.fileUrl); if(u !== '#') window.open(u, '_blank', 'noopener,noreferrer'); };
       }
     }catch(e){
       content.innerHTML = `<div style="padding:40px;text-align:center;color:var(--red)">❌ Dosya yüklenemedi: ${escHtml(e.message)}</div>`;
@@ -3618,9 +3639,9 @@ async function viewFile(idx){
 
 function openInNewTab(){
   const m = currentViewFileIdx !== null ? materials[currentViewFileIdx] : null;
-  // Supabase URL varsa direkt aç (temiz URL)
   if(m && m.fileUrl) {
-    window.open(m.fileUrl, '_blank', 'noopener,noreferrer');
+    const url = safeUrl(m.fileUrl);
+    if(url !== '#') window.open(url, '_blank', 'noopener,noreferrer');
   } else if(currentBlobURL) {
     window.open(currentBlobURL, '_blank');
   }
@@ -3702,7 +3723,10 @@ async function loadMaterials(){
 let selectedFile = null;
 let currentMatType = 'drive';
 
-function saveMaterials(){ localStorage.setItem(materialsKey(), JSON.stringify(materials)); }
+function saveMaterials(){
+  try{ localStorage.setItem(materialsKey(), JSON.stringify(materials)); }
+  catch(e){ console.warn('localStorage quota aşıldı (materials):', e.message); showToast('⚠️ Yerel depolama dolu — veriler sadece sunucuda kaydedildi.'); }
+}
 
 const MAT_ICONS = {drive:'📁', youtube:'▶️', web:'🔗', other:'📎'};
 const MAT_COLORS = {drive:'rgba(26,115,232,0.15)', youtube:'rgba(255,0,0,0.15)', web:'rgba(34,211,165,0.15)', other:'rgba(108,99,255,0.15)'};
@@ -4289,13 +4313,16 @@ function matHideTyping(){ const t=document.getElementById('mat-typing'); if(t) t
 
 function matMd(text){
   if(!text) return '';
-  return text
-    .replace(/## (.+)/g,'<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-    .replace(/^- (.+)/gm,'<li>$1</li>')
-    .replace(/((?:<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>')
-    .replace(/\n{2,}/g,'<br><br>')
-    .replace(/\n/g,'<br>');
+  // Önce tüm HTML'i escape et
+  let s = escHtml(text);
+  // Markdown dönüşümlerini escape edilmiş metin üzerinde uygula
+  s = s.replace(/## (.+)/g,'<h3>$1</h3>');
+  s = s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  s = s.replace(/^- (.+)/gm,'<li>$1</li>');
+  s = s.replace(/((?:<li>.*?<\/li>\s*)+)/g, '<ul>$1</ul>');
+  s = s.replace(/\n{2,}/g,'<br><br>');
+  s = s.replace(/\n/g,'<br>');
+  return s;
 }
 
 function matBuildFlashcards(text){
