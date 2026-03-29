@@ -1074,6 +1074,72 @@
   .ai-loading-dots span:nth-child(3) { animation-delay:0.4s; }
   @keyframes dotPulse { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
 
+  /* Smooth page transitions */
+  .page { will-change: opacity, transform; }
+  
+  /* Better focus styles for accessibility */
+  .nav-item:focus-visible, .add-btn:focus-visible, .mat-mode-btn:focus-visible,
+  .filter-btn:focus-visible, .mat-ws-action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  
+  /* Disabled state for AI buttons during loading */
+  .mat-option-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+    pointer-events: none;
+  }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+      z-index: 200;
+      width: 280px;
+    }
+    .sidebar.mobile-open { transform: translateX(0); }
+    .main { margin-left: 0 !important; }
+    .mobile-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 199;
+    }
+    .mobile-overlay.visible { display: block; }
+    .mobile-topbar {
+      display: flex !important;
+      align-items: center; gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .mobile-hamburger {
+      background: none; border: none; color: var(--text);
+      font-size: 22px; cursor: pointer; padding: 4px;
+    }
+    .page { padding: 16px !important; }
+    #page-materials { padding: 0 !important; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr) !important; }
+    .courses-grid { grid-template-columns: 1fr !important; }
+    .mat-layout { flex-direction: column; height: auto !important; }
+    .mat-sidebar { width: 100% !important; max-height: 40vh; border-right: none !important; border-bottom: 1px solid var(--border); }
+    .mat-detail { min-height: 60vh; }
+    .studio-layout { flex-direction: column; }
+    .studio-sidebar { width: 100% !important; max-height: 30vh; border-right: none !important; border-bottom: 1px solid var(--border); }
+    .schedule-grid { overflow-x: auto; }
+    .schedule-header, .schedule-body { min-width: 600px; }
+    .modal { width: 95vw !important; padding: 20px !important; }
+    .setup-modal { width: 95vw !important; padding: 20px !important; }
+    .rag-sidebar { width: 100% !important; max-height: 25vh; border-right: none !important; border-bottom: 1px solid var(--border); }
+    #mat-panel-rag { flex-direction: column !important; }
+  }
+  @media (min-width: 769px) {
+    .mobile-topbar { display: none !important; }
+    .mobile-overlay { display: none !important; }
+  }
+
   .ai-settings-link { font-size:11px; color:var(--muted); text-align:right; display:block; margin-top:6px; cursor:pointer; }
   .ai-settings-link:hover { color:var(--accent2); }
 
@@ -1191,6 +1257,13 @@
 
 <main class="main">
 
+<!-- Mobile topbar -->
+<div class="mobile-topbar" style="display:none">
+  <button class="mobile-hamburger" onclick="toggleMobileSidebar()">☰</button>
+  <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:16px;">Akademi<span style="color:var(--accent2)">X</span></span>
+</div>
+<div class="mobile-overlay" id="mobile-overlay" onclick="toggleMobileSidebar()"></div>
+
   <!-- SCHEDULE -->
   <div class="page active" id="page-schedule">
     <div class="page-header">
@@ -1298,7 +1371,7 @@
   </div>
 
   <!-- AI STUDIO -->
-  <div class="page" id="page-studio" style="padding:0;display:none">
+  <div class="page" id="page-studio" style="padding:0">
     <div class="studio-layout">
       <!-- Sol: Recents -->
       <div class="studio-sidebar">
@@ -1680,7 +1753,7 @@ async function sbLoadNotes(email, courseCode){
       .eq('user_email', email).eq('course', courseCode)
       .order('created_at', { ascending: false });
     if(error) throw error;
-    return data.map(r => ({ id: r.id, title: r.title, body: r.body, _sbId: r.id }));
+    return data.map(r => ({ id: r.id, title: r.title, body: r.body, _sbId: r.id, date: r.created_at ? new Date(r.created_at).toLocaleDateString('tr-TR', {day:'numeric', month:'short', year:'numeric'}) : '' }));
   }catch(e){ console.warn('Supabase not yükleme hatası:', e); return null; }
 }
 
@@ -2280,10 +2353,16 @@ async function loadEnrolled(){
 // NAV
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  const idx={schedule:0,courses:1,classroom:2,calendar:3,exams:4,materials:5,studio:6}[id]??0;
-  document.querySelectorAll('.nav-item')[idx].classList.add('active');
+  const page = document.getElementById('page-'+id);
+  if(page) page.classList.add('active');
+  // Nav active state — onclick'teki parametreyle eşleştir
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.remove('active');
+    // onclick attribute'undan id'yi çıkar
+    const onclick = n.getAttribute('onclick') || '';
+    const match = onclick.match(/showPage\('([^']+)'\)/);
+    if(match && match[1] === id) n.classList.add('active');
+  });
   if(id==='schedule') renderSchedule();
   if(id==='courses') renderCourses();
   if(id==='calendar') renderCalendar();
@@ -2412,7 +2491,14 @@ async function studioOpenConversation(id){
 
   // Mesajları yükle
   const msgs = await sbLoadStudioMessages(id);
-  studioHistory = msgs.map(m => ({ role: m.role, content: m.content }));
+  studioHistory = msgs.map(m => {
+    const content = m.content;
+    // Normalize: her zaman array format
+    if(m.role === 'assistant'){
+      return { role: m.role, content: typeof content === 'string' ? [{type:'text',text:content}] : content };
+    }
+    return { role: m.role, content: typeof content === 'string' ? [{type:'text',text:content}] : content };
+  });
 
   const container = document.getElementById('studio-messages');
   container.innerHTML = '';
@@ -2556,7 +2642,7 @@ async function studioSend(){
     const result = data.content?.map(c=>c.text||'').join('') || 'Yanıt alınamadı.';
 
     studioHistory.push({ role:'user', content:[{type:'text',text:prompt}] });
-    studioHistory.push({ role:'assistant', content: result });
+    studioHistory.push({ role:'assistant', content:[{type:'text',text:result}] });
 
     typingDiv.remove();
     studioAddMsgToDOM('assistant', matMd(result));
@@ -2770,9 +2856,8 @@ function renderSchedule(){
   if(my.length===0){document.getElementById('schedule-grid').style.display='none';document.getElementById('schedule-empty').style.display='block';return;}
   document.getElementById('schedule-grid').style.display='block';document.getElementById('schedule-empty').style.display='none';
   const slots={};DAYS.forEach(d=>slots[d]=[]);
-  my.forEach(c=>Object.entries(c.schedule).forEach(([day,s])=>{const[t,room]=s.split('|');const[start,end]=t.split('-');slots[day].push({start,end,course:c,room});}));
   let minT=8*60,maxT=20*60;
-  my.forEach(c=>Object.values(c.schedule).forEach(s=>{const[t]=s.split('|');const[a,b]=t.split('-');minT=Math.min(minT,timeToMinutes(a));maxT=Math.max(maxT,timeToMinutes(b));}));
+  my.forEach(c=>Object.entries(c.schedule).forEach(([day,s])=>{const[t,room]=s.split('|');const[start,end]=t.split('-');slots[day].push({start,end,course:c,room});minT=Math.min(minT,timeToMinutes(start));maxT=Math.max(maxT,timeToMinutes(end));}));
   const body=document.getElementById('schedule-body');body.innerHTML='';
   const startH=Math.floor(minT/60);
   const endH=Math.ceil(maxT/60);
@@ -2860,6 +2945,7 @@ function renderCourses(){
   const filtered=rawCourses.filter(c=>(activeFilter==='ALL'||c.dept===activeFilter)&&(!q||c.name.toLowerCase().includes(q)||c.code.toLowerCase().includes(q)||c.instructor.toLowerCase().includes(q)));
   const grid=document.getElementById('courses-grid');
   grid.innerHTML='';
+  const fragment = document.createDocumentFragment();
   filtered.forEach(c=>{
     const idx = rawCourses.indexOf(c);
     const tm=c.code.match(/(VL|UE|L)$/);const type=tm?tm[1]:'';const ie=enrolled.has(c.code);
@@ -2880,8 +2966,9 @@ function renderCourses(){
         ${c.shared?`<div class="meta-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1-3-3.87"/></svg>${escHtml(c.shared)}</div>`:''}
       </div>
       <div class="schedule-chips">${chips}</div>`;
-    grid.appendChild(card);
+    fragment.appendChild(card);
   });
+  grid.appendChild(fragment);
 }
 function setFilter(f){activeFilter=f;renderCourses();}
 function filterCourses(){renderCourses();}
@@ -3039,6 +3126,7 @@ async function loadClassroomData(){
     clData.courses=cd.courses||[];
     renderClCourses();
     const allW=[],allA=[];
+    let failedCourses = 0;
     await Promise.all(clData.courses.map(async course=>{
       try{
         const[w,a]=await Promise.all([
@@ -3047,8 +3135,12 @@ async function loadClassroomData(){
         ]);
         (w.courseWork||[]).forEach(x=>allW.push({...x,courseName:course.name}));
         (a.announcements||[]).forEach(x=>allA.push({...x,courseName:course.name}));
-      }catch(e){}
+      }catch(e){
+        failedCourses++;
+        console.warn(`[Classroom] ${course.name} yüklenemedi:`, e.message);
+      }
     }));
+    if(failedCourses > 0) console.warn(`[Classroom] ${failedCourses}/${clData.courses.length} ders verisi yüklenemedi.`);
     // Sadece bugün ve sonrasındaki ödevler + tarihi olmayanlar
     const now2=new Date(); now2.setHours(0,0,0,0);
     clData.assignments=allW.filter(a=>{
@@ -3210,6 +3302,7 @@ function renderSetupCourses(){
   });
   const container = document.getElementById('setup-courses');
   container.innerHTML = '';
+  const frag = document.createDocumentFragment();
   filtered.forEach(c => {
     const sel = setupSelected.has(c.code);
     const times = Object.entries(c.schedule).map(([d,s])=>{ const[t,r]=s.split('|'); return DAY_TR[d]+' '+t+' · '+r; }).join('  |  ');
@@ -3223,8 +3316,9 @@ function renderSetupCourses(){
         <div class="setup-course-time">${times}</div>
       </div>`;
     row.onclick = e => { if(e.target.tagName!=='INPUT'){ const cb=row.querySelector('input'); cb.checked=!cb.checked; toggleSetup(c.code,cb); } };
-    container.appendChild(row);
+    frag.appendChild(row);
   });
+  container.appendChild(frag);
   updateSetupCount();
 }
 
@@ -3254,9 +3348,12 @@ function saveSetup(){
 // TOAST
 function showToast(msg){
   let t=document.getElementById('toast');
-  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:24px;right:24px;background:#1a1d27;border:1px solid #2e3354;border-radius:10px;padding:12px 18px;font-size:13px;color:#e2e8f0;z-index:9999;transition:opacity 0.3s;box-shadow:0 4px 20px rgba(0,0,0,0.4)';document.body.appendChild(t);}
-  t.textContent=msg;t.style.opacity='1';
-  clearTimeout(t._timeout);t._timeout=setTimeout(()=>t.style.opacity='0',3000);
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 20px;font-size:13px;color:var(--text);z-index:9999;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);box-shadow:0 8px 32px rgba(0,0,0,0.3);transform:translateY(10px);opacity:0;max-width:340px;backdrop-filter:blur(12px)';document.body.appendChild(t);}
+  t.textContent=msg;
+  // Reset animation
+  t.style.opacity='0';t.style.transform='translateY(10px)';
+  requestAnimationFrame(()=>{t.style.opacity='1';t.style.transform='translateY(0)';});
+  clearTimeout(t._timeout);t._timeout=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(10px)';},3000);
 }
 
 // ===== CALENDAR =====
@@ -3446,6 +3543,7 @@ async function viewFile(idx){
     document.getElementById('fv-meta').textContent = m.fileName || '';
     content.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:300px;color:var(--muted);flex-direction:column;gap:12px"><div class="ai-loading-dots" style="display:flex"><span></span><span></span><span></span></div><div>Yükleniyor...</div></div>';
     modal.classList.add('open');
+    revokeBlobURLs();
     try{
       const resp = await fetch(m.fileUrl);
       const blob = await resp.blob();
@@ -3572,16 +3670,7 @@ async function downloadCurrentFile(){
 
 async function downloadFile(idx){
   const m = materials[idx];
-  // Supabase Storage URL varsa direkt indir
-  if(m && m.fileUrl && !m.fileId){
-    const resp = await fetch(m.fileUrl);
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = m.fileName || 'dosya'; a.click();
-    setTimeout(()=>URL.revokeObjectURL(url), 5000);
-    return;
-  }
+  if(!m){ showToast('❌ Materyal bulunamadı.'); return; }
   const fileUrl = m.fileUrl || m.url;
   if(!fileUrl){ showToast('❌ Dosya bulunamadı.'); return; }
   try{
@@ -3885,10 +3974,12 @@ async function selectMat(idx){
   document.getElementById('mat-workspace').style.flexDirection = 'column';
 
   // Dosyayı AI için hazırla (Supabase URL'den)
+  matFileData = null;
   if(m.type==='file' && (m.fileUrl || m.url)){
     const fileUrl = m.fileUrl || m.url;
     try{
       const resp = await fetch(fileUrl);
+      if(!resp.ok) throw new Error('HTTP ' + resp.status);
       const blob = await resp.blob();
       const fakeF = {
         name: m.fileName || 'file',
@@ -3896,7 +3987,10 @@ async function selectMat(idx){
         buffer: await blob.arrayBuffer()
       };
       matFileData = await prepareFileForClaude(fakeF);
-    }catch(e){ console.warn('Dosya hazırlanamadı:', e); }
+    }catch(e){
+      console.warn('Dosya hazırlanamadı:', e);
+      showToast('⚠️ Dosya AI için yüklenemedi — sohbet metin bazlı çalışacak.');
+    }
   }
 
   // Önceki AI çıktılarını ve chat geçmişini Supabase'den yükle
@@ -4194,11 +4288,12 @@ function matShowTyping(){
 function matHideTyping(){ const t=document.getElementById('mat-typing'); if(t) t.remove(); }
 
 function matMd(text){
+  if(!text) return '';
   return text
     .replace(/## (.+)/g,'<h3>$1</h3>')
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
     .replace(/^- (.+)/gm,'<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, m=>'<ul>'+m+'</ul>')
+    .replace(/((?:<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>')
     .replace(/\n{2,}/g,'<br><br>')
     .replace(/\n/g,'<br>');
 }
@@ -4331,7 +4426,7 @@ async function prepareFileForClaude(f){
 
 async function matCallAI(userText, opts={}){
   const m = currentMatIdx!==null ? materials[currentMatIdx] : null;
-  if(!m){ showToast('❌ Bir materyal seçin first.'); return; }
+  if(!m){ showToast('❌ Önce bir materyal seç.'); return; }
 
   // opts.forcePrompt = true means userText IS the full prompt (from option button)
   const prompt = opts.forcePrompt ? userText : (MAT_PROMPTS.chat(m.title) + '\n\nQuestion: ' + userText);
@@ -4604,8 +4699,8 @@ async function ragSend(){
   // Typing
   const msgs = document.getElementById('rag-messages');
   const typing = document.createElement('div');
-  typing.className = 'studio-msg ai'; typing.id = 'rag-typing';
-  typing.innerHTML = `<div class="studio-msg-avatar ai">🔍</div><div class="studio-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div>`;
+  typing.className = 'rag-msg ai'; typing.id = 'rag-typing';
+  typing.innerHTML = `<div class="rag-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div>`;
   msgs.appendChild(typing);
   msgs.scrollTop = msgs.scrollHeight;
 
@@ -4875,6 +4970,26 @@ async function deleteMaterial(idx){
 
 
 // ===== TEMA GEÇİŞİ =====
+
+// ===== MOBİL SİDEBAR =====
+function toggleMobileSidebar(){
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('mobile-overlay');
+  const isOpen = sidebar.classList.contains('mobile-open');
+  sidebar.classList.toggle('mobile-open');
+  overlay.classList.toggle('visible');
+  if(!isOpen) document.body.style.overflow = 'hidden';
+  else document.body.style.overflow = '';
+}
+
+// Sidebar'daki nav-item tıklanınca mobilde kapat
+document.addEventListener('click', e => {
+  if(window.innerWidth <= 768 && e.target.closest('.nav-item')){
+    const sidebar = document.querySelector('.sidebar');
+    if(sidebar.classList.contains('mobile-open')) toggleMobileSidebar();
+  }
+});
+
 function toggleTheme(){
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   const newTheme = isLight ? 'dark' : 'light';
@@ -4906,6 +5021,28 @@ window.addEventListener('load',()=>{
   initTokenClient();
   renderSchedule();
   renderCourses();
+
+  // ── Keyboard shortcuts ──
+  document.addEventListener('keydown', e => {
+    // Escape — tüm açık modalları kapat
+    if(e.key === 'Escape'){
+      const modals = [
+        {el: document.getElementById('modal'), close: closeModal},
+        {el: document.getElementById('mat-modal'), close: closeMatModal},
+        {el: document.getElementById('file-viewer-modal'), close: closeFileViewer},
+        {el: document.getElementById('exam-popup'), close: closeExamPopup},
+        {el: document.getElementById('nv-modal'), close: closeNoteViewer},
+        {el: document.getElementById('setup-overlay'), close: ()=> document.getElementById('setup-overlay').classList.remove('open')},
+      ];
+      for(const m of modals){
+        if(m.el && m.el.classList.contains('open')){
+          m.close();
+          e.preventDefault();
+          return;
+        }
+      }
+    }
+  });
 
   // ── Delegated event listeners ──
   // Ders kartları (courses grid)
