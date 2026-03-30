@@ -5341,33 +5341,71 @@ async function saveMaterial(){
     if(!title){ alert('Başlık zorunludur.'); return; }
     if(!currentUserEmail){ alert('Dosya yükleyebilmek için Google hesabınızla giriş yapın.'); return; }
     if(selectedFile.size > 50 * 1024 * 1024){ alert('Dosya 50 MB sınırını aşıyor.'); return; }
-    if(selectedFile.size > 4 * 1024 * 1024){
-      showToast('⚠️ Büyük dosya (' + formatFileSize(selectedFile.size) + ') — yükleme biraz uzun sürebilir...');
-    }
 
     const saveBtn = document.querySelector('#mat-modal .add-btn');
     if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = '⏳ Yükleniyor...'; }
 
+    const VERCEL_LIMIT = 4 * 1024 * 1024; // 4 MB — Vercel serverless limit
+    const isLargeFile = selectedFile.size > VERCEL_LIMIT;
+
+    if(isLargeFile) showToast('⏳ Büyük dosya (' + formatFileSize(selectedFile.size) + ') doğrudan yükleniyor...');
+    else showToast('⏳ Dosya yükleniyor...');
+
     try{
-      showToast('⏳ Dosya yükleniyor...');
       const sessionId = localStorage.getItem('akademix_session');
       if(!sessionId){ alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.'); return; }
 
-      const formData = new FormData();
-      formData.append('file', selectedFile, selectedFile.name);
+      let fileUrl, filePath, fileName, fileSize;
 
-      const uploadResp = await fetch(BACKEND_URL + '/api/upload', {
-        method: 'POST', headers: { 'x-session-id': sessionId }, body: formData,
-      });
+      if(isLargeFile){
+        // ── BÜYÜK DOSYA: Frontend'den direkt Supabase Storage'a yükle ──
+        if(!sb) throw new Error('Supabase bağlantısı yok — sayfayı yenileyin.');
+        const safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const ext = safeName.split('.').pop().toLowerCase();
+        const uid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2,10);
+        filePath = currentUserEmail + '/' + uid + '.' + ext;
 
-      let uploadResult;
-      try{ uploadResult = await uploadResp.json(); }
-      catch(parseErr){ throw new Error('Sunucu yanıtı okunamadı — dosya çok büyük olabilir (Vercel limiti). Daha küçük bir dosya deneyin.'); }
+        const { error: upErr } = await sb.storage
+          .from('materials')
+          .upload(filePath, selectedFile, {
+            contentType: selectedFile.type || 'application/octet-stream',
+            upsert: false,
+          });
 
-      if(!uploadResp.ok) throw new Error(uploadResult.error || 'Yükleme başarısız (HTTP ' + uploadResp.status + ')');
+        if(upErr){
+          const msg = upErr.message || upErr.error || JSON.stringify(upErr);
+          if(msg.includes('Policy') || msg.includes('security') || msg.includes('permission') || msg.includes('row-level')){
+            throw new Error('Storage izin hatası — Supabase Dashboard → Storage → materials bucket → Policies bölümünde INSERT izni ekleyin.\n\nDetay: ' + msg);
+          }
+          throw new Error('Storage yükleme hatası: ' + msg);
+        }
 
-      const { fileUrl, filePath, fileName, fileSize } = uploadResult;
-      if(!fileUrl) throw new Error('Sunucu dosya URL döndürmedi — yükleme tamamlanmamış olabilir.');
+        const { data: urlData } = sb.storage.from('materials').getPublicUrl(filePath);
+        fileUrl = urlData.publicUrl;
+        fileName = selectedFile.name;
+        fileSize = selectedFile.size;
+        console.log('[Upload] Büyük dosya direkt Supabase\'e yüklendi:', formatFileSize(fileSize));
+      } else {
+        // ── KÜÇÜK DOSYA: Vercel backend üzerinden yükle (service key) ──
+        const formData = new FormData();
+        formData.append('file', selectedFile, selectedFile.name);
+
+        const uploadResp = await fetch(BACKEND_URL + '/api/upload', {
+          method: 'POST', headers: { 'x-session-id': sessionId }, body: formData,
+        });
+
+        let uploadResult;
+        try{ uploadResult = await uploadResp.json(); }
+        catch(parseErr){ throw new Error('Sunucu yanıtı okunamadı — beklenmedik hata.'); }
+
+        if(!uploadResp.ok) throw new Error(uploadResult.error || 'Yükleme başarısız (HTTP ' + uploadResp.status + ')');
+        if(!uploadResult.fileUrl) throw new Error('Sunucu dosya URL döndürmedi.');
+
+        fileUrl = uploadResult.fileUrl;
+        filePath = uploadResult.filePath;
+        fileName = uploadResult.fileName;
+        fileSize = uploadResult.fileSize;
+      }
 
       const newMat = { title, course, type:'file', fileName, fileSize, fileUrl, filePath, addedAt: new Date().toISOString() };
       const sbId = await sbSaveMaterial(currentUserEmail, { title, course, note:'', type:'file', fileName, fileUrl });
@@ -5398,7 +5436,8 @@ async function saveMaterial(){
       showToast('❌ Dosya kaydedilemedi: ' + e.message);
       alert('Dosya kaydedilemedi:\n' + e.message);
     }finally{
-      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Kaydet'; }
+      const sb2 = document.querySelector('#mat-modal .add-btn');
+      if(sb2){ sb2.disabled = false; sb2.textContent = 'Kaydet'; }
     }
     return;
   }
