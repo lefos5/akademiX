@@ -1830,10 +1830,38 @@ function initTokenClient(){
 
 async function silentTokenRefresh(){
   if(!tokenClient){ console.warn('[Token] tokenClient henüz hazır değil'); return; }
+  console.log('[Token] Sessiz yenileme deneniyor...');
   try{
     tokenClient.requestAccessToken({ prompt: '' });
-  }catch(e){ console.warn('[Token] Sessiz yenileme başarısız:', e); }
+  }catch(e){
+    console.warn('[Token] Sessiz yenileme başarısız:', e);
+    // Backend session hâlâ geçerli olabilir — Classroom dışı özellikler çalışmaya devam eder
+  }
 }
+
+// ── Token Yaşam Döngüsü Yönetimi ──
+// Sekme tekrar aktif olduğunda token'ı kontrol et
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && accessToken && tokenExpiresAt){
+    const remaining = tokenExpiresAt - Date.now();
+    console.log('[Token] Sekme aktif — kalan süre:', Math.round(remaining/60000), 'dk');
+    if(remaining < 5 * 60 * 1000){ // 5 dk'dan az kaldıysa yenile
+      console.log('[Token] Süresi dolmak üzere, yenileniyor...');
+      silentTokenRefresh();
+    }
+  }
+});
+
+// Her 45 dakikada bir token'ı kontrol et (setTimeout kaybolursa diye güvenlik ağı)
+setInterval(() => {
+  if(accessToken && tokenExpiresAt){
+    const remaining = tokenExpiresAt - Date.now();
+    if(remaining < 5 * 60 * 1000 && remaining > -10 * 60 * 1000){
+      console.log('[Token] Periyodik kontrol — yenileme gerekli');
+      silentTokenRefresh();
+    }
+  }
+}, 45 * 60 * 1000);
 
 
 // ===== SUPABASE =====
@@ -3281,30 +3309,49 @@ async function handleTokenResponse(resp){
 // Token yenileme backend tarafından otomatik yapılıyor
 
 async function clFetch(url){
+  // Token yoksa veya süresi dolmuşsa önce yenile
+  if(accessToken && tokenExpiresAt && tokenExpiresAt < Date.now()){
+    console.log('[Token] Süresi dolmuş, istek öncesi yenileniyor...');
+    try{ await _refreshTokenPromise(); }catch(e){ console.warn('[Token] Ön yenileme başarısız:', e); }
+  }
+
   let r = await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
   // 401: token süresi dolmuş — yenile ve tekrar dene
   if(r.status === 401){
     console.log('[Token] 401 alındı, yenileniyor...');
-    await new Promise((resolve, reject) => {
-      try{
-        tokenClient.requestAccessToken({
-          prompt:'',
-          callback: (resp) => {
-            if(resp.error){ reject(new Error(resp.error)); return; }
-            accessToken = resp.access_token;
-            const expiresIn = (resp.expires_in || 3600) * 1000;
-            tokenExpiresAt = Date.now() + expiresIn;
-            if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
-            tokenRefreshTimer = setTimeout(silentTokenRefresh, expiresIn - 5*60*1000);
-            resolve();
-          }
-        });
-      }catch(e){ reject(e); }
-    });
-    r = await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+    try{
+      await _refreshTokenPromise();
+      r = await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+    }catch(e){
+      console.error('[Token] Yenileme başarısız — kullanıcı yeniden giriş yapmalı:', e);
+      throw new Error('Google oturumunuz sona erdi. Classroom verilerini görmek için sayfayı yenileyip tekrar giriş yapın.');
+    }
   }
   if(!r.ok) throw new Error('API hatası: '+r.status+' '+r.statusText);
   return r.json();
+}
+
+function _refreshTokenPromise(){
+  return new Promise((resolve, reject) => {
+    if(!tokenClient){ reject(new Error('tokenClient yok')); return; }
+    const timeout = setTimeout(() => reject(new Error('Token yenileme zaman aşımı')), 15000);
+    try{
+      tokenClient.requestAccessToken({
+        prompt:'',
+        callback: (resp) => {
+          clearTimeout(timeout);
+          if(resp.error){ reject(new Error(resp.error)); return; }
+          accessToken = resp.access_token;
+          const expiresIn = (resp.expires_in || 3600) * 1000;
+          tokenExpiresAt = Date.now() + expiresIn;
+          if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+          tokenRefreshTimer = setTimeout(silentTokenRefresh, expiresIn - 5*60*1000);
+          console.log('[Token] Yenilendi — geçerlilik:', Math.round(expiresIn/60000), 'dk');
+          resolve();
+        }
+      });
+    }catch(e){ clearTimeout(timeout); reject(e); }
+  });
 }
 
 async function loadClassroomData(){
