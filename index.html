@@ -4171,16 +4171,42 @@ async function selectMat(idx){
   matFileData = null;
   if(m.type==='file' && (m.fileUrl || m.url)){
     const fileUrl = m.fileUrl || m.url;
+    const ext = (m.fileName || '').split('.').pop().toLowerCase();
+    const fileSize = m.fileSize || 0;
+    const FILE_DIRECT_LIMIT = 10 * 1024 * 1024; // 10 MB
+
     try{
-      const resp = await fetch(fileUrl);
-      if(!resp.ok) throw new Error('HTTP ' + resp.status);
-      const blob = await resp.blob();
-      const fakeF = {
-        name: m.fileName || 'file',
-        type: blob.type,
-        buffer: await blob.arrayBuffer()
-      };
-      matFileData = await prepareFileForClaude(fakeF);
+      if(ext === 'pdf'){
+        // PDF: pdfjs ile URL'den direkt aç — tüm dosyayı belleğe almadan
+        showToast('⏳ PDF analiz ediliyor...');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
+        let fullText = '';
+        const maxPages = Math.min(pdf.numPages, 60);
+        for(let i = 1; i <= maxPages; i++){
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          fullText += `[Sayfa ${i}]\n${textContent.items.map(item => item.str).join(' ')}\n\n`;
+        }
+        if(pdf.numPages > 60) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 60 sayfa analiz edildi]`;
+        matFileData = { type: 'text', content: fullText.substring(0, 30000), pageCount: pdf.numPages };
+        showToast(`✅ PDF analiz edildi (${pdf.numPages} sayfa)`);
+      } else if(fileSize > FILE_DIRECT_LIMIT){
+        // Büyük non-PDF dosya — indirme yapma, sadece başlık bilgisi tut
+        matFileData = { type: 'text', content: `[Dosya: ${m.fileName || 'dosya'} (${formatFileSize(fileSize)}) — dosya çok büyük olduğu için tam metin çıkarılamadı. Dosya adı ve türü baz alınarak cevap verilecek.]` };
+        showToast('ℹ️ Büyük dosya — AI sınırlı bilgiyle çalışacak.');
+      } else {
+        // Küçük non-PDF dosya — normal akış
+        const resp = await fetch(fileUrl);
+        if(!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        const fakeF = {
+          name: m.fileName || 'file',
+          type: blob.type,
+          buffer: await blob.arrayBuffer()
+        };
+        matFileData = await prepareFileForClaude(fakeF);
+      }
     }catch(e){
       console.warn('Dosya hazırlanamadı:', e);
       showToast('⚠️ Dosya AI için yüklenemedi — sohbet metin bazlı çalışacak.');
@@ -4469,13 +4495,11 @@ async function renderPdfPageThumbnail(pageNum, container){
 
   try{
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    // Cache pdf document
+    // Cache pdf document — URL bazlı açma (range request ile, belleği doldurmaz)
     if(!window._pdfThumbCache) window._pdfThumbCache = {};
     let pdf = window._pdfThumbCache[fileUrl];
     if(!pdf){
-      const resp = await fetch(fileUrl);
-      const buf = await resp.arrayBuffer();
-      pdf = await pdfjsLib.getDocument({data: buf}).promise;
+      pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
       window._pdfThumbCache[fileUrl] = pdf;
     }
     if(pageNum > pdf.numPages) return;
