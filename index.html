@@ -1011,6 +1011,43 @@
   .studio-welcome {
     flex:1; display:flex; flex-direction:column;
     align-items:center; justify-content:center;
+    gap: 8px;
+  }
+  /* Welcome modunda input'u ortaya yaklaştır */
+  .studio-main.welcome-mode {
+    justify-content: center;
+  }
+  .studio-main.welcome-mode .studio-welcome {
+    flex: none;
+    margin-bottom: 16px;
+  }
+  .studio-main.welcome-mode .studio-input-area {
+    border-top: none;
+    max-width: 620px;
+    width: 100%;
+    align-self: center;
+    padding: 0 24px 32px;
+    background: transparent;
+  }
+  .studio-main.welcome-mode .studio-input-row {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 6px 6px 6px 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .studio-main.welcome-mode .studio-input-row:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 4px 24px rgba(59,130,246,0.15);
+  }
+  .studio-main.welcome-mode #studio-input {
+    border: none; background: transparent;
+    padding: 8px 8px;
+  }
+  .studio-main.welcome-mode #studio-input:focus { box-shadow: none; }
+  .studio-main.welcome-mode .studio-attach-btn {
+    border: none; background: transparent;
   }
   .studio-messages {
     flex:1; overflow-y:auto; padding:24px 28px;
@@ -2638,11 +2675,7 @@ let studioConversations = [];  // recents listesi
 async function renderStudio(){
   // currentUserEmail henüz set olmamış olabilir — kısa bekle
   if(!currentUserEmail){
-    const welcome = document.getElementById('studio-welcome');
-    if(welcome) welcome.style.display = 'flex';
-    const msgs = document.getElementById('studio-messages');
-    if(msgs) msgs.style.display = 'none';
-    // 1 sn sonra tekrar dene
+    studioSetWelcomeMode(true);
     setTimeout(() => {
       if(currentUserEmail) renderStudio();
     }, 1000);
@@ -2651,8 +2684,22 @@ async function renderStudio(){
   studioConversations = await sbLoadConversations();
   renderStudioRecents();
   if(!studioConvId){
-    document.getElementById('studio-welcome').style.display = 'flex';
-    document.getElementById('studio-messages').style.display = 'none';
+    studioSetWelcomeMode(true);
+  }
+}
+
+function studioSetWelcomeMode(isWelcome){
+  const main = document.querySelector('.studio-main');
+  const welcome = document.getElementById('studio-welcome');
+  const msgs = document.getElementById('studio-messages');
+  if(isWelcome){
+    if(welcome) welcome.style.display = 'flex';
+    if(msgs) msgs.style.display = 'none';
+    if(main) main.classList.add('welcome-mode');
+  } else {
+    if(welcome) welcome.style.display = 'none';
+    if(msgs) msgs.style.display = 'flex';
+    if(main) main.classList.remove('welcome-mode');
   }
 }
 
@@ -2688,8 +2735,7 @@ async function studioNewConversation(){
   studioHistory = [];
   studioAttached = [];
   document.getElementById('studio-messages').innerHTML = '';
-  document.getElementById('studio-messages').style.display = 'none';
-  document.getElementById('studio-welcome').style.display = 'flex';
+  studioSetWelcomeMode(true);
   document.getElementById('studio-attached').innerHTML = '';
   document.getElementById('studio-input').value = '';
   document.querySelectorAll('.studio-conv-item').forEach(el => el.classList.remove('active'));
@@ -2717,8 +2763,7 @@ async function studioOpenConversation(id){
 
   const container = document.getElementById('studio-messages');
   container.innerHTML = '';
-  document.getElementById('studio-welcome').style.display = 'none';
-  container.style.display = 'flex';
+  studioSetWelcomeMode(false);
 
   msgs.forEach(m => {
     studioAddMsgToDOM(m.role, m.role === 'assistant' ? matMd(m.content) : escHtml(m.content));
@@ -2801,9 +2846,8 @@ async function studioSend(){
   document.getElementById('studio-picker').style.display = 'none';
 
   // Mesaj alanını göster
-  document.getElementById('studio-welcome').style.display = 'none';
+  studioSetWelcomeMode(false);
   const container = document.getElementById('studio-messages');
-  container.style.display = 'flex';
 
   studioAddMsgToDOM('user', escHtml(text));
 
