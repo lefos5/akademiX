@@ -2868,11 +2868,57 @@ async function studioSend(){
   // Prompt oluştur — ekli materyaller varsa context ekle
   let prompt = text;
   if(studioAttached.length){
-    const matContext = studioAttached.map(idx => {
+    showToast('⏳ Materyaller okunuyor...');
+    const matContextParts = [];
+    for(const idx of studioAttached){
       const m = materials[idx];
-      return m ? `[Materyal: ${m.title}]\n${m.note || m.title}` : '';
-    }).filter(Boolean).join('\n\n');
-    prompt = `Aşağıdaki materyaller bağlamında cevap ver:\n\n${matContext}\n\n---\nSoru: ${text}`;
+      if(!m) continue;
+      let content = '';
+
+      if(m.type === 'file' && (m.fileUrl || m.url)){
+        const ext = (m.fileName || '').split('.').pop().toLowerCase();
+        const fileUrl = m.fileUrl || m.url;
+        try{
+          if(ext === 'pdf'){
+            // PDF: pdfjs ile URL'den metin çıkar
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
+            const maxP = Math.min(pdf.numPages, 40);
+            const pages = [];
+            for(let i = 1; i <= maxP; i++){
+              const page = await pdf.getPage(i);
+              const tc = await page.getTextContent();
+              pages.push(`[Sayfa ${i}] ${tc.items.map(s => s.str).join(' ')}`);
+            }
+            content = pages.join('\n\n');
+            if(content.length > 20000) content = content.substring(0, 20000) + '\n[...metin kısaltıldı]';
+          } else if(['doc','docx'].includes(ext)){
+            const resp = await fetch(fileUrl);
+            const buf = await resp.arrayBuffer();
+            const result = await mammoth.extractRawText({arrayBuffer: buf});
+            content = result.value.substring(0, 15000);
+          } else {
+            // Diğer dosyalar — küçükse metin oku
+            const fileSize = m.fileSize || 0;
+            if(fileSize < 2 * 1024 * 1024){
+              const resp = await fetch(fileUrl);
+              content = (await resp.text()).substring(0, 10000);
+            } else {
+              content = `[Dosya: ${m.fileName} (${formatFileSize(fileSize)}) — içerik çok büyük]`;
+            }
+          }
+        }catch(e){
+          console.warn('[Studio] Materyal okunamadı:', m.title, e.message);
+          content = `[Dosya okunamadı: ${m.fileName || m.title}]`;
+        }
+      } else if(m.url){
+        content = `[Link: ${m.url}]`;
+      }
+
+      matContextParts.push(`## Materyal: ${m.title}\n${content || m.note || '(içerik yok)'}`);
+    }
+    const matContext = matContextParts.join('\n\n---\n\n');
+    prompt = `Aşağıdaki materyallere dayanarak cevap ver. Markdown formatı kullan.\n\n${matContext}\n\n---\nKullanıcı Sorusu: ${text}`;
   }
 
   // Typing göster
@@ -2890,10 +2936,12 @@ async function studioSend(){
     if(!sessionId) throw new Error('Giriş yapman gerekiyor.');
 
     const msgs = [...studioHistory, { role:'user', content:[{type:'text',text:prompt}] }];
+    const studioSystem = 'Sen AkademiX AI Studio asistanısın. Üniversite öğrencilerine yardımcı oluyorsun. Türkçe cevap ver. Markdown formatını zengin kullan: ## başlıklar, **kalın**, *italik*, - listeler, 1. numaralı listeler, `kod`, > alıntılar. Gerektiğinde SVG diagram çiz. Materyaller eklendiğinde onların içeriğine dayanarak kapsamlı cevaplar ver.';
+    const studioMaxTokens = studioAttached.length > 0 ? 8000 : 4000;
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-session-id':sessionId},
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000, messages:msgs })
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:studioMaxTokens, system:studioSystem, messages:msgs })
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || 'Sunucu hatası');
