@@ -219,7 +219,9 @@
     border-radius: 14px; overflow: hidden;
     box-shadow: 0 4px 32px rgba(0,0,0,0.3);
   }
-  .schedule-header { display: grid; grid-template-columns: 60px repeat(5,1fr); border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .schedule-header { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .schedule-header .day-header:first-child { width: 60px; flex-shrink: 0; }
+  .schedule-header .day-header:not(:first-child) { flex: 1; }
   .day-header {
     padding: 14px 12px; text-align: center;
     font-size: 12px; font-weight: 600; color: var(--muted);
@@ -229,8 +231,6 @@
   .day-header:last-child { border-right: none; }
   .day-header.today { color: var(--accent2); }
   .schedule-body {
-    display: grid;
-    grid-template-columns: 60px repeat(5, 1fr);
     position: relative;
   }
   .sb-time-col {
@@ -482,7 +482,10 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: width 0.25s cubic-bezier(0.16,1,0.3,1);
   }
+  .mat-sidebar.collapsed { width: 0; border-right: none; }
+  .mat-sidebar.collapsed > * { opacity: 0; pointer-events: none; }
   .mat-sidebar-top {
     display: flex;
     align-items: center;
@@ -909,7 +912,10 @@
     border-right:1px solid var(--border);
     display:flex; flex-direction:column;
     background:var(--surface);
+    transition: width 0.25s cubic-bezier(0.16,1,0.3,1);
   }
+  .rag-sidebar.collapsed { width:0; border-right:none; }
+  .rag-sidebar.collapsed > * { opacity:0; pointer-events:none; }
   .rag-sidebar-top {
     display:flex; align-items:center; justify-content:space-between;
     padding:12px 14px 10px; border-bottom:1px solid var(--border);
@@ -975,12 +981,16 @@
     border-right: 1px solid var(--border);
     display: flex; flex-direction:column;
     padding: 16px 0;
+    transition: width 0.25s cubic-bezier(0.16,1,0.3,1), padding 0.25s;
+    overflow: hidden;
   }
+  .studio-sidebar.collapsed { width: 0; padding: 0; border-right: none; }
+  .studio-sidebar.collapsed > * { opacity: 0; pointer-events: none; }
   .studio-sidebar-top {
     display:flex; align-items:center; justify-content:space-between;
     padding: 0 16px 12px;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 12px;
+    margin-bottom: 0; flex-shrink: 0;
   }
   .studio-sidebar-title { font-size:13px; font-weight:700; color:var(--text); }
   .studio-new-btn {
@@ -990,8 +1000,19 @@
     cursor:pointer; transition:opacity 0.15s;
   }
   .studio-new-btn:hover { opacity:0.85; }
-  .studio-recents-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; padding:0 16px 8px; }
+  .studio-recents-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; padding:12px 16px 8px; flex-shrink:0; }
   .studio-recents { flex:1; overflow-y:auto; padding:0 8px; }
+  /* Studio boş sohbet durumu */
+  .studio-recents:empty::after,
+  .studio-recents:has(> div:only-child:empty)::after {
+    content: '';
+  }
+  .studio-empty-state {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    flex:1; padding:32px 16px; text-align:center; color:var(--muted);
+  }
+  .studio-empty-state .icon { font-size:32px; opacity:0.3; margin-bottom:10px; }
+  .studio-empty-state p { font-size:12px; line-height:1.5; }
   .studio-conv-item {
     padding: 9px 10px; border-radius:8px; cursor:pointer;
     transition:background 0.12s; margin-bottom:2px;
@@ -1003,6 +1024,20 @@
   .studio-conv-time { font-size:10px; color:var(--muted); flex-shrink:0; }
   .studio-conv-del { opacity:0; font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; padding:2px 4px; }
   .studio-conv-item:hover .studio-conv-del { opacity:1; }
+
+  /* ── Collapsible Panel Toggle ── */
+  .panel-toggle {
+    position:absolute; top:50%; z-index:10;
+    width:20px; height:40px; border-radius:0 8px 8px 0;
+    background:var(--surface); border:1px solid var(--border);
+    border-left:none; cursor:pointer; color:var(--muted);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; transition:all 0.2s;
+    transform:translateY(-50%);
+  }
+  .panel-toggle:hover { color:var(--accent2); background:var(--surface2); }
+  .panel-toggle.left { left:0; }
+  .panel-toggle.flipped { border-radius:8px 0 0 8px; border:1px solid var(--border); border-right:none; }
 
   .studio-main {
     flex:1; display:flex; flex-direction:column;
@@ -1587,16 +1622,20 @@
   <div class="page" id="page-studio" style="padding:0">
     <div class="studio-layout">
       <!-- Sol: Recents -->
-      <div class="studio-sidebar">
+      <div class="studio-sidebar" id="studio-sidebar">
         <div class="studio-sidebar-top">
           <span class="studio-sidebar-title">AI Studio</span>
-          <button class="studio-new-btn" onclick="studioNewConversation()" title="Yeni Sohbet">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
+          <div style="display:flex;gap:4px;align-items:center">
+            <button class="studio-new-btn" onclick="studioNewConversation()" title="Yeni Sohbet">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
         </div>
         <div class="studio-recents-label">Son Sohbetler</div>
         <div class="studio-recents" id="studio-recents"></div>
       </div>
+      <!-- Sidebar toggle -->
+      <button class="panel-toggle left" id="studio-panel-toggle" onclick="togglePanel('studio-sidebar','studio-panel-toggle')" title="Paneli daralt" style="position:relative;flex-shrink:0;border-radius:0;border-top:none;border-bottom:none;height:auto;width:16px;transform:none;top:0;">‹</button>
       <!-- Sağ: Aktif sohbet -->
       <div class="studio-main">
         <div class="studio-welcome" id="studio-welcome">
@@ -1629,7 +1668,7 @@
   <!-- MATERIALS -->
   <div class="page" id="page-materials">
     <div class="mat-layout">
-      <div class="mat-sidebar">
+      <div class="mat-sidebar" id="mat-sidebar">
         <div class="mat-sidebar-top">
           <span class="mat-sidebar-title">Materyaller</span>
           <button class="mat-add-btn" onclick="openMatModal()" title="Yeni Materyal">
@@ -1645,6 +1684,7 @@
           <div class="mat-list-empty"><div style="font-size:32px;opacity:0.25;margin-bottom:10px">📂</div><p>Henüz materyal yok</p></div>
         </div>
       </div>
+      <button class="panel-toggle left" id="mat-panel-toggle" onclick="togglePanel('mat-sidebar','mat-panel-toggle')" title="Paneli daralt" style="position:relative;flex-shrink:0;border-radius:0;border-top:none;border-bottom:none;height:auto;width:16px;transform:none;top:0;">‹</button>
       <div class="mat-detail" id="mat-detail">
         <div class="mat-welcome" id="mat-welcome">
           <div class="mat-welcome-icon">✨</div>
@@ -2714,7 +2754,10 @@ function renderStudioRecents(){
   const container = document.getElementById('studio-recents');
   if(!container) return;
   if(!studioConversations.length){
-    container.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 8px;">Henüz sohbet yok</div>';
+    container.innerHTML = `<div class="studio-empty-state">
+      <div class="icon">💬</div>
+      <p>Henüz sohbet yok.<br>Yeni bir sohbet başlat!</p>
+    </div>`;
     return;
   }
   container.innerHTML = studioConversations.map(c => `
@@ -3176,36 +3219,33 @@ function renderSchedule(){
   const startH=Math.floor(minT/60);
   const endH=Math.ceil(maxT/60);
   const totalHours=endH-startH;
-  const ROW_H=64; // px per hour
+  const ROW_H=56; // px per hour — biraz kompakt
 
-  // Wrapper: flex row (saat kolonu + 5 gün kolonu)
+  // Header ve body aynı layout: flex row
   body.style.display='flex';
   body.style.flexDirection='row';
   body.style.position='relative';
 
   // Saat etiketi kolonu
   const timeCol=document.createElement('div');
-  timeCol.style.cssText='width:60px;flex-shrink:0;';
+  timeCol.style.cssText='width:60px;flex-shrink:0;border-right:1px solid var(--border);';
   for(let h=startH;h<endH;h++){
     const tl=document.createElement('div');
-    tl.className='time-label';
-    tl.style.cssText=`height:${ROW_H}px;box-sizing:border-box;`;
-    tl.textContent=h+':00';
+    tl.style.cssText=`height:${ROW_H}px;display:flex;align-items:flex-start;justify-content:flex-end;padding:6px 8px 0 0;font-size:10px;color:var(--muted2);font-weight:500;border-bottom:1px solid var(--border);box-sizing:border-box;`;
+    tl.textContent=String(h).padStart(2,'0')+':00';
     timeCol.appendChild(tl);
   }
   body.appendChild(timeCol);
 
   // Her gün için kolon
-  DAYS.forEach(day=>{
+  DAYS.forEach((day,dayIdx)=>{
     const col=document.createElement('div');
-    col.className='sb-day-col';
-    col.style.cssText=`flex:1;position:relative;height:${totalHours*ROW_H}px;`;
+    col.style.cssText=`flex:1;position:relative;height:${totalHours*ROW_H}px;border-right:${dayIdx<4?'1px solid var(--border)':'none'};`;
 
     // Saat çizgileri
     for(let h=0;h<totalHours;h++){
       const line=document.createElement('div');
-      line.className='sb-hour-line';
-      line.style.top=`${h*ROW_H}px`;
+      line.style.cssText=`position:absolute;left:0;right:0;top:${h*ROW_H}px;border-bottom:1px solid var(--border);pointer-events:none;`;
       col.appendChild(line);
     }
 
@@ -5687,6 +5727,17 @@ async function deleteMaterial(idx){
 // ===== TEMA GEÇİŞİ =====
 
 // ===== MOBİL SİDEBAR =====
+
+// ===== PANEL DARALT/GENİŞLET =====
+function togglePanel(sidebarId, toggleId){
+  const sidebar = document.getElementById(sidebarId);
+  const toggle = document.getElementById(toggleId);
+  if(!sidebar || !toggle) return;
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  toggle.textContent = isCollapsed ? '›' : '‹';
+  toggle.title = isCollapsed ? 'Paneli genişlet' : 'Paneli daralt';
+}
+
 function toggleMobileSidebar(){
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('mobile-overlay');
