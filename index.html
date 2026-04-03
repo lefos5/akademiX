@@ -1511,6 +1511,7 @@
         <div class="day-header" id="hdr-Wed">Çarşamba</div>
         <div class="day-header" id="hdr-Thu">Perşembe</div>
         <div class="day-header" id="hdr-Fri">Cuma</div>
+        <div class="day-header" id="hdr-Sat">Cumartesi</div>
       </div>
       <div class="schedule-body" id="schedule-body"></div>
     </div>
@@ -2395,8 +2396,8 @@ const rawCourses = [
   {code:"INF804UE",name:"Proje Geliştirme Metodolojisi - Agile & Scrum",dept:"INF",instructor:"MSc. Nihat Ük",schedule:{"Wed":"15:00-17:00|C102"},classroom:null},
   {code:"ING404",name:"Girişimcilik",dept:"ING",instructor:"Prof. Dr. Murat Hamderi",schedule:{"Thu":"14:30-16:30|C301"},classroom:null},
   {code:"ING406",name:"Mühendisler için Hukuk",dept:"ING",instructor:"Arş. Gör. Dr. Baver Mazlum Mert",schedule:{"Thu":"12:30-16:30|C302"},classroom:null},
-  {code:"ISG002-A",name:"İş Sağlığı ve Güvenliği II",dept:"ISG",instructor:"Dipl.-Ing. Joachim Kuntze / Dr. Öğr. Üyesi Mehmet Adil Akgül",schedule:{"Mon":"09:30-11:30|ONLINE"},classroom:null,shared:"BAU, MAB, MEC, WIN"},
-  {code:"ISG002-B",name:"İş Sağlığı ve Güvenliği II",dept:"ISG",instructor:"Dipl.-Ing. Joachim Kuntze / Dr. Öğr. Üyesi Mehmet Adil Akgül",schedule:{"Mon":"15:30-17:30|ONLINE"},classroom:null,shared:"ETE, INF, FEN"},
+  {code:"ISG002-A",name:"İş Sağlığı ve Güvenliği II",dept:"ISG",instructor:"Dipl.-Ing. Joachim Kuntze / Dr. Öğr. Üyesi Mehmet Adil Akgül",schedule:{"Sat":"09:30-11:30|ONLINE"},classroom:null,shared:"BAU, MAB, MEC, WIN"},
+  {code:"ISG002-B",name:"İş Sağlığı ve Güvenliği II",dept:"ISG",instructor:"Dipl.-Ing. Joachim Kuntze / Dr. Öğr. Üyesi Mehmet Adil Akgül",schedule:{"Sat":"15:30-17:30|ONLINE"},classroom:null,shared:"ETE, INF, FEN"},
   {code:"MAB092",name:"Bilimsel Çalışma Yöntemleri",dept:"MAB",instructor:"Dr. Öğr. Üyesi Mehmet İpekoğlu",schedule:{"Tue":"12:30-14:30|C106"},classroom:null},
   {code:"MAB108L",name:"Tasarım Teknikleri I: Teknik Çizim 2",dept:"MAB",instructor:"Prof. Dr.-Ing. Hulusi Bozkurt",schedule:{"Tue":"15:00-17:00|C104"},classroom:null},
   {code:"MAB108VL",name:"Tasarım Teknikleri I: Teknik Çizim 2",dept:"MAB",instructor:"Prof. Dr.-Ing. Hulusi Bozkurt",schedule:{"Thu":"13:45-16:30|ONLINE", "Fri":"08:30-12:00|C305"},classroom:null},
@@ -2616,8 +2617,8 @@ const EXAM_SCHEDULE = [
   {code:"ÜSDTUR112",name:"Yabancılar İçin Türkçe II",date:"2026-04-08",time:"13:30-14:30",room:"ODBB"},
 ];
 
-const DAYS=["Mon","Tue","Wed","Thu","Fri"];
-const DAY_TR={Mon:"Pazartesi",Tue:"Salı",Wed:"Çarşamba",Thu:"Perşembe",Fri:"Cuma"};
+const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat"];
+const DAY_TR={Mon:"Pazartesi",Tue:"Salı",Wed:"Çarşamba",Thu:"Perşembe",Fri:"Cuma",Sat:"Cumartesi"};
 const DEPT_COLORS={INF:"c-purple",MAT:"c-blue",ENG:"c-green",ETE:"c-orange",PHY:"c-red",TUR:"c-pink",AIT:"c-pink",DEU:"c-orange",BAU:"c-blue",ISG:"c-green",MAB:"c-purple",MEC:"c-red",WIN:"c-blue",VWL:"c-orange",ING:"c-green",OTH:"c-purple"};
 const BANNER_COLORS=['#1a73e8','#188038','#e37400','#d93025','#9334e6','#007b83','#c2185b','#0f9d58'];
 
@@ -3253,7 +3254,7 @@ function renderSchedule(){
   // Her gün için kolon
   DAYS.forEach((day,dayIdx)=>{
     const col=document.createElement('div');
-    col.style.cssText=`flex:1;position:relative;height:${totalHours*ROW_H}px;border-right:${dayIdx<4?'1px solid var(--border)':'none'};`;
+    col.style.cssText=`flex:1;position:relative;height:${totalHours*ROW_H}px;border-right:${dayIdx<5?'1px solid var(--border)':'none'};`;
 
     // Saat çizgileri
     for(let h=0;h<totalHours;h++){
@@ -3287,7 +3288,7 @@ function renderSchedule(){
     body.appendChild(col);
   });
   const ti=(new Date().getDay()+6)%7;
-  ['hdr-Mon','hdr-Tue','hdr-Wed','hdr-Thu','hdr-Fri'].forEach((id,i)=>document.getElementById(id).classList.toggle('today',i===ti));
+  ['hdr-Mon','hdr-Tue','hdr-Wed','hdr-Thu','hdr-Fri','hdr-Sat'].forEach((id,i)=>document.getElementById(id).classList.toggle('today',i===ti));
 }
 
 // COURSES
