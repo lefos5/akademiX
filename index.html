@@ -3768,7 +3768,7 @@ function getCalEvents() {
     const examBase = baseCode(exam.code);
     const isEnrolled = [...enrolled].some(code => {
       const enrolledBase = baseCode(code);
-      return code === exam.code || enrolledBase === examBase || enrolledBase === exam.code;
+      return code === exam.code || enrolledBase === examBase || enrolledBase === exam.code || enrolledBase.startsWith(examBase + '-') || examBase.startsWith(enrolledBase + '-');
     });
     if(!isEnrolled) return;
     const [year, month, day] = exam.date.split('-').map(Number);
