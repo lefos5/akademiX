@@ -4258,17 +4258,17 @@ let matFileData = null;
 
 const MAT_PROMPTS = {
   summary: {
-    short: (t) => `Bu materyali analiz et ve Türkçe kısa bir özet yaz. Maksimum 3 paragraf. Ana noktaları kapsa. Önemli terimleri **kalın** yap. Markdown formatı kullan.\n\nMateryal: ${t}`,
-    detailed: (t) => `Bu materyali kapsamlı şekilde Türkçe analiz et. Markdown formatını zengin kullan. Mümkünse konuyu görselleştiren bir SVG diagram da çiz (akış şeması, kavram haritası vb.).\n\nŞu bölümleri MUTLAKA dahil et ve her birini detaylı yaz:\n\n## 📌 Genel Bakış\nMateryalin neyi kapsadığını 2-3 cümleyle özetle.\n\n## 🎯 Ana Konular\nHer ana konuyu ayrı madde olarak listele. Her maddeyi en az 2-3 cümleyle açıkla. Yüzeysel geçme.\n\n## 📖 Temel Kavramlar ve Tanımlar\nTüm önemli terimleri ve tanımlarını listele. Her terimi **kalın** yap ve yanına açıklamasını yaz.\n\n## ⚡ Kritik Detaylar\nSınavda sorulabilecek spesifik formüller, tarihler, isimler, kurallar gibi ezber gerektiren bilgileri vurgula.\n\n## 🔗 Konular Arası Bağlantılar\nKonuların birbirleriyle nasıl ilişkili olduğunu açıkla.\n\n## 📝 Olası Sınav Konuları\nBu materyalden çıkabilecek soru tiplerini ve konuları tahmin et.\n\n## 💡 Örnekler ve Uygulamalar\nHer ana konu için en az bir somut örnek ver. Anlamayı kolaylaştıracak analojiler kullan.\n\nMateryal: ${t}`,
-    paged: (t) => `Bu materyali sayfa sayfa Türkçe analiz et.\n\nÇOK ÖNEMLİ KURALLAR:\n- Materyaldeki HER SAYFA için ayrı bir bölüm yaz. HİÇBİR SAYFAYI ATLAMA.\n- Her sayfayı en az 3-4 cümleyle özetle. Tek cümlelik özetler YASAK.\n- Önemli kavramları **kalın** yap.\n- Sayfa numaralarını doğru kullan.\n- "Benzer içerik devam ediyor" gibi atlamalar YAPMA.\n- Her sayfanın gerçek içeriğini analiz et.\n\nHer sayfa için bu formatı kullan:\n\n## 📄 Sayfa [numara]\n[O sayfanın detaylı özeti — en az 3-4 cümle, önemli terimler **kalın**]\n\nMateryal: ${t}`,
+    short: (t) => `Aşağıdaki materyali analiz et ve Türkçe kısa bir özet yaz. Maksimum 3 paragraf. Ana noktaları kapsa. Önemli terimleri **kalın** yap. Markdown formatı kullan.\n\nMateryal İçeriği:\n${t}`,
+    detailed: (t) => `Aşağıdaki materyali kapsamlı şekilde Türkçe analiz et. Markdown formatını zengin kullan. Mümkünse konuyu görselleştiren bir SVG diagram da çiz (akış şeması, kavram haritası vb.).\n\nŞu bölümleri MUTLAKA dahil et ve her birini detaylı yaz:\n\n## 📌 Genel Bakış\nMateryalin neyi kapsadığını 2-3 cümleyle özetle.\n\n## 🎯 Ana Konular\nHer ana konuyu ayrı madde olarak listele. Her maddeyi en az 2-3 cümleyle açıkla. Yüzeysel geçme.\n\n## 📖 Temel Kavramlar ve Tanımlar\nTüm önemli terimleri ve tanımlarını listele. Her terimi **kalın** yap ve yanına açıklamasını yaz.\n\n## ⚡ Kritik Detaylar\nSınavda sorulabilecek spesifik formüller, tarihler, isimler, kurallar gibi ezber gerektiren bilgileri vurgula.\n\n## 🔗 Konular Arası Bağlantılar\nKonuların birbirleriyle nasıl ilişkili olduğunu açıkla.\n\n## 📝 Olası Sınav Konuları\nBu materyalden çıkabilecek soru tiplerini ve konuları tahmin et.\n\n## 💡 Örnekler ve Uygulamalar\nHer ana konu için en az bir somut örnek ver. Anlamayı kolaylaştıracak analojiler kullan.\n\nMateryal İçeriği:\n${t}`,
+    paged: (t) => `Aşağıdaki materyali sayfa sayfa Türkçe analiz et.\n\nÇOK ÖNEMLİ KURALLAR:\n- Materyaldeki HER SAYFA için ayrı bir bölüm yaz. HİÇBİR SAYFAYI ATLAMA.\n- Her sayfayı en az 3-4 cümleyle özetle. Tek cümlelik özetler YASAK.\n- Önemli kavramları **kalın** yap.\n- Sayfa numaralarını doğru kullan.\n- "Benzer içerik devam ediyor" gibi atlamalar YAPMA.\n- Her sayfanın gerçek içeriğini analiz et.\n\nHer sayfa için bu formatı kullan:\n\n## 📄 Sayfa [numara]\n[O sayfanın detaylı özeti — en az 3-4 cümle, önemli terimler **kalın**]\n\nMateryal İçeriği:\n${t}`,
   },
   quiz: {
-    easy_mc: (t) => `Bu materyalden Türkçe 10 kolay çoktan seçmeli soru oluştur. Sorular materyalin farklı bölümlerinden olsun.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [neden bu cevap doğru, kısa açıklama]\n\n---\n\nMateryal: ${t}`,
-    hard_mc: (t) => `Bu materyalden Türkçe 10 ZOR ve düşündürücü çoktan seçmeli soru oluştur. Sorular analiz, karşılaştırma, uygulama ve değerlendirme gerektirsin. Şıklar birbirine yakın ve yanıltıcı olsun.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [detaylı açıklama — neden diğer şıklar yanlış]\n\n---\n\nMateryal: ${t}`,
-    open: (t) => `Bu materyalden Türkçe 8 açık uçlu sınav sorusu oluştur. Kolay → orta → zor sırasıyla. Her sorunun model cevabı kapsamlı olsun (en az 3-4 cümle).\n\nHer soru için bu formatı kullan:\n\nSOUR: [soru metni]\nMODEL_CEVAP: [kapsamlı model cevap — en az 3-4 cümle]\n\n---\n\nMateryal: ${t}`,
-    mixed: (t) => `Bu materyalden Türkçe karışık bir sınav oluştur: 5 çoktan seçmeli, 3 doğru/yanlış, 3 açık uçlu soru.\n\nÇoktan seçmeli format:\nSOUR: [soru]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [harf]\nAÇIKLAMA: [açıklama]\n\n---\n\nDoğru/Yanlış format:\nSOUR: [ifade]\nCEVAP: Doğru/Yanlış\nAÇIKLAMA: [açıklama]\n\n---\n\nAçık uçlu format:\nSOUR: [soru]\nMODEL_CEVAP: [kapsamlı cevap]\n\n---\n\nMateryal: ${t}`,
+    easy_mc: (t) => `Aşağıdaki materyalden Türkçe 10 kolay çoktan seçmeli soru oluştur. Sorular materyalin farklı bölümlerinden olsun.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [neden bu cevap doğru, kısa açıklama]\n\n---\n\nMateryal İçeriği:\n${t}`,
+    hard_mc: (t) => `Aşağıdaki materyalden Türkçe 10 ZOR ve düşündürücü çoktan seçmeli soru oluştur. Sorular analiz, karşılaştırma, uygulama ve değerlendirme gerektirsin. Şıklar birbirine yakın ve yanıltıcı olsun.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [detaylı açıklama — neden diğer şıklar yanlış]\n\n---\n\nMateryal İçeriği:\n${t}`,
+    open: (t) => `Aşağıdaki materyalden Türkçe 8 açık uçlu sınav sorusu oluştur. Kolay → orta → zor sırasıyla. Her sorunun model cevabı kapsamlı olsun (en az 3-4 cümle).\n\nHer soru için bu formatı kullan:\n\nSOUR: [soru metni]\nMODEL_CEVAP: [kapsamlı model cevap — en az 3-4 cümle]\n\n---\n\nMateryal İçeriği:\n${t}`,
+    mixed: (t) => `Aşağıdaki materyalden Türkçe karışık bir sınav oluştur: 5 çoktan seçmeli, 3 doğru/yanlış, 3 açık uçlu soru.\n\nÇoktan seçmeli format:\nSOUR: [soru]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [harf]\nAÇIKLAMA: [açıklama]\n\n---\n\nDoğru/Yanlış format:\nSOUR: [ifade]\nCEVAP: Doğru/Yanlış\nAÇIKLAMA: [açıklama]\n\n---\n\nAçık uçlu format:\nSOUR: [soru]\nMODEL_CEVAP: [kapsamlı cevap]\n\n---\n\nMateryal İçeriği:\n${t}`,
   },
-  flashcard: (t) => `Bu materyalden Türkçe flashcard'lar oluştur. Her kart için bu formatı AYNEN kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım — kısa ve öz ama yeterli]\n\nEn kritik noktaları kapsayan en az 15 kart oluştur. Tüm önemli kavramları, tanımları, formülleri ve kuralları dahil et.\n\nMateryal: ${t}`,
+  flashcard: (t) => `Aşağıdaki materyalden Türkçe flashcard'lar oluştur. Her kart için bu formatı AYNEN kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım — kısa ve öz ama yeterli]\n\nEn kritik noktaları kapsayan en az 15 kart oluştur. Tüm önemli kavramları, tanımları, formülleri ve kuralları dahil et.\n\nMateryal İçeriği:\n${t}`,
   chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
 };
 
@@ -4789,8 +4789,9 @@ async function matRunVariant(mode, variant){
   else if(mode === 'quiz') promptFn = MAT_PROMPTS.quiz[variant];
   else promptFn = MAT_PROMPTS.flashcard;
 
-  const prompt = promptFn(m.title);
-  await matCallAI(prompt, { forcePrompt: true, mode, variant });
+  const content = matFileData?.content || matFileData?.fullContent || m.title;
+  const prompt = promptFn(content);
+  await matCallAI(prompt, { forcePrompt: true, mode, variant, skipContentAppend: true });
 }
 
 async function matRunVariantChunked(mode, variant, m, fullContent, chunkSize){
@@ -5205,7 +5206,7 @@ Kuralların:
   matShowTyping();
 
   let messageContent = [];
-  if(matFileData){
+  if(matFileData && !opts.skipContentAppend){
     const fd = matFileData;
     if(fd.type==='pdf') messageContent=[{type:'document',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
     else if(fd.type==='image') messageContent=[{type:'image',source:{type:'base64',media_type:fd.mediaType,data:fd.base64}},{type:'text',text:prompt}];
