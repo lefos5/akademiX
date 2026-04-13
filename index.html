@@ -4463,7 +4463,7 @@ async function loadMatHistory(materialId){
 
       // Yeniden Oluştur butonu
       const resetBar = document.createElement('div');
-      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;';
+      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;';
       const resetBtn = document.createElement('button');
       resetBtn.className = 'mat-ws-action';
       resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
@@ -4893,7 +4893,7 @@ Kuralların:
 
   // Yeniden Oluştur butonu
   const resetBar = document.createElement('div');
-  resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;';
+  resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;';
   const resetBtn = document.createElement('button');
   resetBtn.className = 'mat-ws-action';
   resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
@@ -5274,7 +5274,7 @@ Kuralların:
     // Yeniden Oluştur butonu — tüm AI modlarında (forcePrompt olanlar)
     if(opts.forcePrompt){
       const resetBar = document.createElement('div');
-      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;';
+      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;';
       const resetBtn = document.createElement('button');
       resetBtn.className = 'mat-ws-action';
       resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
