@@ -3742,7 +3742,8 @@ function showToast(msg){
   // Reset animation
   t.style.opacity='0';t.style.transform='translateY(10px)';
   requestAnimationFrame(()=>{t.style.opacity='1';t.style.transform='translateY(0)';});
-  clearTimeout(t._timeout);t._timeout=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(10px)';},3000);
+  t.style.pointerEvents='auto';
+  clearTimeout(t._timeout);t._timeout=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(10px)';t.style.pointerEvents='none';},3000);
 }
 
 // ===== CALENDAR =====
