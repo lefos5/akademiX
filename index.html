@@ -4382,14 +4382,14 @@ async function selectMat(idx){
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
         let fullText = '';
-        const maxPages = Math.min(pdf.numPages, 60);
+        const maxPages = Math.min(pdf.numPages, 150);
         for(let i = 1; i <= maxPages; i++){
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
           fullText += `[Sayfa ${i}]\n${textContent.items.map(item => item.str).join(' ')}\n\n`;
         }
-        if(pdf.numPages > 60) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 60 sayfa analiz edildi]`;
-        matFileData = { type: 'text', content: fullText.substring(0, 30000), pageCount: pdf.numPages };
+        if(pdf.numPages > 150) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 150 sayfa analiz edildi]`;
+        matFileData = { type: 'text', content: fullText.substring(0, 100000), fullContent: fullText, pageCount: pdf.numPages };
         showToast(`✅ PDF analiz edildi (${pdf.numPages} sayfa)`);
       } else if(fileSize > FILE_DIRECT_LIMIT){
         // Büyük non-PDF dosya — indirme yapma, sadece başlık bilgisi tut
@@ -4773,6 +4773,16 @@ async function matRunVariant(mode, variant){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
 
+  // Büyük dosya kontrolü — fullContent varsa ve 100K'yı aşıyorsa chunk sistemi
+  const fullContent = matFileData?.fullContent || matFileData?.content || '';
+  const CHUNK_SIZE = 90000; // her chunk max 90K karakter
+  const needsChunking = fullContent.length > CHUNK_SIZE;
+
+  if(needsChunking && (mode === 'summary' || mode === 'quiz' || mode === 'flashcard')){
+    await matRunVariantChunked(mode, variant, m, fullContent, CHUNK_SIZE);
+    return;
+  }
+
   // Build prompt
   let promptFn;
   if(mode === 'summary') promptFn = MAT_PROMPTS.summary[variant];
@@ -4781,6 +4791,121 @@ async function matRunVariant(mode, variant){
 
   const prompt = promptFn(m.title);
   await matCallAI(prompt, { forcePrompt: true, mode, variant });
+}
+
+async function matRunVariantChunked(mode, variant, m, fullContent, chunkSize){
+  const chunks = [];
+  for(let i = 0; i < fullContent.length; i += chunkSize){
+    chunks.push(fullContent.substring(i, i + chunkSize));
+  }
+
+  const panel = getPanel(mode);
+  const sessionId = localStorage.getItem('akademix_session');
+  if(!sessionId){
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">❌ Giriş yapman gerekiyor.</span>');
+    return;
+  }
+
+  // Kullanıcıya bilgi ver
+  matAddMsgToPanel(mode, 'ai', `<div style="padding:12px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;font-size:13px;color:var(--muted)">
+    📄 Büyük dosya algılandı (${chunks.length} bölüm). Sırayla işleniyor, lütfen bekleyin...
+  </div>`);
+
+  const systemPrompt = `Sen AkademiX platformunda çalışan uzman bir akademik asistansın. Görevin üniversite öğrencilerine materyallerini anlamalarında yardımcı olmak.
+Kuralların:
+- Her zaman Türkçe cevap ver.
+- Markdown formatını zengin şekilde kullan: ## başlıklar, **kalın** önemli terimler, *italik* vurgular, - ve 1. listeler.
+- Cevapların kapsamlı, detaylı ve eğitici olsun.`;
+
+  const tokenLimits = { summary: 8000, quiz: 6000, flashcard: 6000 };
+  const maxTokens = tokenLimits[mode] || 6000;
+
+  let allResults = [];
+
+  for(let i = 0; i < chunks.length; i++){
+    // Progress güncelle
+    const progressEl = panel?.querySelector('.chunk-progress');
+    if(progressEl) progressEl.textContent = `⏳ Bölüm ${i+1}/${chunks.length} işleniyor...`;
+    else matAddMsgToPanel(mode, 'ai', `<div class="chunk-progress" style="font-size:12px;color:var(--muted);margin:4px 0">⏳ Bölüm ${i+1}/${chunks.length} işleniyor...</div>`);
+
+    let chunkPrompt = '';
+    if(mode === 'summary'){
+      if(variant === 'paged'){
+        chunkPrompt = `Aşağıdaki materyal bölümünü (Bölüm ${i+1}/${chunks.length}) sayfa sayfa Türkçe analiz et. HER SAYFAYI atlamadan özetle. Format:\n\n## 📄 Sayfa [numara]\n[Detaylı özet — en az 3-4 cümle]\n\nMateryal Bölümü:\n${chunks[i]}`;
+      } else if(variant === 'short'){
+        chunkPrompt = `Aşağıdaki materyal bölümünü (Bölüm ${i+1}/${chunks.length}) Türkçe 2-3 paragrafla özetle. Ana noktaları kapsa.\n\nMateryal Bölümü:\n${chunks[i]}`;
+      } else {
+        chunkPrompt = `Aşağıdaki materyal bölümünü (Bölüm ${i+1}/${chunks.length}) kapsamlı şekilde Türkçe analiz et. Ana konuları, temel kavramları ve kritik detayları Markdown ile açıkla.\n\nMateryal Bölümü:\n${chunks[i]}`;
+      }
+    } else if(mode === 'quiz'){
+      const qCount = Math.max(3, Math.ceil(10 / chunks.length));
+      let promptFn = MAT_PROMPTS.quiz[variant];
+      chunkPrompt = promptFn(`(Bölüm ${i+1}/${chunks.length})\n${chunks[i]}`).replace('10 ', `${qCount} `);
+    } else if(mode === 'flashcard'){
+      chunkPrompt = `Bu materyal bölümünden (${i+1}/${chunks.length}) Türkçe flashcard'lar oluştur. Her kart için:\nQ: [soru veya kavram]\nA: [cevap veya tanım]\n\nEn az 5 kart oluştur.\n\nMateryal:\n${chunks[i]}`;
+    }
+
+    try{
+      const resp = await fetch(BACKEND_URL + '/api/ai', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-session-id': sessionId},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens: maxTokens,
+          system: systemPrompt,
+          messages:[{role:'user',content:[{type:'text',text:chunkPrompt}]}]
+        })
+      });
+      const data = await resp.json();
+      if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
+      const result = data.content?.map(c=>c.text||'').join('')||'';
+      allResults.push(result);
+    } catch(e){
+      allResults.push(`[Bölüm ${i+1} işlenirken hata: ${e.message}]`);
+    }
+  }
+
+  // Sonuçları birleştir ve göster
+  const combined = allResults.join('\n\n---\n\n');
+  const html = (mode==='flashcard') ? matBuildFlashcards(combined) : (mode==='quiz') ? matBuildQuiz(combined) : matMd(combined);
+  const msgEl = matAddMsgToPanel(mode, 'ai', html);
+
+  // Kaydet butonu (özet için)
+  if(mode === 'summary'){
+    const saveBar = document.createElement('div');
+    saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'add-btn';
+    saveBtn.style.cssText = 'padding:6px 14px;font-size:12px;flex-shrink:0;';
+    saveBtn.textContent = '💾 Kaydet';
+    saveBtn._summaryHtml = html;
+    saveBtn._summaryTitle = m.title;
+    saveBtn._summaryCourse = m.course || '';
+    saveBtn.onclick = function(){ matSaveCurrentSummary(this); };
+    const label = document.createElement('span');
+    label.style.cssText = 'font-size:12px;color:var(--muted);';
+    label.textContent = 'Bu özeti daha sonra görmek için kaydet';
+    saveBar.appendChild(saveBtn);
+    saveBar.appendChild(label);
+    msgEl?.querySelector('.mat-msg-body')?.appendChild(saveBar);
+  }
+
+  // Yeniden Oluştur butonu
+  const resetBar = document.createElement('div');
+  resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;';
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'mat-ws-action';
+  resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+  resetBtn.textContent = '↺ Yeniden Oluştur';
+  resetBtn.onclick = () => matResetMode(mode);
+  resetBar.appendChild(resetBtn);
+  if(panel) panel.appendChild(resetBar);
+
+  // Supabase'e kaydet
+  if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, combined, { variant: variant || null });
+  matModeReady[mode] = true;
+
+  showToast(`✅ ${chunks.length} bölüm işlendi!`);
 }
 
 function matAddMsg(role, html){
@@ -5018,14 +5143,14 @@ async function prepareFileForClaude(f){
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
       let fullText = '';
-      const maxPages = Math.min(pdf.numPages, 50);
+      const maxPages = Math.min(pdf.numPages, 150);
       for(let i = 1; i <= maxPages; i++){
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         fullText += `[Sayfa ${i}]\n${textContent.items.map(item => item.str).join(' ')}\n\n`;
       }
-      if(pdf.numPages > 50) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 50 sayfa analiz edildi]`;
-      return { type: 'text', content: fullText.substring(0, 30000), pageCount: pdf.numPages };
+      if(pdf.numPages > 150) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 150 sayfa analiz edildi]`;
+      return { type: 'text', content: fullText.substring(0, 100000), fullContent: fullText, pageCount: pdf.numPages };
     } catch(e) {
       return { type: 'pdf', base64, mediaType: 'application/pdf' };
     }
@@ -5390,7 +5515,7 @@ async function ragSend(){
       if((!answer || answer.includes('bulunamadı') || answer.includes('bilgi yok') || answer.includes('mevcut değil')) && matFileData?.content){
         const sessionId = localStorage.getItem('akademix_session');
         if(sessionId){
-          const fallbackPrompt = `Kullanıcı şu soruyu sordu: "${question}"\n\nAşağıdaki materyale dayanarak cevap ver. Markdown formatı kullan.\n\nMateryal:\n${matFileData.content.substring(0, 15000)}`;
+          const fallbackPrompt = `Kullanıcı şu soruyu sordu: "${question}"\n\nAşağıdaki materyale dayanarak cevap ver. Markdown formatı kullan.\n\nMateryal:\n${matFileData.content.substring(0, 50000)}`;
           const resp2 = await fetch(BACKEND_URL + '/api/ai', {
             method:'POST',
             headers:{'Content-Type':'application/json','x-session-id':sessionId},
