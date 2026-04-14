@@ -1212,11 +1212,34 @@
   .mat-type-tab.active { background:rgba(108,99,255,0.15); border-color:var(--accent); color:var(--accent2); }
 
   /* COURSE SETUP MODAL */
-  .setup-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:2000; align-items:center; justify-content:center; }
+  .setup-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
   .setup-overlay.open { display:flex; }
-  .setup-modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px; width:700px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; }
-  .setup-modal h2 { font-size:20px; font-weight:700; margin-bottom:6px; }
+  .setup-modal { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:36px; width:700px; max-width:95vw; max-height:92vh; display:flex; flex-direction:column; box-shadow:0 24px 80px rgba(0,0,0,0.5); }
+  .setup-modal h2 { font-size:22px; font-weight:800; margin-bottom:6px; font-family:'Outfit',sans-serif; }
   .setup-sub { color:var(--muted); font-size:13px; margin-bottom:20px; line-height:1.6; }
+  /* Onboarding step indicators */
+  .onb-steps { display:flex; align-items:center; gap:6px; margin-bottom:28px; }
+  .onb-step { width:28px; height:4px; border-radius:4px; background:var(--border); transition:all 0.3s; }
+  .onb-step.active { background:var(--accent); width:40px; }
+  .onb-step.done { background:var(--green); }
+  /* Step panels */
+  .onb-panel { display:none; flex-direction:column; flex:1; min-height:0; }
+  .onb-panel.active { display:flex; animation:fadeIn 0.2s ease; }
+  /* Welcome step */
+  .onb-welcome-icon { font-size:56px; margin-bottom:16px; text-align:center; }
+  .onb-welcome-title { font-size:26px; font-weight:800; text-align:center; font-family:'Outfit',sans-serif; margin-bottom:8px; }
+  .onb-welcome-subtitle { color:var(--muted); font-size:14px; text-align:center; line-height:1.7; margin-bottom:28px; }
+  .onb-features { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:28px; }
+  .onb-feature { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:10px; font-size:13px; font-weight:500; }
+  .onb-feature span:first-child { font-size:20px; }
+  /* Dept step */
+  .onb-dept-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:12px; }
+  .onb-dept-card { background:var(--surface2); border:2px solid var(--border); border-radius:12px; padding:16px 12px; text-align:center; cursor:pointer; transition:all 0.15s; }
+  .onb-dept-card:hover { border-color:var(--accent); }
+  .onb-dept-card.selected { border-color:var(--accent); background:var(--accent-glow); }
+  .onb-dept-card .dept-icon { font-size:24px; margin-bottom:6px; }
+  .onb-dept-card .dept-name { font-size:11px; font-weight:700; color:var(--text2); }
+  .onb-dept-note { font-size:12px; color:var(--muted); text-align:center; margin-top:8px; }
   .setup-search { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; color:var(--text); font-size:13px; outline:none; margin-bottom:12px; }
   .setup-search:focus { border-color:var(--accent); }
   .setup-dept-filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
@@ -1780,15 +1803,77 @@
 
 <div class="setup-overlay" id="setup-overlay">
   <div class="setup-modal">
-    <h2>👋 Hoş geldin! Derslerini seç</h2>
-    <p class="setup-sub">Bu dönem hangi dersleri alıyorsun? Seçtikten sonra ders programın otomatik oluşacak. Daha sonra "Derslerimi Düzenle" ile değiştirebilirsin.</p>
-    <input class="setup-search" type="text" id="setup-search" placeholder="Ders adı veya kodu ara..." oninput="renderSetupCourses()">
-    <div class="setup-dept-filters" id="setup-dept-filters"></div>
-    <div class="setup-courses" id="setup-courses"></div>
-    <div class="setup-footer">
-      <span class="setup-count"><strong id="setup-count">0</strong> ders seçildi</span>
-      <button class="setup-save-btn" id="setup-save-btn" onclick="saveSetup()" disabled>Kaydet ve Başla →</button>
+
+    <!-- Step indicators -->
+    <div class="onb-steps">
+      <div class="onb-step active" id="onb-step-0"></div>
+      <div class="onb-step" id="onb-step-1"></div>
+      <div class="onb-step" id="onb-step-2"></div>
+      <div class="onb-step" id="onb-step-3"></div>
     </div>
+
+    <!-- ADIM 1: Hoşgeldin -->
+    <div class="onb-panel active" id="onb-panel-0">
+      <div class="onb-welcome-icon">🎓</div>
+      <div class="onb-welcome-title">AkademiX'e Hoş Geldin!</div>
+      <div id="onb-welcome-name" class="onb-welcome-subtitle">TAÜ Mühendislik Fakültesi öğrencileri için akademik asistanın. Seni birkaç adımda kuruyoruz.</div>
+      <div class="onb-features">
+        <div class="onb-feature"><span>📅</span><span>Otomatik ders programı</span></div>
+        <div class="onb-feature"><span>🤖</span><span>AI ile materyal analizi</span></div>
+        <div class="onb-feature"><span>📚</span><span>Google Classroom entegrasyonu</span></div>
+        <div class="onb-feature"><span>🔍</span><span>Materyallerden soru sor (RAG)</span></div>
+      </div>
+      <div class="setup-footer" style="margin-top:auto">
+        <span></span>
+        <button class="setup-save-btn" onclick="onbNext()">Başlayalım →</button>
+      </div>
+    </div>
+
+    <!-- ADIM 2: Bölüm seç -->
+    <div class="onb-panel" id="onb-panel-1">
+      <h2>Bölümünü seç</h2>
+      <p class="setup-sub">Hangi bölümde okuyorsun? Bir sonraki adımda derslerini seçmeni kolaylaştıracak.</p>
+      <div class="onb-dept-grid" id="onb-dept-grid"></div>
+      <p class="onb-dept-note">💡 Birden fazla bölümden ders alıyorsan endişelenme — sonraki adımda tüm dersleri görebilirsin.</p>
+      <div class="setup-footer" style="margin-top:auto">
+        <button class="setup-save-btn" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border)" onclick="onbBack()">← Geri</button>
+        <button class="setup-save-btn" id="onb-dept-next" onclick="onbNext()" disabled>Devam →</button>
+      </div>
+    </div>
+
+    <!-- ADIM 3: Ders seç -->
+    <div class="onb-panel" id="onb-panel-2" style="min-height:0">
+      <h2>Derslerini seç</h2>
+      <p class="setup-sub">Bölümünün dersleri seçili geldi. İstediğini kaldır ya da başka bölümden ders ekle.</p>
+      <input class="setup-search" type="text" id="setup-search" placeholder="Ders adı veya kodu ara..." oninput="renderSetupCourses()">
+      <div class="setup-dept-filters" id="setup-dept-filters"></div>
+      <div class="setup-courses" id="setup-courses" style="flex:1;overflow-y:auto;min-height:0"></div>
+      <div class="setup-footer">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="setup-save-btn" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:8px 16px" onclick="onbBack()">← Geri</button>
+          <span class="setup-count"><strong id="setup-count">0</strong> ders seçildi</span>
+        </div>
+        <button class="setup-save-btn" id="setup-save-btn" onclick="onbNext()" disabled>Devam →</button>
+      </div>
+    </div>
+
+    <!-- ADIM 4: Hazır -->
+    <div class="onb-panel" id="onb-panel-3">
+      <div class="onb-welcome-icon">🚀</div>
+      <div class="onb-welcome-title">Programın Hazır!</div>
+      <div class="onb-welcome-subtitle" id="onb-finish-text">Derslerini seçtin. Ders programın oluşturuldu.</div>
+      <div class="onb-features">
+        <div class="onb-feature"><span>➡️</span><span>Ders programını görüntüle</span></div>
+        <div class="onb-feature"><span>📁</span><span>Materyal yükle ve AI ile çalış</span></div>
+        <div class="onb-feature"><span>🔗</span><span>Google Classroom'u bağla</span></div>
+        <div class="onb-feature"><span>⚙️</span><span>Dersleri istediğin zaman düzenle</span></div>
+      </div>
+      <div class="setup-footer" style="margin-top:auto">
+        <span></span>
+        <button class="setup-save-btn" onclick="saveSetup()">Başla! 🎉</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -3450,10 +3535,14 @@ async function handleTokenResponse(resp){
       loadClassroomData();
     }
     // Kullanicinin kayitli derslerini yukle
-    loadEnrolled().then(()=>{ renderSchedule(); renderCourses(); });
+    loadEnrolled().then(()=>{
+      renderSchedule();
+      renderCourses();
+      if(enrolled.size === 0) openCourseSetup(true);
+    });
     loadMaterials().then(()=>renderMaterials());
     if(enrolled.size === 0){
-      openCourseSetup();
+      openCourseSetup(true);
     } else {
       renderSchedule();
       renderCourses();
@@ -3659,12 +3748,120 @@ async function signOut(){
 let setupFilter = 'ALL';
 let setupSelected = new Set();
 
-function openCourseSetup(){
+// Onboarding bölüm metadata
+const DEPT_META = {
+  'BAU': { icon: '🏗️', name: 'İnşaat Müh.' },
+  'MEC': { icon: '⚙️', name: 'Makine Müh.' },
+  'ETE': { icon: '⚡', name: 'Elektrik-Elektronik' },
+  'INF': { icon: '💻', name: 'Bilgisayar Müh.' },
+  'ISG': { icon: '🦺', name: 'İş Sağlığı ve Güvenliği' },
+  'MAB': { icon: '🔬', name: 'Malzeme Bilimi' },
+  'WIN': { icon: '🌬️', name: 'Rüzgar Enerjisi' },
+  'DEU': { icon: '🇩🇪', name: 'Almanca' },
+  'ENG': { icon: '🇬🇧', name: 'İngilizce' },
+  'ING': { icon: '🇬🇧', name: 'İngilizce' },
+  'MAT': { icon: '📐', name: 'Matematik' },
+  'PHY': { icon: '🔭', name: 'Fizik' },
+  'VWL': { icon: '📊', name: 'İktisat' },
+  'AIT': { icon: '🇹🇷', name: 'Atatürk İlkeleri' },
+  'TUR': { icon: '📖', name: 'Türkçe' },
+  'OTH': { icon: '📚', name: 'Diğer' },
+};
+
+let onbStep = 0;
+let onbSelectedDept = null;
+
+function onbUpdateSteps(){
+  for(let i=0;i<4;i++){
+    const el = document.getElementById('onb-step-'+i);
+    if(!el) continue;
+    el.className = 'onb-step' + (i < onbStep ? ' done' : i === onbStep ? ' active' : '');
+  }
+  for(let i=0;i<4;i++){
+    const panel = document.getElementById('onb-panel-'+i);
+    if(!panel) continue;
+    panel.classList.toggle('active', i === onbStep);
+  }
+}
+
+function onbNext(){
+  if(onbStep === 0){
+    onbStep = 1;
+    renderOnbDepts();
+    onbUpdateSteps();
+  } else if(onbStep === 1){
+    if(!onbSelectedDept) return;
+    onbStep = 2;
+    // Bölüm derslerini varsayılan seçili yap
+    setupSelected = new Set(
+      rawCourses.filter(c => c.dept === onbSelectedDept).map(c => c.code)
+    );
+    setupFilter = onbSelectedDept;
+    document.getElementById('setup-search').value = '';
+    renderSetupDepts();
+    renderSetupCourses();
+    onbUpdateSteps();
+  } else if(onbStep === 2){
+    if(setupSelected.size === 0) return;
+    onbStep = 3;
+    const n = setupSelected.size;
+    document.getElementById('onb-finish-text').textContent =
+      n + ' ders seçtin. Ders programın oluşturuldu — dilediğin zaman "Derslerimi Düzenle" ile değiştirebilirsin.';
+    onbUpdateSteps();
+  }
+}
+
+function onbBack(){
+  if(onbStep > 0){
+    onbStep--;
+    onbUpdateSteps();
+  }
+}
+
+function renderOnbDepts(){
+  // Ana bölümler (AIT, DEU, ENG, ING, MAT, PHY, TUR, OTH hariç)
+  const mainDepts = [...new Set(rawCourses.map(c=>c.dept))]
+    .filter(d => !['AIT','DEU','ENG','ING','MAT','PHY','TUR','OTH','VWL'].includes(d))
+    .sort();
+  const grid = document.getElementById('onb-dept-grid');
+  grid.innerHTML = '';
+  mainDepts.forEach(d => {
+    const meta = DEPT_META[d] || { icon: '📚', name: d };
+    const card = document.createElement('div');
+    card.className = 'onb-dept-card' + (onbSelectedDept === d ? ' selected' : '');
+    card.innerHTML = `<div class="dept-icon">${meta.icon}</div><div class="dept-name">${meta.name}</div>`;
+    card.onclick = () => {
+      onbSelectedDept = d;
+      document.querySelectorAll('.onb-dept-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      document.getElementById('onb-dept-next').disabled = false;
+    };
+    grid.appendChild(card);
+  });
+}
+
+
+function openCourseSetup(fromOnboarding=false){
   setupSelected = new Set(enrolled);
-  setupFilter = 'ALL';
-  document.getElementById('setup-search').value = '';
-  renderSetupDepts();
-  renderSetupCourses();
+  onbSelectedDept = null;
+  if(fromOnboarding){
+    // İlk giriş: adım 0'dan başla, kullanıcı adını göster
+    onbStep = 0;
+    const guser = JSON.parse(localStorage.getItem('guser')||'{}');
+    const name = guser.name ? guser.name.split(' ')[0] : '';
+    if(name){
+      document.getElementById('onb-welcome-name').textContent =
+        'Merhaba ' + name + '! TAÜ Mühendislik Fakültesi öğrencileri için akademik asistanın. Seni birkaç adımda kuruyoruz.';
+    }
+  } else {
+    // Derslerimi Düzenle: direkt adım 3'e git
+    onbStep = 2;
+    setupFilter = 'ALL';
+    document.getElementById('setup-search').value = '';
+    renderSetupDepts();
+    renderSetupCourses();
+  }
+  onbUpdateSteps();
   document.getElementById('setup-overlay').classList.add('open');
 }
 
