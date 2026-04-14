@@ -3380,7 +3380,7 @@ async function initGoogleAuth(){
   if(params.get('login') === 'error'){
     const reason = params.get('reason');
     const msg = reason === 'unauthorized_domain'
-      ? '⛔ Sadece TAÜ e-posta adresleri (@tau.edu.tr veya @std.tau.edu.tr) ile giriş yapılabilir.'
+      ? '⛔ Sadece TAÜ e-posta adresleri (@tau.edu.tr veya @stud.tau.edu.tr) ile giriş yapılabilir.'
       : 'Giriş başarısız, tekrar deneyin.';
     document.getElementById('signin-error').textContent = msg;
     document.getElementById('signin-error').style.display = 'block';
