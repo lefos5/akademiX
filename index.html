@@ -2010,7 +2010,7 @@ async function sbSaveMaterial(email, mat){
 async function sbDeleteMaterial(sbId){
   if(!sb || !sbId) return;
   try{
-    await sb.from('materials').delete().eq('id', sbId);
+    await sb.from('materials').delete().eq('id', sbId).eq('user_email', currentUserEmail);
   }catch(e){ console.warn('Supabase materyal silme hatası:', e); }
 }
 
@@ -2029,7 +2029,7 @@ async function sbSaveNote(email, courseCode, note){
   if(!sb || !email) return null;
   try{
     if(note._sbId){
-      const { error } = await sb.from('notes').update({ title: note.title, body: note.body }).eq('id', note._sbId);
+      const { error } = await sb.from('notes').update({ title: note.title, body: note.body }).eq('id', note._sbId).eq('user_email', currentUserEmail);
       if(error) throw error;
       return note._sbId;
     } else {
@@ -2044,7 +2044,7 @@ async function sbSaveNote(email, courseCode, note){
 
 async function sbDeleteNote(sbId){
   if(!sb || !sbId) return;
-  try{ await sb.from('notes').delete().eq('id', sbId); }
+  try{ await sb.from('notes').delete().eq('id', sbId).eq('user_email', currentUserEmail); }
   catch(e){ console.warn('Supabase not silme hatası:', e); }
 }
 
@@ -2084,7 +2084,7 @@ async function sbLoadAiOutputs(materialId, type=null){
 
 async function sbDeleteAiOutput(id){
   if(!sb || !id) return;
-  try{ await sb.from('ai_outputs').delete().eq('id', id); }
+  try{ await sb.from('ai_outputs').delete().eq('id', id).eq('user_email', currentUserEmail); }
   catch(e){ console.warn('[ai_outputs] Silme hatası:', e.message); }
 }
 
@@ -2187,15 +2187,15 @@ async function sbLoadConversations(){
 
 async function sbUpdateConversationTitle(id, title){
   if(!sb || !id) return;
-  try{ await sb.from('ai_conversations').update({ title, updated_at: new Date().toISOString() }).eq('id', id); }
+  try{ await sb.from('ai_conversations').update({ title, updated_at: new Date().toISOString() }).eq('id', id).eq('user_email', currentUserEmail); }
   catch(e){ console.warn('[studio] Başlık güncellenemedi:', e.message); }
 }
 
 async function sbDeleteConversation(id){
   if(!sb || !id) return;
   try{
-    await sb.from('studio_messages').delete().eq('conversation_id', id);
-    await sb.from('ai_conversations').delete().eq('id', id);
+    await sb.from('studio_messages').delete().eq('conversation_id', id).eq('user_email', currentUserEmail);
+    await sb.from('ai_conversations').delete().eq('id', id).eq('user_email', currentUserEmail);
   }catch(e){ console.warn('[studio] Sohbet silinemedi:', e.message); }
 }
 
@@ -2210,7 +2210,7 @@ async function sbSaveStudioMessage(conversationId, role, content, materialIds=[]
     }).select('id').single();
     if(error) throw error;
     // updated_at güncelle
-    await sb.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
+    await sb.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId).eq('user_email', currentUserEmail);
     return data.id;
   }catch(e){ console.warn('[studio] Mesaj kaydedilemedi:', e.message); return null; }
 }
@@ -2257,15 +2257,15 @@ async function sbLoadRagConversations(materialId){
 
 async function sbUpdateRagConvTitle(id, title){
   if(!sb || !id) return;
-  try{ await sb.from('rag_conversations').update({ title }).eq('id', id); }
+  try{ await sb.from('rag_conversations').update({ title }).eq('id', id).eq('user_email', currentUserEmail); }
   catch(e){ console.warn('[rag_conv] başlık güncellenemedi:', e.message); }
 }
 
 async function sbDeleteRagConversation(id){
   if(!sb || !id) return;
   try{
-    await sb.from('rag_messages').delete().eq('conversation_id', id);
-    await sb.from('rag_conversations').delete().eq('id', id);
+    await sb.from('rag_messages').delete().eq('conversation_id', id).eq('user_email', currentUserEmail);
+    await sb.from('rag_conversations').delete().eq('id', id).eq('user_email', currentUserEmail);
   }catch(e){ console.warn('[rag_conv] silinemedi:', e.message); }
 }
 
