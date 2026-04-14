@@ -3378,8 +3378,14 @@ async function initGoogleAuth(){
     window.history.replaceState({}, '', window.location.pathname);
   }
   if(params.get('login') === 'error'){
-    document.getElementById('signin-error').textContent = 'Giriş başarısız, tekrar deneyin.';
+    const reason = params.get('reason');
+    const msg = reason === 'unauthorized_domain'
+      ? '⛔ Sadece TAÜ e-posta adresleri (@tau.edu.tr veya @std.tau.edu.tr) ile giriş yapılabilir.'
+      : 'Giriş başarısız, tekrar deneyin.';
+    document.getElementById('signin-error').textContent = msg;
     document.getElementById('signin-error').style.display = 'block';
+    showToast(msg);
+    showPage('classroom');
     window.history.replaceState({}, '', window.location.pathname);
     return;
   }
