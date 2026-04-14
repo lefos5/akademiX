@@ -3751,12 +3751,11 @@ let setupSelected = new Set();
 // Onboarding bölüm metadata
 const DEPT_META = {
   'BAU': { icon: '🏗️', name: 'İnşaat Müh.' },
-  'MEC': { icon: '⚙️', name: 'Makine Müh.' },
+  'MEC': { icon: '🤖', name: 'Mekatronik Müh.' },
   'ETE': { icon: '⚡', name: 'Elektrik-Elektronik' },
   'INF': { icon: '💻', name: 'Bilgisayar Müh.' },
-  'ISG': { icon: '🦺', name: 'İş Sağlığı ve Güvenliği' },
-  'MAB': { icon: '🔬', name: 'Malzeme Bilimi' },
-  'WIN': { icon: '🌬️', name: 'Rüzgar Enerjisi' },
+  'MAB': { icon: '⚙️', name: 'Makine Müh.' },
+  'WIN': { icon: '🏭', name: 'Endüstri Müh.' },
   'DEU': { icon: '🇩🇪', name: 'Almanca' },
   'ENG': { icon: '🇬🇧', name: 'İngilizce' },
   'ING': { icon: '🇬🇧', name: 'İngilizce' },
@@ -3792,10 +3791,8 @@ function onbNext(){
   } else if(onbStep === 1){
     if(!onbSelectedDept) return;
     onbStep = 2;
-    // Bölüm derslerini varsayılan seçili yap
-    setupSelected = new Set(
-      rawCourses.filter(c => c.dept === onbSelectedDept).map(c => c.code)
-    );
+    // Bölüm filtresini uygula, seçim kullanıcıya kalsın
+    setupSelected = new Set();
     setupFilter = onbSelectedDept;
     document.getElementById('setup-search').value = '';
     renderSetupDepts();
@@ -3821,7 +3818,7 @@ function onbBack(){
 function renderOnbDepts(){
   // Ana bölümler (AIT, DEU, ENG, ING, MAT, PHY, TUR, OTH hariç)
   const mainDepts = [...new Set(rawCourses.map(c=>c.dept))]
-    .filter(d => !['AIT','DEU','ENG','ING','MAT','PHY','TUR','OTH','VWL'].includes(d))
+    .filter(d => !['AIT','DEU','ENG','ING','MAT','PHY','TUR','OTH','VWL','ISG'].includes(d))
     .sort();
   const grid = document.getElementById('onb-dept-grid');
   grid.innerHTML = '';
