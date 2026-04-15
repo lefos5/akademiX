@@ -762,73 +762,79 @@
   }
 
   /* ── Quiz Card Styles ── */
-  .quiz-container { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
+  .quiz-container { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
   .quiz-card {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 14px; overflow: hidden; transition: all 0.2s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden; transition: border-color 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
   .quiz-card:hover { border-color: var(--border2); }
   .quiz-card-header {
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 16px; cursor: pointer; user-select: none;
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 16px 16px 12px; cursor: default; user-select: none;
   }
   .quiz-card-num {
-    width: 28px; height: 28px; border-radius: 8px;
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; flex-shrink: 0;
-    font-family: 'Outfit', sans-serif;
+    font-size: 12px; font-weight: 800;
+    font-family: 'Outfit', sans-serif; margin-top: 1px;
   }
   .quiz-card-num.mc { background: rgba(59,130,246,0.15); color: var(--accent2); }
   .quiz-card-num.tf { background: rgba(251,191,36,0.15); color: var(--yellow); }
   .quiz-card-num.open { background: rgba(167,139,250,0.15); color: var(--blue); }
   .quiz-card-question {
     flex: 1; font-size: 13px; font-weight: 600;
-    color: var(--text); line-height: 1.5;
+    color: var(--text); line-height: 1.6;
   }
-  .quiz-card-toggle {
-    width: 24px; height: 24px; border-radius: 6px;
-    background: var(--surface3); border: none;
-    color: var(--muted); cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; transition: all 0.2s; flex-shrink: 0;
+  .quiz-card-type-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+    flex-shrink: 0; margin-top: 2px;
+    background: var(--surface2); color: var(--muted); border: 1px solid var(--border);
   }
-  .quiz-card.open .quiz-card-toggle { transform: rotate(180deg); color: var(--accent2); }
   .quiz-options {
-    padding: 0 16px 4px 54px;
-    display: flex; flex-direction: column; gap: 6px;
+    padding: 0 16px 12px 58px;
+    display: flex; flex-direction: column; gap: 8px;
   }
   .quiz-option {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px; border-radius: 8px; font-size: 12px;
-    background: var(--surface); border: 1px solid var(--border);
-    color: var(--text2); transition: all 0.15s; cursor: pointer;
-  }
-  .quiz-option:hover { border-color: var(--accent); }
-  .quiz-option.correct {
-    background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.4);
-    color: var(--green);
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 10px; font-size: 13px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); line-height: 1.4;
   }
   .quiz-option-letter {
-    width: 22px; height: 22px; border-radius: 6px;
-    background: var(--surface2); border: 1px solid var(--border);
+    width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;
+    background: var(--surface3); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; flex-shrink: 0;
+    font-size: 11px; font-weight: 700; color: var(--muted);
   }
-  .quiz-option.correct .quiz-option-letter {
-    background: var(--green); color: #fff; border-color: var(--green);
+  .quiz-divider { height: 1px; background: var(--border); margin: 0 16px 12px; }
+  /* Çözüm butonu */
+  .quiz-sol-btn {
+    margin: 0 16px 14px 58px; padding: 7px 14px;
+    background: transparent; border: 1px solid var(--border2);
+    border-radius: 8px; font-size: 12px; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px; width: fit-content;
   }
+  .quiz-sol-btn:hover { border-color: var(--green); color: var(--green); background: rgba(52,211,153,0.06); }
+  .quiz-sol-btn.revealed { border-color: var(--green); color: var(--green); background: rgba(52,211,153,0.06); }
   .quiz-card-answer {
-    display: none; padding: 12px 16px 14px 54px;
+    display: none; padding: 12px 16px 14px 58px;
     border-top: 1px solid var(--border);
     background: rgba(52,211,153,0.04);
+    animation: fadeIn 0.15s ease;
   }
-  .quiz-card.open .quiz-card-answer { display: block; }
+  .quiz-card-answer.visible { display: block; }
   .quiz-answer-label {
     font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.8px; color: var(--green); margin-bottom: 6px;
-    display: flex; align-items: center; gap: 5px;
+    letter-spacing: 0.8px; color: var(--green); margin-bottom: 8px;
   }
   .quiz-answer-text { font-size: 12px; line-height: 1.7; color: var(--text2); }
+  /* Doğru şık — sadece çözüm açıkken göster */
+  .quiz-option.correct-hidden { background: var(--surface2); border-color: var(--border); color: var(--text2); }
+  .quiz-option.correct-hidden .quiz-option-letter { background: var(--surface3); border-color: var(--border); color: var(--muted); }
+  .quiz-option.correct-shown { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.4); color: var(--green); }
+  .quiz-option.correct-shown .quiz-option-letter { background: var(--green); color: #fff; border-color: var(--green); }
 
   /* ── Summary Page Thumbnails ── */
   .summary-page-section {
@@ -5339,80 +5345,130 @@ function matBuildFlashcards(text){
 }
 
 function matBuildQuiz(text){
-  // Yapılandırılmış sınav formatını parse et
   const blocks = text.split(/\n---\n|\n-{3,}\n/).filter(b => b.trim());
   const questions = [];
 
   blocks.forEach(block => {
     const lines = block.trim().split('\n');
     let q = { question:'', options:[], answer:'', explanation:'', modelAnswer:'', type:'open' };
+    let currentField = null;
 
     for(const line of lines){
       const l = line.trim();
-      if(/^SOUR:\s*/i.test(l)) q.question = l.replace(/^SOUR:\s*/i,'');
+      // SORU veya SOUR her ikisini de yakala
+      if(/^(SORU|SOUR):\s*/i.test(l)){
+        q.question = l.replace(/^(SORU|SOUR):\s*/i,'');
+        currentField = 'question';
+      }
       else if(/^[A-D]\)\s*/i.test(l)){
         q.options.push(l);
         q.type = 'mc';
+        currentField = 'option';
       }
       else if(/^CEVAP:\s*/i.test(l)){
         const ans = l.replace(/^CEVAP:\s*/i,'').trim();
         q.answer = ans;
-        if(/^(Doğru|Yanlış)$/i.test(ans)) q.type = 'tf';
+        if(/^(Do[gğ]ru|Yanl[iı][sş])$/i.test(ans)) q.type = 'tf';
+        currentField = 'answer';
       }
-      else if(/^AÇIKLAMA:\s*/i.test(l)) q.explanation = l.replace(/^AÇIKLAMA:\s*/i,'');
-      else if(/^MODEL_CEVAP:\s*/i.test(l)) q.modelAnswer = l.replace(/^MODEL_CEVAP:\s*/i,'');
-      else if(q.modelAnswer) q.modelAnswer += '\n' + l; // çok satırlı model cevap
+      else if(/^AÇIKLAMA:\s*/i.test(l)){
+        q.explanation = l.replace(/^AÇIKLAMA:\s*/i,'');
+        currentField = 'explanation';
+      }
+      else if(/^MODEL_CEVAP:\s*/i.test(l)){
+        q.modelAnswer = l.replace(/^MODEL_CEVAP:\s*/i,'');
+        currentField = 'modelAnswer';
+      }
+      else if(l && currentField === 'question') q.question += ' ' + l;
+      else if(l && currentField === 'explanation') q.explanation += ' ' + l;
+      else if(l && currentField === 'modelAnswer') q.modelAnswer += '\n' + l;
     }
     if(q.question) questions.push(q);
   });
 
-  // Parse başarısız olduysa fallback
   if(!questions.length) return matMd(text);
 
+  const uid = Date.now();
   let html = '<div class="quiz-container">';
+
   questions.forEach((q, i) => {
     const numClass = q.type === 'mc' ? 'mc' : q.type === 'tf' ? 'tf' : 'open';
-    const typeLabel = q.type === 'mc' ? 'Çoktan Seçmeli' : q.type === 'tf' ? 'Doğru/Yanlış' : 'Açık Uçlu';
+    const typeLabel = q.type === 'mc' ? 'Çoktan Seçmeli' : q.type === 'tf' ? 'D/Y' : 'Açık Uçlu';
     const correctLetter = q.answer.trim().charAt(0).toUpperCase();
+    const cardId = `qz-${uid}-${i}`;
 
-    html += `<div class="quiz-card" onclick="this.classList.toggle('open')">
+    html += `<div class="quiz-card" id="${cardId}">
       <div class="quiz-card-header">
         <div class="quiz-card-num ${numClass}">${i+1}</div>
         <div class="quiz-card-question">${escHtml(q.question)}</div>
-        <div class="quiz-card-toggle">▼</div>
+        <span class="quiz-card-type-badge">${typeLabel}</span>
       </div>`;
 
-    // Seçenekler
+    // Şıklar — başlangıçta doğru şık gizli
     if(q.options.length){
       html += '<div class="quiz-options">';
       q.options.forEach(opt => {
-        const letter = opt.charAt(0).toUpperCase();
-        const text = opt.replace(/^[A-D]\)\s*/i,'');
+        const letter = opt.trim().charAt(0).toUpperCase();
+        const optText = opt.replace(/^[A-D]\)\s*/i,'');
         const isCorrect = letter === correctLetter;
-        html += `<div class="quiz-option ${isCorrect ? 'correct' : ''}">
+        html += `<div class="quiz-option${isCorrect ? ' correct-hidden' : ''}" data-correct="${isCorrect}">
           <div class="quiz-option-letter">${escHtml(letter)}</div>
-          <span>${escHtml(text)}</span>
+          <span>${escHtml(optText)}</span>
         </div>`;
       });
       html += '</div>';
     }
 
-    // Cevap alanı
-    html += '<div class="quiz-card-answer">';
-    if(q.type === 'tf'){
-      html += `<div class="quiz-answer-label">✅ Cevap</div>
-        <div class="quiz-answer-text"><strong>${escHtml(q.answer)}</strong></div>`;
-    } else if(q.type === 'mc'){
-      html += `<div class="quiz-answer-label">✅ Doğru Cevap: ${escHtml(q.answer)}</div>`;
-    } else {
-      html += '<div class="quiz-answer-label">📝 Model Cevap</div>';
+    // Çözümü Gör butonu + cevap alanı
+    const hasAnswer = q.explanation || q.modelAnswer || q.answer;
+    if(hasAnswer){
+      html += `<div class="quiz-divider"></div>
+      <button class="quiz-sol-btn" onclick="toggleQuizSolution('${cardId}', this)">
+        👁 Çözümü Gör
+      </button>`;
+
+      html += `<div class="quiz-card-answer" id="${cardId}-ans">`;
+      if(q.type === 'mc'){
+        html += `<div class="quiz-answer-label">✅ Doğru Cevap: ${escHtml(q.answer)}</div>`;
+      } else if(q.type === 'tf'){
+        html += `<div class="quiz-answer-label">✅ Cevap: ${escHtml(q.answer)}</div>`;
+      } else {
+        html += `<div class="quiz-answer-label">📝 Model Cevap</div>`;
+      }
+      if(q.explanation) html += `<div class="quiz-answer-text">${escHtml(q.explanation)}</div>`;
+      if(q.modelAnswer) html += `<div class="quiz-answer-text">${matMd(q.modelAnswer.trim())}</div>`;
+      html += '</div>';
     }
-    if(q.explanation) html += `<div class="quiz-answer-text">${escHtml(q.explanation)}</div>`;
-    if(q.modelAnswer) html += `<div class="quiz-answer-text">${matMd(q.modelAnswer.trim())}</div>`;
-    html += '</div></div>';
+
+    html += '</div>';
   });
+
   html += '</div>';
   return html;
+}
+
+function toggleQuizSolution(cardId, btn){
+  const ans = document.getElementById(cardId + '-ans');
+  const card = document.getElementById(cardId);
+  if(!ans) return;
+  const isVisible = ans.classList.contains('visible');
+  if(isVisible){
+    ans.classList.remove('visible');
+    btn.classList.remove('revealed');
+    btn.textContent = '👁 Çözümü Gör';
+    // Doğru şıkları tekrar gizle
+    card.querySelectorAll('.quiz-option.correct-shown').forEach(el => {
+      el.classList.replace('correct-shown', 'correct-hidden');
+    });
+  } else {
+    ans.classList.add('visible');
+    btn.classList.add('revealed');
+    btn.textContent = '🙈 Çözümü Gizle';
+    // Doğru şıkları göster
+    card.querySelectorAll('.quiz-option.correct-hidden').forEach(el => {
+      el.classList.replace('correct-hidden', 'correct-shown');
+    });
+  }
 }
 
 // ═══════════════════════════════════════
