@@ -4501,11 +4501,15 @@ function renderMaterials(){
     const el = document.createElement('div');
     el.className = 'mat-list-item' + (currentMatIdx===realIdx?' active':'');
     el.dataset.idx = realIdx;
+    const summaryCount = loadSummaries().filter(s => s.matTitle === m.title || s.title === m.title).length;
+    const summaryBadge = summaryCount > 0
+      ? `<span style="font-size:10px;background:rgba(59,130,246,0.15);color:var(--accent2);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:1px 7px;font-weight:600;margin-top:3px;display:inline-block">📝 ${summaryCount} özet</span>`
+      : '';
     el.innerHTML = `
       <div class="mat-list-icon" style="background:${bg}">${icon}</div>
       <div class="mat-list-info">
         <div class="mat-list-name">${escHtml(m.title)}</div>
-        <div class="mat-list-course">${course?course.code:(m.course||'')}</div>
+        <div class="mat-list-course">${course?course.code:(m.course||'')}${summaryBadge ? ' ' : ''}${summaryBadge}</div>
       </div>
       <button class="mat-list-del" onclick="event.stopPropagation();deleteMaterial(${realIdx})" title="Sil">✕</button>`;
     el.onclick = () => selectMat(realIdx);
@@ -5536,6 +5540,7 @@ function matSaveCurrentSummary(btn){
   btn.style.boxShadow = 'none';
   showToast('✅ Özet kaydedildi!');
   renderMatSavedSummaries(title);
+  renderMaterials(); // Sol listede rozeti güncelle
 }
 
 function addClearChatBtn(){
