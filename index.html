@@ -2963,14 +2963,19 @@ function toggleStudioMaterialPicker(){
   if(picker.style.display !== 'none'){ picker.style.display = 'none'; return; }
 
   const attachedIds = new Set(studioAttached);
+  const isLightTheme = document.documentElement.getAttribute('data-theme') === 'light';
+  const itemTextColor = isLightTheme ? '#1e3a5f' : '#b8c4d8';
+  const itemSubColor = isLightTheme ? '#6b7a99' : '#6b7a99';
+  const itemHoverBg = isLightTheme ? '#eef1f7' : '#323232';
   picker.innerHTML = materials.length === 0
-    ? '<div style="padding:12px;font-size:12px;color:var(--muted);">Henüz materyal yok.</div>'
+    ? `<div style="padding:12px;font-size:12px;color:${itemSubColor};">Henüz materyal yok.</div>`
     : materials.map((m, idx) => `
-        <div class="studio-picker-item ${attachedIds.has(idx) ? 'selected' : ''}" onclick="studioToggleMaterial(${idx})">
+        <div class="studio-picker-item ${attachedIds.has(idx) ? 'selected' : ''}" onclick="studioToggleMaterial(${idx})"
+          style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;">
           <span style="font-size:16px;">${m.type === 'file' ? getFileIcon(m.fileName||'') : (MAT_ICONS[m.type]||'📎')}</span>
           <div>
-            <div class="studio-picker-item-name">${escHtml(m.title)}</div>
-            <div class="studio-picker-item-course">${escHtml(m.course||'')}</div>
+            <div style="font-size:12px;font-weight:500;color:${itemTextColor};">${escHtml(m.title)}</div>
+            <div style="font-size:10px;color:${itemSubColor};">${escHtml(m.course||'')}</div>
           </div>
         </div>`).join('');
 
