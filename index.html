@@ -2968,8 +2968,13 @@ function toggleStudioMaterialPicker(){
           </div>
         </div>`).join('');
 
-  // Butona göre konumlandır — butonun hemen üstünde
-  const btn = document.querySelector('#studio-input-area .studio-attach-btn');
+  // Görünür olan attach butonunu bul
+  const allBtns = document.querySelectorAll('.studio-attach-btn');
+  let btn = null;
+  for(const b of allBtns){
+    const r = b.getBoundingClientRect();
+    if(r.width > 0 && r.height > 0){ btn = b; break; }
+  }
   if(btn){
     const rect = btn.getBoundingClientRect();
     picker.style.position = 'fixed';
