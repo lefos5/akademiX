@@ -4457,17 +4457,180 @@ let matFileData = null;
 
 const MAT_PROMPTS = {
   summary: {
-    short: (t) => `Aşağıdaki materyali analiz et ve Türkçe kısa bir özet yaz. Maksimum 3 paragraf. Ana noktaları kapsa. Önemli terimleri **kalın** yap. Markdown formatı kullan.\n\nMateryal İçeriği:\n${t}`,
-    detailed: (t) => `Aşağıdaki materyali kapsamlı şekilde Türkçe analiz et. Markdown formatını zengin kullan. Mümkünse konuyu görselleştiren bir SVG diagram da çiz (akış şeması, kavram haritası vb.).\n\nŞu bölümleri MUTLAKA dahil et ve her birini detaylı yaz:\n\n## 📌 Genel Bakış\nMateryalin neyi kapsadığını 2-3 cümleyle özetle.\n\n## 🎯 Ana Konular\nHer ana konuyu ayrı madde olarak listele. Her maddeyi en az 2-3 cümleyle açıkla. Yüzeysel geçme.\n\n## 📖 Temel Kavramlar ve Tanımlar\nTüm önemli terimleri ve tanımlarını listele. Her terimi **kalın** yap ve yanına açıklamasını yaz.\n\n## ⚡ Kritik Detaylar\nSınavda sorulabilecek spesifik formüller, tarihler, isimler, kurallar gibi ezber gerektiren bilgileri vurgula.\n\n## 🔗 Konular Arası Bağlantılar\nKonuların birbirleriyle nasıl ilişkili olduğunu açıkla.\n\n## 📝 Olası Sınav Konuları\nBu materyalden çıkabilecek soru tiplerini ve konuları tahmin et.\n\n## 💡 Örnekler ve Uygulamalar\nHer ana konu için en az bir somut örnek ver. Anlamayı kolaylaştıracak analojiler kullan.\n\nMateryal İçeriği:\n${t}`,
-    paged: (t) => `Aşağıdaki materyali sayfa sayfa Türkçe analiz et.\n\nÇOK ÖNEMLİ KURALLAR:\n- Materyaldeki HER SAYFA için ayrı bir bölüm yaz. HİÇBİR SAYFAYI ATLAMA.\n- Her sayfayı en az 3-4 cümleyle özetle. Tek cümlelik özetler YASAK.\n- Önemli kavramları **kalın** yap.\n- Sayfa numaralarını doğru kullan.\n- "Benzer içerik devam ediyor" gibi atlamalar YAPMA.\n- Her sayfanın gerçek içeriğini analiz et.\n\nHer sayfa için bu formatı kullan:\n\n## 📄 Sayfa [numara]\n[O sayfanın detaylı özeti — en az 3-4 cümle, önemli terimler **kalın**]\n\nMateryal İçeriği:\n${t}`,
+    short: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine ders veren deneyimli bir akademisyensin. Materyal Almanca olabilir — içeriği anlayıp Türkçe özet yaz.
+
+Aşağıdaki ders materyalini analiz et ve Türkçe KISA bir özet yaz.
+
+KURALLAR:
+- Maksimum 4-5 paragraf
+- Her paragraf en az 3 cümle olsun
+- Teknik terimleri Almanca orijinaliyle yaz, yanına Türkçe açıklamasını ekle: **Werkstoff** (malzeme)
+- Formüller, sayısal değerler ve birimler aynen korunsun
+- Yüzeysel geçme — mühendislik detaylarını dahil et
+
+Materyal:
+${t}`,
+
+    detailed: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine ders veren deneyimli bir akademisyensin. Materyal Almanca olabilir — içeriği anlayıp Türkçe kapsamlı analiz yaz.
+
+KURALLAR:
+- Teknik terimleri Almanca orijinaliyle yaz, yanına Türkçe açıklamasını ekle: **Streckgrenze** (akma sınırı)
+- Formüller, denklemler ve sayısal değerler aynen korunsun, birimleri de yaz
+- Her bölümü gerçekten detaylı yaz — "kısaca" veya "özetle" deme
+- Sınava hazırlık açısından kritik bilgileri ⚡ ile işaretle
+
+Şu bölümleri MUTLAKA dahil et:
+
+## 📌 Genel Bakış
+Materyalin konusu ve kapsamı — 3-4 cümle.
+
+## 🎯 Ana Konular ve Açıklamalar
+Her ana konuyu başlık altında en az 4-5 cümleyle açıkla. Tanımları, mekanizmaları, neden-sonuç ilişkilerini yaz.
+
+## 📐 Formüller ve Sayısal Değerler
+Tüm formülleri, denklemleri, sabitleri ve eşik değerlerini listele. Her birini açıkla.
+
+## 📖 Teknik Terimler Sözlüğü
+Almanca/İngilizce teknik terimleri → Türkçe karşılığı ve tanımı şeklinde listele.
+
+## ⚡ Sınava Hazırlık — Kritik Noktalar
+Sınavda kesinlikle çıkabilecek tanımlar, formüller, karşılaştırmalar ve ezber gerektiren bilgiler.
+
+## 💡 Somut Örnekler ve Uygulamalar
+Her ana konu için gerçek mühendislik örneği ver.
+
+Materyal:
+${t}`,
+
+    paged: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine ders veren deneyimli bir akademisyensin. Materyal Almanca olabilir — içeriği anlayıp Türkçe sayfa sayfa analiz yaz.
+
+KURALLAR:
+- Materyaldeki HER SAYFA için ayrı bölüm yaz — HİÇBİR SAYFAYI ATLAMA
+- Her sayfayı en az 4-5 cümleyle özetle — "bu sayfada X anlatılıyor" gibi yüzeysel geçme
+- Teknik terimleri: **Almanca** (Türkçe karşılığı) formatında yaz
+- Formüller ve sayısal değerler aynen korunsun
+- "Bir önceki sayfayla benzer" veya "devam ediyor" yazma — her sayfanın özgün içeriğini yaz
+
+Format:
+## 📄 Sayfa [N]
+[Sayfanın detaylı Türkçe özeti — formüller, tanımlar, örnekler dahil]
+
+Materyal:
+${t}`,
   },
   quiz: {
-    easy_mc: (t) => `Aşağıdaki materyalden Türkçe 10 kolay çoktan seçmeli soru oluştur. Sorular materyalin farklı bölümlerinden olsun.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [neden bu cevap doğru, kısa açıklama]\n\n---\n\nMateryal İçeriği:\n${t}`,
-    hard_mc: (t) => `Aşağıdaki materyalden Türkçe 10 ZOR ve düşündürücü çoktan seçmeli soru oluştur. Sorular analiz, karşılaştırma, uygulama ve değerlendirme gerektirsin. Şıklar birbirine yakın ve yanıltıcı olsun.\n\nHer soru için bu formatı AYNEN kullan:\n\nSOUR: [soru metni]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [doğru şıkkın harfi]\nAÇIKLAMA: [detaylı açıklama — neden diğer şıklar yanlış]\n\n---\n\nMateryal İçeriği:\n${t}`,
-    open: (t) => `Aşağıdaki materyalden Türkçe 8 açık uçlu sınav sorusu oluştur. Kolay → orta → zor sırasıyla. Her sorunun model cevabı kapsamlı olsun (en az 3-4 cümle).\n\nHer soru için bu formatı kullan:\n\nSOUR: [soru metni]\nMODEL_CEVAP: [kapsamlı model cevap — en az 3-4 cümle]\n\n---\n\nMateryal İçeriği:\n${t}`,
-    mixed: (t) => `Aşağıdaki materyalden Türkçe karışık bir sınav oluştur: 5 çoktan seçmeli, 3 doğru/yanlış, 3 açık uçlu soru.\n\nÇoktan seçmeli format:\nSOUR: [soru]\nA) [seçenek]\nB) [seçenek]\nC) [seçenek]\nD) [seçenek]\nCEVAP: [harf]\nAÇIKLAMA: [açıklama]\n\n---\n\nDoğru/Yanlış format:\nSOUR: [ifade]\nCEVAP: Doğru/Yanlış\nAÇIKLAMA: [açıklama]\n\n---\n\nAçık uçlu format:\nSOUR: [soru]\nMODEL_CEVAP: [kapsamlı cevap]\n\n---\n\nMateryal İçeriği:\n${t}`,
+    easy_mc: (t) => `Sen TAÜ mühendislik sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe sorular yaz.
+
+Aşağıdaki materyalden 10 KOLAY çoktan seçmeli soru oluştur.
+
+KURALLAR:
+- Sorular materyalin farklı konularından olsun — aynı konudan 2'den fazla soru yapma
+- Teknik terimleri Türkçe yaz, gerekirse Almancasını parantezde ekle
+- Şıklar kısa ve net olsun
+- Yanlış şıklar makul ama açıkça yanlış olsun
+- SOUR değil SORU yaz
+
+Her soru için AYNEN bu formatı kullan:
+
+SORU: [soru metni]
+A) [seçenek]
+B) [seçenek]
+C) [seçenek]
+D) [seçenek]
+CEVAP: [harf]
+AÇIKLAMA: [neden doğru, 1-2 cümle]
+
+---
+
+Materyal:
+${t}`,
+
+    hard_mc: (t) => `Sen TAÜ mühendislik final sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe sorular yaz.
+
+Aşağıdaki materyalden 10 ZOR çoktan seçmeli soru oluştur.
+
+KURALLAR:
+- Sorular analiz, hesaplama, karşılaştırma veya uygulama gerektirsin — bilgi sorma değil
+- Şıklar birbirine yakın ve yanıltıcı olsun — "hiçbiri" veya "hepsi" gibi kolaylaştırıcı şıklar kullanma
+- Formül veya sayısal hesap gerektiren en az 3 soru olsun
+- Her sorunun açıklaması neden diğer şıkların yanlış olduğunu da anlatsın
+
+Her soru için AYNEN bu formatı kullan:
+
+SORU: [soru metni]
+A) [seçenek]
+B) [seçenek]
+C) [seçenek]
+D) [seçenek]
+CEVAP: [harf]
+AÇIKLAMA: [detaylı açıklama — neden doğru ve neden diğerleri yanlış]
+
+---
+
+Materyal:
+${t}`,
+
+    open: (t) => `Sen TAÜ mühendislik sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe sorular yaz.
+
+Aşağıdaki materyalden 8 açık uçlu sınav sorusu oluştur. Kolay (2) → Orta (3) → Zor (3) sırasıyla.
+
+KURALLAR:
+- Sorular gerçekten materyale özgü olsun — genel mühendislik bilgisi sorma
+- Model cevaplar en az 4-5 cümle olsun, formül varsa dahil et
+- Zor sorular hesaplama, tasarım veya karşılaştırma gerektirsin
+
+Her soru için AYNEN bu formatı kullan:
+
+SORU: [soru metni] [Kolay/Orta/Zor]
+MODEL_CEVAP: [kapsamlı model cevap]
+
+---
+
+Materyal:
+${t}`,
+
+    mixed: (t) => `Sen TAÜ mühendislik sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe karışık sınav oluştur.
+
+5 çoktan seçmeli + 3 doğru/yanlış + 3 açık uçlu soru oluştur.
+
+Çoktan seçmeli format:
+SORU: [soru]
+A) [seçenek]  B) [seçenek]  C) [seçenek]  D) [seçenek]
+CEVAP: [harf]
+AÇIKLAMA: [açıklama]
+---
+
+Doğru/Yanlış format:
+SORU: [ifade]
+CEVAP: Doğru / Yanlış
+AÇIKLAMA: [açıklama]
+---
+
+Açık uçlu format:
+SORU: [soru]
+MODEL_CEVAP: [kapsamlı cevap]
+---
+
+Materyal:
+${t}`,
   },
-  flashcard: (t) => `Aşağıdaki materyalden Türkçe flashcard'lar oluştur. Her kart için bu formatı AYNEN kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım — kısa ve öz ama yeterli]\n\nEn kritik noktaları kapsayan en az 15 kart oluştur. Tüm önemli kavramları, tanımları, formülleri ve kuralları dahil et.\n\nMateryal İçeriği:\n${t}`,
+
+  flashcard: (t) => `Sen TAÜ mühendislik öğrencisi için flashcard hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe flashcard yaz.
+
+KURALLAR:
+- En az 20 kart oluştur
+- Kart türleri karışık olsun: tanım soruları, formül kartları, karşılaştırma kartları, "ne zaman kullanılır" kartları
+- Teknik terimleri: ön yüzde Almanca/Türkçe birlikte yaz
+- Formül kartlarında: ön yüz formül adı → arka yüz formül + ne anlama geldiği
+- Cevaplar kısa ama eksiksiz olsun — tek kelimelik cevaplar YASAK, en az 1-2 cümle
+- Sınava çok çıkan konulara ağırlık ver
+
+Her kart için AYNEN bu formatı kullan:
+Q: [soru veya kavram — net ve spesifik]
+A: [cevap — kısa ama eksiksiz, en az 1-2 cümle]
+
+Materyal:
+${t}`,
   chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
   mindmap: (t) => `Sen bir akademik görsel tasarım uzmanısın. Aşağıdaki materyali analiz edip konular arası ilişkileri gösteren bir kavram haritası SVG diyagramı üret. SADECE geçerli SVG kodu üret, başka hiçbir şey yazma. SVG viewBox="0 0 900 600" olsun. Ana konu ortada büyük bir daire içinde, alt konular etrafında küçük daireler içinde. Ok ve çizgilerle ilişkileri göster. Renk: Ana konu #3b82f6, birincil #6366f1, ikincil #34d399, üçüncül #fb923c. Türkçe etiketler, en az 8 en fazla 15 kavram. SVG dışında HİÇBİR ŞEY yazma.\n\nMateryal:\n${t}`,
 };
@@ -4960,11 +5123,16 @@ async function matRunVariantChunked(mode, variant, m, fullContent, chunkSize){
     📄 Büyük dosya algılandı (${chunks.length} bölüm). Sırayla işleniyor, lütfen bekleyin...
   </div>`);
 
-  const systemPrompt = `Sen AkademiX platformunda çalışan uzman bir akademik asistansın. Görevin üniversite öğrencilerine materyallerini anlamalarında yardımcı olmak.
+  const systemPrompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademik asistansın.
+
 Kuralların:
 - Her zaman Türkçe cevap ver.
-- Markdown formatını zengin şekilde kullan: ## başlıklar, **kalın** önemli terimler, *italik* vurgular, - ve 1. listeler.
-- Cevapların kapsamlı, detaylı ve eğitici olsun.`;
+- Materyal Almanca veya İngilizce olabilir — içeriği tam olarak anlayıp Türkçe yaz.
+- Teknik terimleri Almanca/İngilizce orijinaliyle yaz, yanına Türkçe karşılığını ekle: **Streckgrenze** (akma sınırı).
+- Formüller, denklemler ve sayısal değerleri aynen koru, birimleri de yaz.
+- Markdown formatını zengin kullan: ## başlıklar, **kalın** terimler, formüller, listeler.
+- Yüzeysel geçme — mühendislik detaylarını, mekanizmaları ve nedenleri açıkla.
+- Sınava hazırlık için kritik bilgileri vurgula.`;
 
   const tokenLimits = { summary: 8000, quiz: 6000, flashcard: 6000 };
   const maxTokens = tokenLimits[mode] || 6000;
@@ -4980,18 +5148,51 @@ Kuralların:
     let chunkPrompt = '';
     if(mode === 'summary'){
       if(variant === 'paged'){
-        chunkPrompt = `Aşağıdaki materyal bölümünü (Bölüm ${i+1}/${chunks.length}) sayfa sayfa Türkçe analiz et. HER SAYFAYI atlamadan özetle. Format:\n\n## 📄 Sayfa [numara]\n[Detaylı özet — en az 3-4 cümle]\n\nMateryal Bölümü:\n${chunks[i]}`;
+        chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe sayfa sayfa analiz et. Bu materyal bölümü ${i+1}/${chunks.length}. numaralı bölümdür.
+
+HER SAYFAYI atlamadan detaylı özetle. Teknik terimleri: **Almanca** (Türkçe) formatında yaz. Formüller aynen korunsun.
+
+Format:
+## 📄 Sayfa [numara]
+[Sayfanın detaylı Türkçe özeti — en az 4-5 cümle, formüller ve terimler dahil]
+
+Materyal Bölümü:
+${chunks[i]}`;
       } else if(variant === 'short'){
-        chunkPrompt = `Aşağıdaki materyal bölümünü (Bölüm ${i+1}/${chunks.length}) Türkçe 2-3 paragrafla özetle. Ana noktaları kapsa.\n\nMateryal Bölümü:\n${chunks[i]}`;
+        chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe özetle. Bu materyal bölümü ${i+1}/${chunks.length}. bölümdür.
+
+Bu bölümün ana noktalarını 3-4 paragrafla özetle. Teknik terimleri: **Almanca** (Türkçe) formatında yaz. Formüller aynen korunsun.
+
+Materyal Bölümü:
+${chunks[i]}`;
       } else {
-        chunkPrompt = `Aşağıdaki materyal bölümünü (Bölüm ${i+1}/${chunks.length}) kapsamlı şekilde Türkçe analiz et. Ana konuları, temel kavramları ve kritik detayları Markdown ile açıkla.\n\nMateryal Bölümü:\n${chunks[i]}`;
+        chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe kapsamlı analiz yaz. Bu materyal bölümü ${i+1}/${chunks.length}. bölümdür.
+
+Bu bölümün tüm konularını, kavramlarını, formüllerini ve teknik detaylarını Markdown formatında yaz. Teknik terimleri: **Almanca** (Türkçe) formatında yaz.
+
+Materyal Bölümü:
+${chunks[i]}`;
       }
     } else if(mode === 'quiz'){
       const qCount = Math.max(3, Math.ceil(10 / chunks.length));
       let promptFn = MAT_PROMPTS.quiz[variant];
-      chunkPrompt = promptFn(`(Bölüm ${i+1}/${chunks.length})\n${chunks[i]}`).replace('10 ', `${qCount} `);
+      chunkPrompt = promptFn(`(Bölüm ${i+1}/${chunks.length})
+${chunks[i]}`).replace('10 ', `${qCount} `);
     } else if(mode === 'flashcard'){
-      chunkPrompt = `Bu materyal bölümünden (${i+1}/${chunks.length}) Türkçe flashcard'lar oluştur. Her kart için:\nQ: [soru veya kavram]\nA: [cevap veya tanım]\n\nEn az 5 kart oluştur.\n\nMateryal:\n${chunks[i]}`;
+      chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe flashcard'lar oluştur. Bu bölüm ${i+1}/${chunks.length}. bölümdür.
+
+KURALLAR:
+- En az 5 kart oluştur
+- Teknik terimleri: ön yüzde Almanca/Türkçe birlikte yaz
+- Formül kartlarında: ön yüz formül adı → arka yüz formül + açıklama
+- Cevaplar en az 1-2 cümle olsun
+
+Her kart için AYNEN bu formatı kullan:
+Q: [soru veya kavram]
+A: [cevap — en az 1-2 cümle]
+
+Materyal:
+${chunks[i]}`;
     }
 
     try{
