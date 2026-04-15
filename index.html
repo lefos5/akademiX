@@ -1155,6 +1155,12 @@
     border-radius:12px; padding:8px; max-height:220px; overflow-y:auto;
     box-shadow:0 8px 32px rgba(0,0,0,0.35); z-index:500;
   }
+  /* Portal modunda (body'e taşındığında) */
+  body > .studio-picker {
+    background:var(--surface) !important;
+    border:2px solid var(--accent) !important;
+    box-shadow:0 8px 40px rgba(0,0,0,0.4) !important;
+  }
   .studio-picker-item {
     display:flex; align-items:center; gap:10px; padding:8px 10px;
     border-radius:8px; cursor:pointer; transition:background 0.12s;
@@ -2977,14 +2983,25 @@ function toggleStudioMaterialPicker(){
   }
   if(btn){
     const rect = btn.getBoundingClientRect();
-    picker.style.position = 'fixed';
-    picker.style.left = rect.left + 'px';
-    picker.style.top = (rect.top - 8) + 'px';
-    picker.style.transform = 'translateY(-100%)';
-    picker.style.width = '280px';
-    picker.style.zIndex = '9999';
+    picker.style.cssText = [
+      'display:block',
+      'position:fixed',
+      'left:' + rect.left + 'px',
+      'top:' + (rect.top - 8) + 'px',
+      'transform:translateY(-100%)',
+      'width:280px',
+      'z-index:9999',
+      'background:var(--surface)',
+      'border:1px solid var(--border2)',
+      'border-radius:12px',
+      'padding:8px',
+      'max-height:220px',
+      'overflow-y:auto',
+      'box-shadow:0 8px 32px rgba(0,0,0,0.3)',
+    ].join(';');
+  } else {
+    picker.style.display = 'block';
   }
-  picker.style.display = 'block';
 }
 
 function studioToggleMaterial(idx){
