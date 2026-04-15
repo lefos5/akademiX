@@ -2948,6 +2948,12 @@ function studioAddMsgToDOM(role, html){
 // Materyal picker
 function toggleStudioMaterialPicker(){
   const picker = document.getElementById('studio-picker');
+
+  // Picker'ı body'e taşı (overflow:hidden olan parent'lardan kurtulmak için)
+  if(picker.parentElement !== document.body){
+    document.body.appendChild(picker);
+  }
+
   if(picker.style.display !== 'none'){ picker.style.display = 'none'; return; }
 
   const attachedIds = new Set(studioAttached);
@@ -2961,6 +2967,17 @@ function toggleStudioMaterialPicker(){
             <div class="studio-picker-item-course">${escHtml(m.course||'')}</div>
           </div>
         </div>`).join('');
+
+  // Butona göre konumlandır
+  const btn = document.querySelector('#studio-input-area .studio-attach-btn');
+  if(btn){
+    const rect = btn.getBoundingClientRect();
+    picker.style.position = 'fixed';
+    picker.style.left = rect.left + 'px';
+    picker.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+    picker.style.width = '280px';
+    picker.style.zIndex = '9999';
+  }
   picker.style.display = 'block';
 }
 
