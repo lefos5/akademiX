@@ -4471,6 +4471,7 @@ const MAT_PROMPTS = {
   },
   flashcard: (t) => `Aşağıdaki materyalden Türkçe flashcard'lar oluştur. Her kart için bu formatı AYNEN kullan:\nQ: [soru veya kavram]\nA: [cevap veya tanım — kısa ve öz ama yeterli]\n\nEn kritik noktaları kapsayan en az 15 kart oluştur. Tüm önemli kavramları, tanımları, formülleri ve kuralları dahil et.\n\nMateryal İçeriği:\n${t}`,
   chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
+  mindmap: (t) => `Sen bir akademik görsel tasarım uzmanısın. Aşağıdaki materyali analiz edip konular arası ilişkileri gösteren bir kavram haritası SVG diyagramı üret. SADECE geçerli SVG kodu üret, başka hiçbir şey yazma. SVG viewBox="0 0 900 600" olsun. Ana konu ortada büyük bir daire içinde, alt konular etrafında küçük daireler içinde. Ok ve çizgilerle ilişkileri göster. Renk: Ana konu #3b82f6, birincil #6366f1, ikincil #34d399, üçüncül #fb923c. Türkçe etiketler, en az 8 en fazla 15 kavram. SVG dışında HİÇBİR ŞEY yazma.\n\nMateryal:\n${t}`,
 };
 
 function renderMaterials(){
@@ -4852,6 +4853,12 @@ function setMatMode(mode, btn){
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('flashcard',null)">🃏 Oluştur — AI en kritik noktaları seçer</button>
       </div>`);
+  } else if(mode === 'mindmap'){
+    matAddMsgToPanel('mindmap', 'ai', `<strong>🔗 Kavram Haritası</strong>
+      <div style="color:var(--muted);font-size:12px;margin:8px 0 12px;">Materyal analiz edilip konular arası ilişkiler görsel harita olarak çizilecek.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="mat-option-btn" onclick="matRunVariant('mindmap',null)">🔗 Kavram Haritası Oluştur</button>
+      </div>`);
   }
 }
 
@@ -4992,6 +4999,7 @@ async function matRunVariant(mode, variant){
   let promptFn;
   if(mode === 'summary') promptFn = MAT_PROMPTS.summary[variant];
   else if(mode === 'quiz') promptFn = MAT_PROMPTS.quiz[variant];
+  else if(mode === 'mindmap') promptFn = MAT_PROMPTS.mindmap;
   else promptFn = MAT_PROMPTS.flashcard;
 
   const content = matFileData?.content || matFileData?.fullContent || m.title;
@@ -5073,7 +5081,7 @@ Kuralların:
 
   // Sonuçları birleştir ve göster
   const combined = allResults.join('\n\n---\n\n');
-  const html = (mode==='flashcard') ? matBuildFlashcards(combined) : (mode==='quiz') ? matBuildQuiz(combined) : matMd(combined);
+  const html = (mode==='flashcard') ? matBuildFlashcards(combined) : (mode==='quiz') ? matBuildQuiz(combined) : (mode==='mindmap') ? matBuildMindmap(combined) : matMd(combined);
   const msgEl = matAddMsgToPanel(mode, 'ai', html);
 
   // Kaydet butonu (özet için)
@@ -5176,6 +5184,24 @@ function matMd(text){
   // İç içe ul/ol temizliği
   s = s.replace(/<br><\/?(ul|ol)/g, '</$1');
   return s;
+}
+
+function matBuildMindmap(text){
+  // SVG içeriyorsa direkt render et
+  const svgMatch = text.match(/<svg[\s\S]*<\/svg>/i);
+  if(svgMatch){
+    let svg = svgMatch[0];
+    // Güvenlik: event handler ve script temizle
+    svg = svg.replace(/\bon\w+\s*=/gi, 'data-blocked=');
+    svg = svg.replace(/<script[\s\S]*?<\/script>/gi, '');
+    return `<div class="md-svg-container" style="background:var(--surface2);border-radius:12px;padding:16px;overflow:auto;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">🔗 Kavram Haritası</div>
+      ${svg}
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">Tam ekran için sağ tık → Resmi yeni sekmede aç</div>
+    </div>`;
+  }
+  // SVG yoksa markdown olarak render et
+  return matMd(text);
 }
 
 function matBuildFlashcards(text){
@@ -5454,7 +5480,7 @@ Kuralların:
     }
 
     matHideTyping();
-    const html = (mode==='flashcard') ? matBuildFlashcards(result) : (mode==='quiz') ? matBuildQuiz(result) : matMd(result);
+    const html = (mode==='flashcard') ? matBuildFlashcards(result) : (mode==='quiz') ? matBuildQuiz(result) : (mode==='mindmap') ? matBuildMindmap(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
 
     if(mode === 'summary'){
