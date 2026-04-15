@@ -3101,7 +3101,7 @@ async function studioSend(){
     if(!sessionId) throw new Error('Giriş yapman gerekiyor.');
 
     const msgs = [...studioHistory, { role:'user', content:[{type:'text',text:prompt}] }];
-    const studioSystem = 'Sen AkademiX AI Studio asistanısın. Üniversite öğrencilerine yardımcı oluyorsun. Türkçe cevap ver. Markdown formatını zengin kullan: ## başlıklar, **kalın**, *italik*, - listeler, 1. numaralı listeler, `kod`, > alıntılar. Gerektiğinde SVG diagram çiz. Materyaller eklendiğinde onların içeriğine dayanarak kapsamlı cevaplar ver.';
+    const studioSystem = 'Sen AkademiX AI Studio asistanısın. Türkçe cevap ver. Markdown kullan. Konu görsel anlatıma uygunsa (tree, graph, algoritma, devre, akış şeması) SVG diyagram çiz. Materyaller eklendiğinde onların içeriğine dayanarak kapsamlı cevaplar ver.';
     const studioMaxTokens = studioAttached.length > 0 ? 8000 : 4000;
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
@@ -5152,7 +5152,8 @@ Kuralların:
 - Formüller, denklemler ve sayısal değerleri aynen koru, birimleri de yaz.
 - Markdown formatını zengin kullan: ## başlıklar, **kalın** terimler, formüller, listeler.
 - Yüzeysel geçme — mühendislik detaylarını, mekanizmaları ve nedenleri açıkla.
-- Sınava hazırlık için kritik bilgileri vurgula.`;
+- Sınava hazırlık için kritik bilgileri vurgula.
+- Konu görsel anlatıma uygunsa (tree, graph, algoritma, devre, akış şeması) SVG diyagram çiz.`;
 
   const tokenLimits = { summary: 8000, quiz: 6000, flashcard: 6000 };
   const maxTokens = tokenLimits[mode] || 6000;
@@ -5900,7 +5901,7 @@ async function ragSend(){
         body:JSON.stringify({
           model:'claude-sonnet-4-20250514',
           max_tokens: 8000,
-          system: 'Sen bir akademik asistansın. Kullanıcının verdiği materyale dayanarak isteklerini Türkçe olarak yerine getir. Markdown formatını zengin kullan. Materyaldeki TÜM içeriği kapsa, hiçbir bölümü atlama.',
+          system: 'Sen bir akademik asistansın. Türkçe cevap ver. Markdown kullan. TÜM içeriği kapsa. Konu görsel anlatıma uygunsa SVG diyagram çiz.',
           messages:[{role:'user',content:[{type:'text',text:fullPrompt}]}]
         })
       });
@@ -5922,7 +5923,7 @@ async function ragSend(){
             method:'POST',
             headers:{'Content-Type':'application/json','x-session-id':sessionId},
             body:JSON.stringify({
-              system: 'Sen bir akademik asistansın. Materyale dayanarak soruları Türkçe cevapla. Markdown kullan.',
+              system: 'Sen bir akademik asistansın. Materyale dayanarak soruları Türkçe cevapla. Markdown kullan. Konu görsel anlatıma uygunsa SVG diyagram çiz.',
               messages:[{role:'user',content:[{type:'text',text:fallbackPrompt}]}],
               provider:'gemini'
             })
