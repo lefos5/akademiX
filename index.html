@@ -1297,7 +1297,6 @@
   .ai-save-bar.visible { display:flex; }
   .ai-save-bar-left { font-size:12px; color:var(--muted); }
   .ai-save-bar-left strong { color:var(--text2); }
-  .saved-summaries-section { margin-top:20px; }
   .saved-summary-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; }
   .saved-summary-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
   .saved-summary-title { font-size:13px; font-weight:700; color:var(--text); }
@@ -2232,7 +2231,6 @@ async function sbDeleteChatHistory(materialId){
 // Eski summary fonksiyonları — geriye dönük uyumluluk için korunuyor
 async function sbSaveSummary(email, summary){
   // Artık ai_outputs üzerinden çalışıyor — material_id gerektiriyor
-  // Yeni akış matSaveCurrentSummary içinde doğrudan sbSaveAiOutput kullanıyor
   return null;
 }
 async function sbDeleteSummary(matTitle){ /* no-op */ }
@@ -4502,15 +4500,11 @@ function renderMaterials(){
     const el = document.createElement('div');
     el.className = 'mat-list-item' + (currentMatIdx===realIdx?' active':'');
     el.dataset.idx = realIdx;
-    const summaryCount = loadSummaries().filter(s => s.matTitle === m.title || s.title === m.title).length;
-    const summaryBadge = summaryCount > 0
-      ? `<span style="font-size:10px;background:rgba(59,130,246,0.15);color:var(--accent2);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:1px 7px;font-weight:600;margin-top:3px;display:inline-block">📝 ${summaryCount} özet</span>`
-      : '';
     el.innerHTML = `
       <div class="mat-list-icon" style="background:${bg}">${icon}</div>
       <div class="mat-list-info">
         <div class="mat-list-name">${escHtml(m.title)}</div>
-        <div class="mat-list-course">${course?course.code:(m.course||'')}${summaryBadge ? ' ' : ''}${summaryBadge}</div>
+        <div class="mat-list-course">${course?course.code:(m.course||'')}</div>
       </div>
       <button class="mat-list-del" onclick="event.stopPropagation();deleteMaterial(${realIdx})" title="Sil">✕</button>`;
     el.onclick = () => selectMat(realIdx);
@@ -4709,59 +4703,6 @@ async function loadMatHistory(materialId){
   }
 }
 
-function renderMatSavedSummaries(matTitle, targetPanel){
-  // targetPanel verilmişse onu, yoksa summary panelini kullan
-  const panel = targetPanel || getPanel('summary');
-  if(!panel) return;
-
-  // Önceki saved summaries bölümünü kaldır
-  const existing = panel.querySelector('#mat-saved-summaries');
-  if(existing) existing.remove();
-
-  const relevant = loadSummaries().filter(s => s.matTitle === matTitle || s.title === matTitle);
-  if(!relevant.length) return;
-
-  const section = document.createElement('div');
-  section.id = 'mat-saved-summaries';
-  section.style.cssText = 'border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:8px;';
-  section.innerHTML = `
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-      <span>📚</span> Kaydedilen Özetler (${relevant.length})
-    </div>
-    ${relevant.map(s => `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;">
-          <div style="min-width:0;">
-            <div style="font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(s.title)}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${escHtml(s.date||'')}</div>
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0;">
-            <button class="mat-ws-action" onclick="toggleMatSummaryBody(${s.id},this)">👁 Göster</button>
-            <button class="mat-ws-action" style="color:var(--red);" onclick="deleteMatSummary(${s.id},'${escHtml(matTitle)}')">✕ Sil</button>
-          </div>
-        </div>
-        <div id="mat-sum-body-${s.id}" style="display:none;font-size:12px;line-height:1.7;color:var(--text2);border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">${s.html}</div>
-      </div>`).join('')}`;
-  panel.prepend(section);
-}
-
-function toggleMatSummaryBody(id, btn){
-  const el = document.getElementById('mat-sum-body-' + id);
-  if(!el) return;
-  const isOpen = el.style.display !== 'none';
-  el.style.display = isOpen ? 'none' : 'block';
-  if(btn) btn.textContent = isOpen ? '👁 Göster' : '🙈 Gizle';
-}
-
-async function deleteMatSummary(id, matTitle){
-  if(!confirm('Bu özeti silmek istiyor musun?')) return;
-  const summaries = loadSummaries();
-  const toDelete = summaries.find(s => s.id === id);
-  if(toDelete?.title) await sbDeleteSummary(toDelete.title);
-  saveSummaries(summaries.filter(s => s.id !== id));
-  renderMatSavedSummaries(matTitle);
-  showToast('🗑️ Özet silindi.');
-}
 
 // Panel yardımcısı — aktif paneli göster, diğerlerini gizle
 function getPanel(mode){
@@ -4833,7 +4774,6 @@ function setMatMode(mode, btn){
 
   if(mode === 'summary'){
     // Kaydedilen özetleri en üstte göster
-    if(m) renderMatSavedSummaries(m.title, panel);
     matAddMsgToPanel('summary', 'ai', `<strong>Özet türünü seç:</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('summary','short')">⚡ Kısa — sadece ana noktalar</button>
@@ -4888,11 +4828,6 @@ async function matResetMode(mode){
   const matId = m?._sbId || m?.id;
   if(matId) await sbDeleteAiOutputsByType(matId, mode);
 
-  // localStorage'daki kaydedilmiş özetleri de temizle (summary modunda)
-  if(mode === 'summary' && m){
-    const summaries = loadSummaries().filter(s => s.matTitle !== m.title && s.title !== m.title);
-    saveSummaries(summaries);
-  }
 
   const btn = document.querySelector(`.mat-mode-btn[data-mode="${mode}"]`);
   if(btn) setMatMode(mode, btn);
@@ -5083,26 +5018,6 @@ Kuralların:
   const combined = allResults.join('\n\n---\n\n');
   const html = (mode==='flashcard') ? matBuildFlashcards(combined) : (mode==='quiz') ? matBuildQuiz(combined) : (mode==='mindmap') ? matBuildMindmap(combined) : matMd(combined);
   const msgEl = matAddMsgToPanel(mode, 'ai', html);
-
-  // Kaydet butonu (özet için)
-  if(mode === 'summary'){
-    const saveBar = document.createElement('div');
-    saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'add-btn';
-    saveBtn.style.cssText = 'padding:6px 14px;font-size:12px;flex-shrink:0;';
-    saveBtn.textContent = '💾 Kaydet';
-    saveBtn._summaryHtml = html;
-    saveBtn._summaryTitle = m.title;
-    saveBtn._summaryCourse = m.course || '';
-    saveBtn.onclick = function(){ matSaveCurrentSummary(this); };
-    const label = document.createElement('span');
-    label.style.cssText = 'font-size:12px;color:var(--muted);';
-    label.textContent = 'Bu özeti daha sonra görmek için kaydet';
-    saveBar.appendChild(saveBtn);
-    saveBar.appendChild(label);
-    msgEl?.querySelector('.mat-msg-body')?.appendChild(saveBar);
-  }
 
   // Yeniden Oluştur butonu
   const resetBar = document.createElement('div');
@@ -5483,25 +5398,6 @@ Kuralların:
     const html = (mode==='flashcard') ? matBuildFlashcards(result) : (mode==='quiz') ? matBuildQuiz(result) : (mode==='mindmap') ? matBuildMindmap(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
 
-    if(mode === 'summary'){
-      const saveBar = document.createElement('div');
-      saveBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;';
-      const saveBtn = document.createElement('button');
-      saveBtn.className = 'add-btn';
-      saveBtn.style.cssText = 'padding:6px 14px;font-size:12px;flex-shrink:0;';
-      saveBtn.textContent = '💾 Kaydet';
-      saveBtn._summaryHtml = html;
-      saveBtn._summaryTitle = m.title;
-      saveBtn._summaryCourse = m.course || '';
-      saveBtn.onclick = function(){ matSaveCurrentSummary(this); };
-      const label = document.createElement('span');
-      label.style.cssText = 'font-size:12px;color:var(--muted);';
-      label.textContent = 'Bu özeti daha sonra görmek için kaydet';
-      saveBar.appendChild(saveBtn);
-      saveBar.appendChild(label);
-      msgEl.querySelector('.mat-msg-body').appendChild(saveBar);
-    }
-
     // Yeniden Oluştur butonu — tüm AI modlarında (forcePrompt olanlar)
     if(opts.forcePrompt){
       const resetBar = document.createElement('div');
@@ -5536,38 +5432,6 @@ Kuralların:
   }
 }
 
-function summariesKey(){
-  return currentUserEmail ? 'ai_summaries_' + currentUserEmail : 'ai_summaries_guest';
-}
-function loadSummaries(){ return safeLocalStorage(summariesKey(), []); }
-function saveSummaries(arr){ try{ localStorage.setItem(summariesKey(), JSON.stringify(arr)); }catch(e){} }
-
-function matSaveCurrentSummary(btn){
-  const html = btn._summaryHtml;
-  const title = btn._summaryTitle;
-  const course = btn._summaryCourse;
-  if(!html) return;
-
-  // localStorage'a kaydet
-  const summaries = loadSummaries();
-  summaries.unshift({
-    id: Date.now(), title, course, matTitle: title, html,
-    date: new Date().toLocaleDateString('tr-TR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})
-  });
-  saveSummaries(summaries);
-
-  // Supabase ai_outputs'a kaydet
-  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
-  if(m?._sbId || m?.id) sbSaveAiOutput(m._sbId || m.id, 'summary', html, { title, course });
-
-  btn.textContent = '✅ Kaydedildi';
-  btn.disabled = true;
-  btn.style.background = 'var(--surface3)';
-  btn.style.boxShadow = 'none';
-  showToast('✅ Özet kaydedildi!');
-  renderMatSavedSummaries(title);
-  renderMaterials(); // Sol listede rozeti güncelle
-}
 
 function addClearChatBtn(){
   const panel = getPanel('chat');
@@ -6070,8 +5934,6 @@ async function deleteMaterial(idx){
   }
 
   if(m && m._sbId) await sbDeleteMaterial(m._sbId);
-  if(m && m.title) await sbDeleteSummary(m.title);
-  saveSummaries(loadSummaries().filter(s => s.title !== m.title));
 
   materials.splice(idx, 1);
   saveMaterials();
