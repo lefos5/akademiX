@@ -3087,7 +3087,7 @@ async function studioSend(){
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-session-id':sessionId},
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:studioMaxTokens, system:studioSystem, messages:msgs })
+      body: JSON.stringify({ system:studioSystem, messages:msgs, provider:'gemini' })
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || 'Sunucu hatası');
@@ -3129,7 +3129,7 @@ async function studioGenerateTitle(userMsg, assistantMsg){
       method:'POST',
       headers:{'Content-Type':'application/json','x-session-id':sessionId},
       body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:30,
-        messages:[{role:'user',content:[{type:'text',text:prompt}]}] })
+        messages:[{role:'user',content:[{type:'text',text:prompt}]}], provider:'gemini' })
     });
     const data = await resp.json();
     const title = data.content?.map(c=>c.text||'').join('').trim().replace(/^["']|["']$/g,'') || 'Yeni Sohbet';
@@ -5579,7 +5579,7 @@ Kuralların:
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-session-id': sessionId},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,system:systemPrompt,messages:msgs})
+      body:JSON.stringify({system:systemPrompt,messages:msgs,provider:'gemini'})
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
@@ -5818,10 +5818,9 @@ async function ragSend(){
             method:'POST',
             headers:{'Content-Type':'application/json','x-session-id':sessionId},
             body:JSON.stringify({
-              model:'claude-sonnet-4-20250514',
-              max_tokens: 6000,
               system: 'Sen bir akademik asistansın. Materyale dayanarak soruları Türkçe cevapla. Markdown kullan.',
-              messages:[{role:'user',content:[{type:'text',text:fallbackPrompt}]}]
+              messages:[{role:'user',content:[{type:'text',text:fallbackPrompt}]}],
+              provider:'gemini'
             })
           });
           const data2 = await resp2.json();
