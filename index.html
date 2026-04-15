@@ -751,14 +751,20 @@
 
   /* SVG Diagram Container */
   .md-svg-container {
-    margin: 14px 0; padding: 16px;
+    margin: 16px 0; padding: 20px 16px 14px;
     background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 12px; text-align: center;
-    overflow-x: auto;
+    border-radius: 14px; text-align: center;
+    overflow-x: auto; position: relative;
+  }
+  .md-svg-container::before {
+    content: '📊 Diyagram';
+    position: absolute; top: 8px; left: 12px;
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.8px;
   }
   .md-svg-container svg {
     max-width: 100%; height: auto;
-    display: inline-block;
+    display: inline-block; margin-top: 4px;
   }
 
   /* ── Quiz Card Styles ── */
@@ -4491,6 +4497,7 @@ KURALLAR:
 - Formüller, denklemler ve sayısal değerler aynen korunsun, birimleri de yaz
 - Her bölümü gerçekten detaylı yaz — "kısaca" veya "özetle" deme
 - Sınava hazırlık açısından kritik bilgileri ⚡ ile işaretle
+- Konu görsel anlatıma uygunsa (veri yapısı, algoritma, devre, akış şeması, karşılaştırma vb.) MUTLAKA SVG diyagram çiz. Diyagramı ilgili bölümün hemen altına ekle. SVG viewBox en az 600 genişliğinde olsun, Türkçe etiket kullan.
 
 Şu bölümleri MUTLAKA dahil et:
 
@@ -5631,11 +5638,19 @@ Kuralların:
 - Markdown formatını zengin şekilde kullan: ## başlıklar, **kalın** önemli terimler, *italik* vurgular, - ve 1. listeler, \`kod\`, > alıntılar.
 - Cevapların kapsamlı, detaylı ve eğitici olsun. Yüzeysel cevaplar verme.
 - Kavramları açıklarken örnekler ve analojiler kullan.
-- Gerektiğinde konuyu görselleştirmek için SVG diagram çiz. SVG'yi şu formatta ver:
+- Aşağıdaki konulardan biri geçiyorsa MUTLAKA SVG diagram çiz:
+  * Veri yapıları: tree, binary tree, BST, heap, graph, linked list, stack, queue
+  * Algoritmalar: sorting, searching, BFS, DFS, dynamic programming akışı
+  * Mühendislik: devre şemaları, kuvvet diyagramları, gerilme-şekil değiştirme grafikleri
+  * Süreç/akış: flowchart, state machine, lifecycle, pipeline
+  * Karşılaştırma: iki veya daha fazla kavram/yöntem karşılaştırması
+  * Hiyerarşi: sınıf diyagramı, organizasyon şeması, taksonomi
+  * Zaman serisi: timeline, Gantt benzeri görseller
+  SVG formatı:
   \`\`\`svg
-  <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">...</svg>
+  <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">...</svg>
   \`\`\`
-  Diagram çizerken: akış şemaları, kavram haritaları, karşılaştırma tabloları, zaman çizelgeleri gibi akademik görseller oluştur. Renkleri kullan: #3b82f6 (mavi), #2dd4bf (teal), #f87171 (kırmızı), #fbbf24 (sarı), #34d399 (yeşil).
+  SVG kuralları: viewBox en az 600 genişliğinde olsun. Metin taşmasını önle (tspan ile böl). Renk paleti: #3b82f6 mavi, #34d399 yeşil, #f87171 kırmızı, #fbbf24 sarı, #a78bfa mor, #fb923c turuncu. Arka plan transparan. Ok uçları için marker tanımla.
 - Sayfa sayfa özet yapıyorsan HER sayfayı atlamadan özetle. Hiçbir sayfayı "benzer içerik" diye geçme.`;
 
   const _sb=document.getElementById('mat-send-btn'); if(_sb) _sb.disabled=true;
