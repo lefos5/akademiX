@@ -835,6 +835,13 @@
   .quiz-option.correct-hidden .quiz-option-letter { background: var(--surface3); border-color: var(--border); color: var(--muted); }
   .quiz-option.correct-shown { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.4); color: var(--green); }
   .quiz-option.correct-shown .quiz-option-letter { background: var(--green); color: #fff; border-color: var(--green); }
+  /* Tıklama feedback */
+  .quiz-option { cursor: pointer; }
+  .quiz-option.selected-correct { background: rgba(52,211,153,0.15); border-color: var(--green); color: var(--green); }
+  .quiz-option.selected-correct .quiz-option-letter { background: var(--green); color: #fff; border-color: var(--green); }
+  .quiz-option.selected-wrong { background: rgba(248,113,113,0.15); border-color: var(--red); color: var(--red); }
+  .quiz-option.selected-wrong .quiz-option-letter { background: var(--red); color: #fff; border-color: var(--red); }
+  .quiz-option.answered { cursor: default; }
 
   /* ── Summary Page Thumbnails ── */
   .summary-page-section {
@@ -5411,7 +5418,7 @@ function matBuildQuiz(text){
         const letter = opt.trim().charAt(0).toUpperCase();
         const optText = opt.replace(/^[A-D]\)\s*/i,'');
         const isCorrect = letter === correctLetter;
-        html += `<div class="quiz-option${isCorrect ? ' correct-hidden' : ''}" data-correct="${isCorrect}">
+        html += `<div class="quiz-option${isCorrect ? ' correct-hidden' : ''}" data-correct="${isCorrect}" onclick="selectQuizOption(this, '${cardId}')">
           <div class="quiz-option-letter">${escHtml(letter)}</div>
           <span>${escHtml(optText)}</span>
         </div>`;
@@ -5445,6 +5452,32 @@ function matBuildQuiz(text){
 
   html += '</div>';
   return html;
+}
+
+function selectQuizOption(el, cardId){
+  const card = document.getElementById(cardId);
+  // Zaten cevaplandıysa tekrar tıklamayı engelle
+  if(card.dataset.answered) return;
+  card.dataset.answered = '1';
+
+  const isCorrect = el.dataset.correct === 'true';
+
+  // Tüm şıkları "answered" yap (cursor default)
+  card.querySelectorAll('.quiz-option').forEach(opt => {
+    opt.classList.add('answered');
+    // Doğru şıkları göster
+    if(opt.dataset.correct === 'true'){
+      opt.classList.remove('correct-hidden');
+      opt.classList.add('correct-shown');
+    }
+  });
+
+  // Seçilen şıka feedback ver
+  if(isCorrect){
+    el.classList.add('selected-correct');
+  } else {
+    el.classList.add('selected-wrong');
+  }
 }
 
 function toggleQuizSolution(cardId, btn){
