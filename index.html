@@ -2999,10 +2999,13 @@ function toggleStudioMaterialPicker(){
       'border:1px solid ' + borderColor,
       'border-radius:12px',
       'padding:8px',
+      'height:auto',
       'max-height:220px',
       'overflow-y:auto',
       'box-shadow:0 8px 32px ' + shadowColor,
     ].join(';');
+    // Height'i bir tick sonra yeniden hesaplat
+    requestAnimationFrame(() => { picker.style.height = 'auto'; });
   } else {
     picker.style.display = 'block';
   }
