@@ -90,19 +90,18 @@
   .sidebar.collapsed { width: 0; border-right: none; overflow: hidden; }
   .sidebar.collapsed > *:not(.desktop-hamburger) { opacity: 0; pointer-events: none; }
 
-  /* Sidebar içindeki hamburger — sidebar kapansa da görünür kalsın diye fixed */
+  /* Hamburger — açıkken sidebar'ın sağ kenarına yapışık, kapalıyken sol üstte */
   .desktop-hamburger {
-    position: fixed; top: 18px; left: 14px; z-index: 150;
-    width: 34px; height: 34px; border-radius: 8px;
+    position: fixed; top: 16px; left: 220px; z-index: 150;
+    width: 32px; height: 32px; border-radius: 8px;
     background: var(--surface2); border: 1px solid var(--border);
     color: var(--text); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, transform 0.15s;
+    transition: left 0.25s cubic-bezier(0.16,1,0.3,1), background 0.15s, transform 0.15s;
   }
-  .desktop-hamburger:hover { background: var(--accent-glow); }
-  .desktop-hamburger svg { width: 18px; height: 18px; }
-  /* Sidebar açıkken logo hamburger için yer açsın */
-  .sidebar:not(.collapsed) .logo { padding-left: 60px !important; }
+  body.sidebar-collapsed .desktop-hamburger { left: 16px; }
+  .desktop-hamburger:hover { background: var(--accent-glow); transform: scale(1.05); }
+  .desktop-hamburger svg { width: 16px; height: 16px; }
 
   .logo {
     padding: 28px 22px 22px;
@@ -1438,7 +1437,6 @@
   }
   @media (max-width: 768px) {
     .desktop-hamburger { display: none !important; }
-    .sidebar:not(.collapsed) .logo { padding-left: 16px !important; }
   }
 
   .ai-settings-link { font-size:11px; color:var(--muted); text-align:right; display:block; margin-top:6px; cursor:pointer; }
