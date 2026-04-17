@@ -100,6 +100,33 @@
     display: flex; flex-direction: column; z-index: 100;
     transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
   }
+  .sidebar.collapsed { transform: translateX(-100%); }
+
+  /* Sidebar içindeki chevron — sidebar açıkken sağ üst köşede */
+  .sidebar-toggle {
+    position: absolute; top: 14px; right: 12px; z-index: 2;
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .sidebar-toggle:hover { background: var(--accent-glow); transform: scale(1.05); }
+  .sidebar-toggle svg { width: 14px; height: 14px; }
+
+  /* Sidebar kapalıyken sayfada beliren hamburger */
+  .desktop-hamburger {
+    position: fixed; top: 14px; left: 14px; z-index: 150;
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  body.sidebar-collapsed .desktop-hamburger { display: flex; }
+  .desktop-hamburger:hover { background: var(--surface2); transform: scale(1.05); }
+  .desktop-hamburger svg { width: 18px; height: 18px; }
 
   .logo {
     padding: 28px 22px 22px;
@@ -199,7 +226,8 @@
   }
 
   /* ── MAIN ── */
-  .main { margin-left: 248px; min-height: 100vh; }
+  .main { margin-left: 248px; min-height: 100vh; transition: margin-left 0.3s cubic-bezier(0.16,1,0.3,1); }
+  body.sidebar-collapsed .main { margin-left: 0; }
   .page { padding: 32px 36px; }
   #page-materials { padding: 0 !important; }
   .page { display: none; }
@@ -1397,8 +1425,11 @@
       z-index: 199;
       width: 280px;
     }
-    .sidebar.mobile-open { transform: translateX(0); }
+    .sidebar.collapsed { transform: translateX(-100%); }
+    .sidebar.mobile-open { transform: translateX(0) !important; }
     .sidebar-logo { display: none; }
+    .sidebar-toggle { display: none !important; }
+    .desktop-hamburger { display: none !important; }
     .main { margin-left: 0 !important; padding-top: 56px; box-sizing: border-box; }
     .mobile-overlay {
       display: none; position: fixed; inset: 0; top: 56px;
@@ -1487,8 +1518,15 @@
   </div>
 </header>
 
+<button class="desktop-hamburger" onclick="toggleDesktopSidebar()" title="Menüyü aç" aria-label="Menüyü aç">
+  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+
 <aside class="sidebar">
-  <div class="logo sidebar-logo" style="padding:18px 16px 14px;">
+  <button class="sidebar-toggle" onclick="toggleDesktopSidebar()" title="Menüyü daralt" aria-label="Menüyü daralt">
+    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div class="logo sidebar-logo" style="padding:18px 48px 14px 16px;">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 90" width="200" height="82">
       <defs>
         <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -6421,6 +6459,25 @@ function toggleMobileSidebar(){
   if(!isOpen) document.body.style.overflow = 'hidden';
   else document.body.style.overflow = '';
 }
+
+function toggleDesktopSidebar(){
+  if(window.innerWidth <= 768){ toggleMobileSidebar(); return; }
+  const sidebar = document.querySelector('.sidebar');
+  if(!sidebar) return;
+  const collapsed = sidebar.classList.toggle('collapsed');
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  try { localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0'); } catch(e){}
+}
+
+// Sayfa yüklenince state'i geri yükle
+(function initSidebarState(){
+  try {
+    if(localStorage.getItem('sidebar_collapsed') === '1' && window.innerWidth > 768){
+      document.querySelector('.sidebar')?.classList.add('collapsed');
+      document.body.classList.add('sidebar-collapsed');
+    }
+  } catch(e){}
+})();
 
 // Sidebar'daki nav-item tıklanınca mobilde kapat
 document.addEventListener('click', e => {
