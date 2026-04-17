@@ -2093,14 +2093,31 @@ function initTokenClient(){
 }
 
 async function silentTokenRefresh(){
-  if(!tokenClient){ console.warn('[Token] tokenClient henüz hazır değil'); return; }
-  console.log('[Token] Sessiz yenileme deneniyor...');
+  console.log('[Token] Sessiz yenileme deneniyor (backend)...');
   try{
-    tokenClient.requestAccessToken({ prompt: '' });
+    await _refreshTokenPromise();
   }catch(e){
-    console.warn('[Token] Sessiz yenileme başarısız:', e);
-    // Backend session hâlâ geçerli olabilir — Classroom dışı özellikler çalışmaya devam eder
+    console.warn('[Token] Sessiz yenileme başarısız:', e.message);
+    if(e.message === 'SESSION_EXPIRED'){
+      // Session gerçekten bitmiş — kullanıcıyı sessizce logout edip giriş sayfasına at
+      forceReLogin('Oturum süresi doldu, yeniden giriş yap.');
+    }
   }
+}
+
+// Tüm lokal state'i temizleyip giriş sayfasına yönlendir
+function forceReLogin(reason){
+  console.warn('[Auth] Yeniden giriş gerekli:', reason);
+  try {
+    localStorage.removeItem('akademix_session');
+    localStorage.removeItem('guser');
+    sessionStorage.removeItem('guser');
+  } catch(e){}
+  accessToken = null;
+  tokenExpiresAt = null;
+  if(tokenRefreshTimer){ clearTimeout(tokenRefreshTimer); tokenRefreshTimer = null; }
+  // Giriş sayfasına yönlendir
+  window.location.href = BACKEND_URL + '/api/auth?action=login';
 }
 
 // ── Token Yaşam Döngüsü Yönetimi ──
@@ -3685,6 +3702,11 @@ async function initGoogleAuth(){
       document.getElementById('user-card').classList.add('visible');
       document.getElementById('classroom-signin').style.display='none';
       document.getElementById('classroom-content').classList.add('visible');
+      // Token yaşını bilmiyoruz — proaktif olarak backend'den yenile (55 dk sonrası için timer kur)
+      _refreshTokenPromise().catch(e => {
+        console.warn('[Init] Proaktif token yenileme başarısız:', e.message);
+        if(e.message === 'SESSION_EXPIRED') forceReLogin('Oturum süresi doldu');
+      });
       loadEnrolled().then(()=>{ renderSchedule(); renderCourses(); });
       loadMaterials().then(()=>renderMaterials());
     }
@@ -3753,7 +3775,11 @@ async function clFetch(url){
   // Token yoksa veya süresi dolmuşsa önce yenile
   if(accessToken && tokenExpiresAt && tokenExpiresAt < Date.now()){
     console.log('[Token] Süresi dolmuş, istek öncesi yenileniyor...');
-    try{ await _refreshTokenPromise(); }catch(e){ console.warn('[Token] Ön yenileme başarısız:', e); }
+    try{ await _refreshTokenPromise(); }
+    catch(e){
+      if(e.message === 'SESSION_EXPIRED'){ forceReLogin('Oturum süresi doldu'); throw e; }
+      console.warn('[Token] Ön yenileme başarısız:', e);
+    }
   }
 
   let r = await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
@@ -3764,8 +3790,12 @@ async function clFetch(url){
       await _refreshTokenPromise();
       r = await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
     }catch(e){
-      console.error('[Token] Yenileme başarısız — kullanıcı yeniden giriş yapmalı:', e);
-      throw new Error('Google oturumunuz sona erdi. Classroom verilerini görmek için sayfayı yenileyip tekrar giriş yapın.');
+      if(e.message === 'SESSION_EXPIRED'){
+        forceReLogin('Oturum süresi doldu');
+        throw new Error('Oturum süresi doldu, tekrar giriş yapılıyor...');
+      }
+      console.error('[Token] Yenileme başarısız:', e);
+      throw new Error('Bağlantı sorunu, lütfen tekrar dene.');
     }
   }
   if(!r.ok) throw new Error('API hatası: '+r.status+' '+r.statusText);
@@ -3773,25 +3803,33 @@ async function clFetch(url){
 }
 
 function _refreshTokenPromise(){
-  return new Promise((resolve, reject) => {
-    if(!tokenClient){ reject(new Error('tokenClient yok')); return; }
-    const timeout = setTimeout(() => reject(new Error('Token yenileme zaman aşımı')), 15000);
+  return new Promise(async (resolve, reject) => {
+    const sessionId = localStorage.getItem('akademix_session');
+    if(!sessionId){ reject(new Error('Session yok')); return; }
     try{
-      tokenClient.requestAccessToken({
-        prompt:'',
-        callback: (resp) => {
-          clearTimeout(timeout);
-          if(resp.error){ reject(new Error(resp.error)); return; }
-          accessToken = resp.access_token;
-          const expiresIn = (resp.expires_in || 3600) * 1000;
-          tokenExpiresAt = Date.now() + expiresIn;
-          if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
-          tokenRefreshTimer = setTimeout(silentTokenRefresh, expiresIn - 5*60*1000);
-          console.log('[Token] Yenilendi — geçerlilik:', Math.round(expiresIn/60000), 'dk');
-          resolve();
-        }
+      const r = await fetch(BACKEND_URL + '/api/auth?action=refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+        credentials: 'include',
       });
-    }catch(e){ clearTimeout(timeout); reject(e); }
+      const data = await r.json();
+      if(!r.ok || !data.accessToken){
+        // 401 = refresh token geçersiz, kullanıcı tekrar giriş yapmalı
+        if(r.status === 401){
+          reject(new Error('SESSION_EXPIRED'));
+        } else {
+          reject(new Error(data.error || 'Token yenileme başarısız'));
+        }
+        return;
+      }
+      accessToken = data.accessToken;
+      const expiresIn = (data.expiresIn || 3600) * 1000;
+      tokenExpiresAt = Date.now() + expiresIn;
+      if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+      tokenRefreshTimer = setTimeout(silentTokenRefresh, expiresIn - 5 * 60 * 1000);
+      console.log('[Token] Backend üzerinden yenilendi — geçerlilik:', Math.round(expiresIn/60000), 'dk');
+      resolve();
+    }catch(e){ reject(e); }
   });
 }
 
