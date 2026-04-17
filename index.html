@@ -90,18 +90,20 @@
   .sidebar.collapsed { width: 0; border-right: none; overflow: hidden; }
   .sidebar.collapsed > *:not(.desktop-hamburger) { opacity: 0; pointer-events: none; }
 
-  /* Hamburger — açıkken sidebar'ın sağ kenarına yapışık, kapalıyken sol üstte */
+  /* Hamburger — açıkken sidebar'ın içinde sağda, kapalıyken sol üstte */
   .desktop-hamburger {
-    position: fixed; top: 16px; left: 220px; z-index: 150;
+    position: fixed; top: 14px; left: 204px; z-index: 150;
     width: 32px; height: 32px; border-radius: 8px;
     background: var(--surface2); border: 1px solid var(--border);
     color: var(--text); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: left 0.25s cubic-bezier(0.16,1,0.3,1), background 0.15s, transform 0.15s;
+    transition: left 0.25s cubic-bezier(0.16,1,0.3,1), top 0.25s, background 0.15s, transform 0.15s;
   }
-  body.sidebar-collapsed .desktop-hamburger { left: 16px; }
+  body.sidebar-collapsed .desktop-hamburger { left: 16px; top: 16px; }
   .desktop-hamburger:hover { background: var(--accent-glow); transform: scale(1.05); }
   .desktop-hamburger svg { width: 16px; height: 16px; }
+  /* Sidebar açıkken logo'nun sağ üst köşesinde duruyor — logoyu biraz sola çek ki çakışmasın */
+  .sidebar:not(.collapsed) .logo { padding-right: 50px !important; }
 
   .logo {
     padding: 28px 22px 22px;
