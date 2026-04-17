@@ -1126,14 +1126,29 @@
 
   /* Ekli materyaller chips */
   .studio-attached { display:flex; flex-wrap:wrap; gap:6px; padding:8px 16px 0; }
+  .studio-attached:empty { padding: 0; }
   .studio-chip {
-    display:flex; align-items:center; gap:5px;
-    background:var(--accent-glow); border:1px solid rgba(59,130,246,0.25);
-    border-radius:20px; padding:3px 10px 3px 8px;
-    font-size:11px; font-weight:600; color:var(--accent2);
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--accent-glow); border:1px solid var(--accent);
+    border-radius:20px; padding:5px 4px 5px 12px;
+    font-size:12px; font-weight:600; color:var(--accent2);
+    box-shadow: 0 1px 4px rgba(59,130,246,0.15);
+    animation: chipIn 0.2s cubic-bezier(0.16,1,0.3,1);
   }
-  .studio-chip button { background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; padding:0; line-height:1; }
-  .studio-chip button:hover { color:var(--red); }
+  .studio-chip-icon { font-size:13px; line-height:1; }
+  .studio-chip-label { line-height:1.2; }
+  .studio-chip button {
+    display:flex; align-items:center; justify-content:center;
+    width:18px; height:18px; border-radius:50%;
+    background:rgba(0,0,0,0.08); border:none; color:var(--accent2);
+    cursor:pointer; font-size:11px; line-height:1; padding:0;
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+  }
+  .studio-chip button:hover { background:var(--red); color:#fff; transform:scale(1.1); }
+  @keyframes chipIn {
+    from { opacity:0; transform:scale(0.8); }
+    to { opacity:1; transform:scale(1); }
+  }
 
   .studio-input-area {
     border-top:1px solid var(--border);
@@ -2918,7 +2933,7 @@ async function studioNewConversation(){
   studioAttached = [];
   document.getElementById('studio-messages').innerHTML = '';
   studioSetWelcomeMode(true);
-  document.getElementById('studio-attached').innerHTML = '';
+  renderStudioAttached();
   document.getElementById('studio-input').value = '';
   document.querySelectorAll('.studio-conv-item').forEach(el => el.classList.remove('active'));
 }
@@ -2926,7 +2941,7 @@ async function studioNewConversation(){
 async function studioOpenConversation(id){
   studioConvId = id;
   studioAttached = [];
-  document.getElementById('studio-attached').innerHTML = '';
+  renderStudioAttached();
   document.getElementById('studio-input').value = '';
 
   // Aktif sohbeti vurgula
@@ -3078,15 +3093,23 @@ function studioToggleMaterial(idx){
 }
 
 function renderStudioAttached(){
-  const container = document.getElementById('studio-attached');
-  container.innerHTML = studioAttached.map(idx => {
+  const html = studioAttached.map(idx => {
     const m = materials[idx];
     if(!m) return '';
-    return `<div class="studio-chip">
-      <span>${escHtml(m.title.length > 20 ? m.title.slice(0,20)+'…' : m.title)}</span>
-      <button onclick="studioRemoveMaterial(${idx})">✕</button>
+    const icon = m.type === 'file' ? getFileIcon(m.fileName||'') : (MAT_ICONS[m.type]||'📎');
+    const title = m.title.length > 20 ? m.title.slice(0,20)+'…' : m.title;
+    return `<div class="studio-chip" title="${escHtml(m.title)}">
+      <span class="studio-chip-icon">${icon}</span>
+      <span class="studio-chip-label">${escHtml(title)}</span>
+      <button onclick="studioRemoveMaterial(${idx})" title="Kaldır" aria-label="Kaldır">✕</button>
     </div>`;
   }).join('');
+  // Hem welcome hem chat moddaki container'a yaz
+  const containers = [
+    document.getElementById('studio-attached'),
+    document.getElementById('studio-attached-welcome'),
+  ];
+  containers.forEach(c => { if(c) c.innerHTML = html; });
 }
 
 function studioRemoveMaterial(idx){
