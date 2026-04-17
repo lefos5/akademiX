@@ -2996,37 +2996,49 @@ function toggleStudioMaterialPicker(ev){
           </div>
         </div>`).join('');
 
-  // Konumlandır — butonun üstünde veya altında, viewport'a göre akıllı
+  // Konumlandır — önce göster ve boyutlandır, sonra top hesapla
   const rect = btn.getBoundingClientRect();
-  const pickerHeight = 220; // max-height
-  const spaceAbove = rect.top;
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const openUpward = spaceAbove > pickerHeight + 16 || spaceAbove > spaceBelow;
-
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   const bgColor = isLight ? '#ffffff' : '#2a2a2a';
   const borderColor = isLight ? '#c4cde0' : '#363a5a';
   const shadowColor = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.4)';
 
-  // Tüm style'ı tek seferde ata (eski inline style'ı sıfırla)
-  const styles = [
+  // İlk geçiş: görünür + sabit width, top'u 0 yap ki yüksekliği ölçebilelim
+  // right/bottom override edilmeli, çünkü .studio-picker CSS'inde absolute kurallar var
+  picker.style.cssText = [
     'display:block',
     'position:fixed',
-    'left:' + Math.max(8, Math.min(rect.left, window.innerWidth - 288)) + 'px',
-    openUpward
-      ? 'top:' + (rect.top - 8) + 'px;transform:translateY(-100%)'
-      : 'top:' + (rect.bottom + 8) + 'px;transform:none',
+    'top:0',
+    'left:0',
+    'right:auto',
+    'bottom:auto',
+    'transform:none',
     'width:280px',
     'z-index:9999',
     'background:' + bgColor,
     'border:1px solid ' + borderColor,
     'border-radius:12px',
     'padding:8px',
-    'max-height:' + pickerHeight + 'px',
+    'max-height:220px',
     'overflow-y:auto',
     'box-shadow:0 8px 32px ' + shadowColor,
-  ];
-  picker.style.cssText = styles.join(';');
+    'visibility:hidden',
+  ].join(';');
+
+  // Şimdi gerçek yüksekliği ölç
+  const actualHeight = Math.min(picker.scrollHeight, 220);
+  const spaceAbove = rect.top;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const openUpward = spaceAbove >= actualHeight + 16 || spaceAbove > spaceBelow;
+
+  const finalTop = openUpward
+    ? Math.max(8, rect.top - 8 - actualHeight)
+    : Math.min(window.innerHeight - actualHeight - 8, rect.bottom + 8);
+  const finalLeft = Math.max(8, Math.min(rect.left, window.innerWidth - 288));
+
+  picker.style.top = finalTop + 'px';
+  picker.style.left = finalLeft + 'px';
+  picker.style.visibility = 'visible';
   picker.dataset.open = 'true';
 }
 
