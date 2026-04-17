@@ -80,14 +80,8 @@
   }
 
   /* ── SIDEBAR ── */
-  /* TOPBAR — üstte sabit, hamburger + logo */
-  .topbar {
-    position: fixed; top: 0; left: 0; right: 0; height: 56px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 12px;
-    padding: 0 16px; z-index: 200;
-  }
+  /* TOPBAR — sadece mobilde görünür */
+  .topbar { display: none; }
   .topbar-hamburger {
     width: 36px; height: 36px; border-radius: 8px;
     background: transparent; border: none; color: var(--text);
@@ -100,14 +94,12 @@
   .topbar-logo svg { display: block; }
 
   .sidebar {
-    position: fixed; left:0; top:56px; bottom:0; width:248px;
+    position: fixed; left:0; top:0; bottom:0; width:248px;
     background: linear-gradient(180deg, #2a2a2a 0%, #242424 100%);
     border-right: 1px solid var(--border);
     display: flex; flex-direction: column; z-index: 100;
-    transition: width 0.25s cubic-bezier(0.16,1,0.3,1);
+    transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
   }
-  .sidebar.collapsed { width: 0; border-right: none; overflow: hidden; }
-  .sidebar.collapsed > * { opacity: 0; pointer-events: none; }
 
   .logo {
     padding: 28px 22px 22px;
@@ -207,8 +199,7 @@
   }
 
   /* ── MAIN ── */
-  .main { margin-left: 248px; padding-top: 56px; min-height: 100vh; box-sizing: border-box; transition: margin-left 0.25s cubic-bezier(0.16,1,0.3,1); }
-  body.sidebar-collapsed .main { margin-left: 0; }
+  .main { margin-left: 248px; min-height: 100vh; }
   .page { padding: 32px 36px; }
   #page-materials { padding: 0 !important; }
   .page { display: none; }
@@ -492,7 +483,7 @@
   ═══════════════════════════════════════ */
   .mat-layout {
     display: flex;
-    height: calc(100vh - 56px);
+    height: 100vh;
     overflow: hidden;
   }
 
@@ -1015,7 +1006,7 @@
     border-radius:6px; font-size:11px; line-height:1.5; color:var(--text2);
   }
   .rag-source-num { font-weight:700; color:var(--accent2); margin-right:4px; }
-  .studio-layout { display:flex; height:calc(100vh - 56px); overflow:hidden; }
+  .studio-layout { display:flex; height:100vh; overflow:hidden; }
 
   .studio-sidebar {
     width: 240px; flex-shrink:0;
@@ -1395,20 +1386,26 @@
 
   /* ── MOBILE RESPONSIVE ── */
   @media (max-width: 768px) {
+    .topbar {
+      display: flex; position: fixed; top: 0; left: 0; right: 0; height: 56px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      align-items: center; gap: 12px; padding: 0 16px; z-index: 200;
+    }
     .sidebar {
       top: 56px;
       transform: translateX(-100%);
-      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
-      z-index: 200;
+      z-index: 199;
       width: 280px;
     }
     .sidebar.mobile-open { transform: translateX(0); }
-    .main { margin-left: 0 !important; }
+    .sidebar-logo { display: none; }
+    .main { margin-left: 0 !important; padding-top: 56px; box-sizing: border-box; }
     .mobile-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5); z-index: 199;
+      display: none; position: fixed; inset: 0; top: 56px;
+      background: rgba(0,0,0,0.5); z-index: 198;
     }
     .mobile-overlay.visible { display: block; }
+    .mat-layout, .studio-layout { height: calc(100vh - 56px) !important; }
     .page { padding: 16px !important; }
     #page-materials { padding: 0 !important; }
     .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
@@ -1460,7 +1457,7 @@
 <body>
 
 <header class="topbar" id="topbar">
-  <button class="topbar-hamburger" onclick="toggleDesktopSidebar()" title="Menüyü aç/kapat" aria-label="Menüyü aç/kapat">
+  <button class="topbar-hamburger" onclick="toggleMobileSidebar()" title="Menüyü aç/kapat" aria-label="Menüyü aç/kapat">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
   <div class="topbar-logo">
@@ -1491,6 +1488,32 @@
 </header>
 
 <aside class="sidebar">
+  <div class="logo sidebar-logo" style="padding:18px 16px 14px;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 90" width="200" height="82">
+      <defs>
+        <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#2dd4bf"/>
+          <stop offset="100%" style="stop-color:#14b8a6"/>
+        </linearGradient>
+      </defs>
+      <g transform="translate(110, 28)">
+        <path d="M-2 0 Q-2 -8 -12 -12 L-12 2 Q-2 6 -2 0Z" fill="none" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 0 Q2 -8 12 -12 L12 2 Q2 6 2 0Z" fill="none" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="0" cy="-20" r="1.5" fill="#2dd4bf"/>
+        <circle cx="-5" cy="-17" r="1.2" fill="#2dd4bf" opacity="0.8"/>
+        <circle cx="5" cy="-17" r="1.2" fill="#2dd4bf" opacity="0.8"/>
+        <circle cx="-9" cy="-13" r="1" fill="#2dd4bf" opacity="0.5"/>
+        <circle cx="9" cy="-13" r="1" fill="#2dd4bf" opacity="0.5"/>
+        <line x1="0" y1="-16" x2="0" y2="-22" stroke="#2dd4bf" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+        <line x1="-4" y1="-14" x2="-6" y2="-19" stroke="#2dd4bf" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+        <line x1="4" y1="-14" x2="6" y2="-19" stroke="#2dd4bf" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+      </g>
+      <text x="110" y="68" text-anchor="middle" font-family="'Outfit','Segoe UI',Arial,sans-serif" font-size="30" font-weight="800" letter-spacing="-0.5">
+        <tspan fill="var(--text)">akademi</tspan><tspan fill="url(#tealGrad)" font-weight="900">X</tspan>
+      </text>
+    </svg>
+    <p style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:2px;letter-spacing:0.3px;">2025–2026 Bahar Dönemi</p>
+  </div>
   <nav class="nav">
     <div class="nav-item active" onclick="showPage('schedule')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -6398,26 +6421,6 @@ function toggleMobileSidebar(){
   if(!isOpen) document.body.style.overflow = 'hidden';
   else document.body.style.overflow = '';
 }
-
-function toggleDesktopSidebar(){
-  // Mobilde aynı butona basıldıysa mobil davranışına yönlendir
-  if(window.innerWidth <= 768){ toggleMobileSidebar(); return; }
-  const sidebar = document.querySelector('.sidebar');
-  if(!sidebar) return;
-  const collapsed = sidebar.classList.toggle('collapsed');
-  document.body.classList.toggle('sidebar-collapsed', collapsed);
-  try { localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0'); } catch(e){}
-}
-
-// Sayfa yüklenince sidebar state'ini geri yükle
-(function initSidebarState(){
-  try {
-    if(localStorage.getItem('sidebar_collapsed') === '1' && window.innerWidth > 768){
-      document.querySelector('.sidebar')?.classList.add('collapsed');
-      document.body.classList.add('sidebar-collapsed');
-    }
-  } catch(e){}
-})();
 
 // Sidebar'daki nav-item tıklanınca mobilde kapat
 document.addEventListener('click', e => {
