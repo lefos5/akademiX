@@ -1663,7 +1663,7 @@
           <div class="studio-welcome-input" style="width:100%;max-width:580px;">
             <div class="studio-attached" id="studio-attached-welcome"></div>
             <div class="studio-input-row" style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:6px 6px 6px 12px;box-shadow:0 4px 24px rgba(0,0,0,0.12);">
-              <button class="studio-attach-btn" onclick="toggleStudioMaterialPicker()" title="Materyal Ekle" style="border:none;background:transparent;">
+              <button class="studio-attach-btn" onclick="toggleStudioMaterialPicker(event)" title="Materyal Ekle" style="border:none;background:transparent;">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               </button>
               <textarea id="studio-input-welcome" placeholder="Bir şey sor..." rows="1"
@@ -1674,7 +1674,6 @@
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
             </div>
-            <div class="studio-picker" id="studio-picker-welcome" style="display:none;position:absolute;bottom:100%;left:0;right:0;margin-bottom:6px;"></div>
           </div>
         </div>
         <div class="studio-messages" id="studio-messages"></div>
@@ -1682,7 +1681,7 @@
           <!-- Ekli materyaller -->
           <div class="studio-attached" id="studio-attached"></div>
           <div class="studio-input-row">
-            <button class="studio-attach-btn" onclick="toggleStudioMaterialPicker()" title="Materyal Ekle">
+            <button class="studio-attach-btn" onclick="toggleStudioMaterialPicker(event)" title="Materyal Ekle">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             </button>
             <textarea id="studio-input" placeholder="Bir şey sor..." rows="1"
@@ -2952,21 +2951,39 @@ function studioAddMsgToDOM(role, html){
 }
 
 // Materyal picker
-function toggleStudioMaterialPicker(){
-  const picker = document.getElementById('studio-picker');
+function toggleStudioMaterialPicker(ev){
+  // Event bubbling'i durdur — document click handler hemen kapatmasın
+  if(ev){ ev.stopPropagation(); }
 
-  // Picker'ı body'e taşı (overflow:hidden olan parent'lardan kurtulmak için)
+  const picker = document.getElementById('studio-picker');
+  if(!picker) return;
+
+  // Picker'ı body'e taşı (overflow:hidden parent'lardan kurtul)
   if(picker.parentElement !== document.body){
     document.body.appendChild(picker);
   }
 
-  if(picker.style.display !== 'none'){ picker.style.display = 'none'; return; }
+  // Zaten açıksa kapat
+  const isOpen = picker.dataset.open === 'true';
+  if(isOpen){
+    picker.style.display = 'none';
+    picker.dataset.open = 'false';
+    return;
+  }
 
+  // Tıklanan butonu event'ten al (welcome mi chat mi — fark etmez)
+  const btn = ev?.currentTarget || ev?.target?.closest('.studio-attach-btn');
+  if(!btn){
+    console.warn('[picker] attach button bulunamadı');
+    return;
+  }
+
+  // İçeriği doldur
   const attachedIds = new Set(studioAttached);
   const isLightTheme = document.documentElement.getAttribute('data-theme') === 'light';
   const itemTextColor = isLightTheme ? '#1e3a5f' : '#b8c4d8';
   const itemSubColor = isLightTheme ? '#6b7a99' : '#6b7a99';
-  const itemHoverBg = isLightTheme ? '#eef1f7' : '#323232';
+
   picker.innerHTML = materials.length === 0
     ? `<div style="padding:12px;font-size:12px;color:${itemSubColor};">Henüz materyal yok.</div>`
     : materials.map((m, idx) => `
@@ -2979,41 +2996,38 @@ function toggleStudioMaterialPicker(){
           </div>
         </div>`).join('');
 
-  // Görünür olan attach butonunu bul
-  const allBtns = document.querySelectorAll('.studio-attach-btn');
-  let btn = null;
-  for(const b of allBtns){
-    const r = b.getBoundingClientRect();
-    if(r.width > 0 && r.height > 0){ btn = b; break; }
-  }
-  if(btn){
-    const rect = btn.getBoundingClientRect();
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    const bgColor = isLight ? '#ffffff' : '#2a2a2a';
-    const borderColor = isLight ? '#c4cde0' : '#363a5a';
-    const shadowColor = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.4)';
-    picker.style.cssText = [
-      'display:block',
-      'position:fixed',
-      'left:' + rect.left + 'px',
-      'top:' + (rect.top - 8) + 'px',
-      'transform:translateY(-100%)',
-      'width:280px',
-      'z-index:9999',
-      'background:' + bgColor,
-      'border:1px solid ' + borderColor,
-      'border-radius:12px',
-      'padding:8px',
-      'height:auto',
-      'max-height:220px',
-      'overflow-y:auto',
-      'box-shadow:0 8px 32px ' + shadowColor,
-    ].join(';');
-    // Height'i bir tick sonra yeniden hesaplat
-    requestAnimationFrame(() => { picker.style.height = 'auto'; });
-  } else {
-    picker.style.display = 'block';
-  }
+  // Konumlandır — butonun üstünde veya altında, viewport'a göre akıllı
+  const rect = btn.getBoundingClientRect();
+  const pickerHeight = 220; // max-height
+  const spaceAbove = rect.top;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const openUpward = spaceAbove > pickerHeight + 16 || spaceAbove > spaceBelow;
+
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const bgColor = isLight ? '#ffffff' : '#2a2a2a';
+  const borderColor = isLight ? '#c4cde0' : '#363a5a';
+  const shadowColor = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.4)';
+
+  // Tüm style'ı tek seferde ata (eski inline style'ı sıfırla)
+  const styles = [
+    'display:block',
+    'position:fixed',
+    'left:' + Math.max(8, Math.min(rect.left, window.innerWidth - 288)) + 'px',
+    openUpward
+      ? 'top:' + (rect.top - 8) + 'px;transform:translateY(-100%)'
+      : 'top:' + (rect.bottom + 8) + 'px;transform:none',
+    'width:280px',
+    'z-index:9999',
+    'background:' + bgColor,
+    'border:1px solid ' + borderColor,
+    'border-radius:12px',
+    'padding:8px',
+    'max-height:' + pickerHeight + 'px',
+    'overflow-y:auto',
+    'box-shadow:0 8px 32px ' + shadowColor,
+  ];
+  picker.style.cssText = styles.join(';');
+  picker.dataset.open = 'true';
 }
 
 function studioToggleMaterial(idx){
@@ -3021,7 +3035,9 @@ function studioToggleMaterial(idx){
   if(i === -1) studioAttached.push(idx);
   else studioAttached.splice(i, 1);
   renderStudioAttached();
-  toggleStudioMaterialPicker(); // kapat
+  // Picker'ı kapat
+  const picker = document.getElementById('studio-picker');
+  if(picker){ picker.style.display = 'none'; picker.dataset.open = 'false'; }
 }
 
 function renderStudioAttached(){
@@ -3060,7 +3076,8 @@ async function studioSend(){
   if(!text) return;
 
   inp.value = ''; inp.style.height = 'auto';
-  document.getElementById('studio-picker').style.display = 'none';
+  const pickerEl = document.getElementById('studio-picker');
+  if(pickerEl){ pickerEl.style.display = 'none'; pickerEl.dataset.open = 'false'; }
 
   // Mesaj alanını göster
   studioSetWelcomeMode(false);
@@ -3214,9 +3231,11 @@ async function studioGenerateTitle(userMsg, assistantMsg){
 // Dışarı tıklayınca picker kapat
 document.addEventListener('click', e => {
   const picker = document.getElementById('studio-picker');
-  if(picker && !picker.contains(e.target) && !e.target.closest('.studio-attach-btn')){
-    picker.style.display = 'none';
-  }
+  if(!picker || picker.dataset.open !== 'true') return;
+  if(picker.contains(e.target)) return;
+  if(e.target.closest('.studio-attach-btn')) return;
+  picker.style.display = 'none';
+  picker.dataset.open = 'false';
 });
 
 function renderExams(){
@@ -6344,13 +6363,6 @@ document.addEventListener('click', e => {
   if(window.innerWidth <= 768 && e.target.closest('.nav-item')){
     const sidebar = document.querySelector('.sidebar');
     if(sidebar.classList.contains('mobile-open')) toggleMobileSidebar();
-  }
-  // Studio picker dışına tıklayınca kapat
-  const picker = document.getElementById('studio-picker');
-  if(picker && picker.style.display !== 'none'){
-    if(!e.target.closest('#studio-picker') && !e.target.closest('.studio-attach-btn')){
-      picker.style.display = 'none';
-    }
   }
 });
 
