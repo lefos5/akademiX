@@ -6257,8 +6257,40 @@ async function saveMaterial(){
 
       let fileUrl, filePath, fileName, fileSize;
 
-      // Her dosya backend üzerinden — güvenli
-      {
+      const VERCEL_LIMIT = 4 * 1024 * 1024; // 4 MB — Vercel serverless body limit
+
+      if(selectedFile.size > VERCEL_LIMIT){
+        // ── BÜYÜK DOSYA: Signed URL ile direkt Supabase'e ──
+        showToast('⏳ Büyük dosya (' + formatFileSize(selectedFile.size) + ') hazırlanıyor...');
+
+        // 1. Backend'den signed upload URL iste
+        const signedResp = await fetch(BACKEND_URL + '/api/upload?action=signed-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+          body: JSON.stringify({ fileName: selectedFile.name, fileSize: selectedFile.size }),
+        });
+        const signedData = await signedResp.json();
+        if(!signedResp.ok || !signedData.signedUrl){
+          throw new Error(signedData.error || 'Signed URL alınamadı');
+        }
+
+        // 2. Supabase'e direkt PUT ile yükle
+        showToast('⏳ Dosya yükleniyor...');
+        const putResp = await fetch(signedData.signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': selectedFile.type || 'application/octet-stream' },
+          body: selectedFile,
+        });
+        if(!putResp.ok){
+          const errText = await putResp.text().catch(() => '');
+          throw new Error('Supabase upload hatası: HTTP ' + putResp.status + (errText ? ' — ' + errText.slice(0, 200) : ''));
+        }
+
+        fileUrl = signedData.publicUrl;
+        filePath = signedData.filePath;
+        fileName = selectedFile.name;
+        fileSize = selectedFile.size;
+      } else {
         // ── KÜÇÜK DOSYA: Vercel backend üzerinden yükle (service key) ──
         const formData = new FormData();
         formData.append('file', selectedFile, selectedFile.name);
