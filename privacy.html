@@ -1,120 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Privacy Policy — AkademiX</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --bg: #07090f; --surface: #0d1117; --border: #1c2a3e;
-    --accent: #3b82f6; --accent2: #60a5fa; --blue: #a78bfa;
-    --text: #e8edf5; --text2: #b8c4d8; --muted: #4d6480;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(180deg, #f8f9ff 0%, #ffffff 100%);
+    color: #1a1f36;
+    line-height: 1.7;
+    padding: 40px 20px;
   }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh;
-    background-image: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(59,130,246,0.07) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(167,139,250,0.05) 0%, transparent 60%); }
-  .container { max-width: 760px; margin: 0 auto; padding: 60px 24px; }
-  .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; text-decoration: none; margin-bottom: 40px; transition: color 0.15s; }
-  .back-link:hover { color: var(--accent2); }
-  .logo { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 24px; }
-  .logo span { color: var(--accent2); }
-  h1 { font-family: 'Outfit', sans-serif; font-size: 36px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 12px; }
-  .subtitle { color: var(--muted); font-size: 14px; }
-  .divider { height: 1px; background: linear-gradient(90deg, var(--accent), var(--blue), transparent); opacity: 0.3; margin: 32px 0; }
-  .section { margin-bottom: 36px; }
-  h2 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; color: var(--accent2); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-  p { color: var(--text2); font-size: 15px; line-height: 1.8; margin-bottom: 10px; }
-  ul { padding-left: 20px; color: var(--text2); font-size: 15px; line-height: 1.8; }
-  ul li { margin-bottom: 6px; }
-  .highlight { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15); border-radius: 12px; padding: 16px 20px; margin: 20px 0; color: var(--text2); font-size: 14px; line-height: 1.7; }
-  .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; text-align: center; line-height: 1.8; }
-  a { color: var(--accent2); text-decoration: none; }
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 16px;
+    padding: 48px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #6366f1;
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 32px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .back:hover { background: rgba(99,102,241,0.08); }
+  .brand {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: #1a1f36;
+    margin-bottom: 8px;
+  }
+  .brand span { color: #14b8a6; font-weight: 900; }
+  h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 34px;
+    font-weight: 800;
+    margin: 8px 0 6px;
+    letter-spacing: -0.5px;
+  }
+  .updated {
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 28px 0 12px;
+    color: #1a1f36;
+  }
+  p { margin-bottom: 12px; color: #374151; font-size: 15px; }
+  ul { padding-left: 22px; margin-bottom: 12px; }
+  li { margin-bottom: 6px; color: #374151; font-size: 15px; }
+  strong { color: #1a1f36; font-weight: 600; }
+  a { color: #6366f1; text-decoration: none; }
   a:hover { text-decoration: underline; }
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .callout {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    color: #6b7280;
+    font-size: 13px;
+  }
 </style>
 </head>
 <body>
 <div class="container">
-  <a href="index.html" class="back-link">← Back to AkademiX</a>
-  <div class="logo">Akademi<span>X</span></div>
+  <a class="back" href="https://lefos5.github.io/akademiX/index.html">← Back to AkademiX</a>
+  <div class="brand">akademi<span>X</span></div>
   <h1>Privacy Policy</h1>
-  <p class="subtitle">Last updated: March 2026</p>
-  <div class="divider"></div>
-  <div class="highlight">
-    AkademiX is an academic management platform developed exclusively for students of Türk-Alman Üniversitesi (TAÜ). This privacy policy explains what data our application collects and how it is handled.
-  </div>
+  <div class="updated">Last updated: April 21, 2026</div>
 
-  <div class="section">
-    <h2>📋 Data We Collect</h2>
-    <p>AkademiX accesses the following data:</p>
-    <ul>
-      <li>Google account information (name, email address, profile picture)</li>
-      <li>Google Classroom data (courses, assignments, announcements)</li>
-      <li>Materials and notes uploaded or created within the app</li>
-      <li>AI-generated summaries saved by the user</li>
-    </ul>
-  </div>
+  <p>AkademiX is an academic management platform developed exclusively for students of Türk-Alman Üniversitesi (TAÜ). This Privacy Policy describes what information we collect, how we use and share it, and the choices you have. By using AkademiX you agree to the practices described below.</p>
 
-  <div class="section">
-    <h2>💾 Data Storage</h2>
-    <p>User data is stored in two ways:</p>
-    <ul>
-      <li><strong>Locally</strong> — course schedules and preferences are stored in your browser's localStorage and IndexedDB</li>
-      <li><strong>Cloud</strong> — materials, notes, and AI summaries are synced to our Supabase database so they are accessible across devices</li>
-      <li>No data is sold or shared with third parties</li>
-      <li>No advertising or tracking scripts are used</li>
-    </ul>
-  </div>
+  <h2>1. Who We Are</h2>
+  <p>AkademiX is an independent student-built project. It is not an official product of Türk-Alman Üniversitesi. Contact: <a href="mailto:akademix.contact@gmail.com">akademix.contact@gmail.com</a></p>
 
-  <div class="section">
-    <h2>🔑 Google OAuth</h2>
-    <p>AkademiX uses Google OAuth 2.0 for authentication. The sign-in process is handled entirely through Google's secure infrastructure.</p>
-    <ul>
-      <li>Only <strong>@stud.tau.edu.tr</strong> institutional accounts are accepted</li>
-      <li>Google Classroom data is used solely within the application</li>
-      <li>Access tokens are stored in browser memory and are never sent to our servers</li>
-    </ul>
-  </div>
+  <h2>2. Information We Collect</h2>
+  <p>When you sign in with Google and use AkademiX, we collect the following categories of information:</p>
+  <ul>
+    <li><strong>Google account profile:</strong> name, email address, profile picture (for identifying your account)</li>
+    <li><strong>Google Classroom data:</strong> course list, course work, announcements — read-only, via Google Classroom API</li>
+    <li><strong>Google OAuth tokens:</strong> an access token and a refresh token issued by Google, stored server-side so that you stay logged in and so that Classroom data can be refreshed</li>
+    <li><strong>Content you create:</strong> uploaded materials (PDFs, links), notes, AI-generated summaries/exams/flashcards, and chat messages you exchange with the AI</li>
+    <li><strong>Technical metadata:</strong> timestamps of your activity and basic rate-limiting counters (number of AI requests per day)</li>
+  </ul>
+  <p>We do <strong>not</strong> collect passwords, payment information, IP addresses for tracking purposes, advertising identifiers, or any analytics data.</p>
 
-  <div class="section">
-    <h2>🤖 AI Summarization</h2>
-    <p>The AI summarization feature uses the Anthropic Claude API. When you use this feature:</p>
-    <ul>
-      <li>The content of your uploaded document is sent to the Anthropic API for processing</li>
-      <li>No document content is permanently stored by Anthropic beyond the duration of the request</li>
-      <li>For Anthropic's privacy policy, visit: <a href="https://www.anthropic.com/privacy" target="_blank">anthropic.com/privacy</a></li>
-    </ul>
-  </div>
+  <h2>3. How We Use Your Information</h2>
+  <p>Your data is used solely to operate the features of AkademiX:</p>
+  <ul>
+    <li>To authenticate you and maintain your session</li>
+    <li>To display your Google Classroom courses, assignments, and announcements within the app</li>
+    <li>To store materials, notes, and AI outputs you create so they persist across devices</li>
+    <li>To send content to AI providers when you request an AI feature (see Section 5)</li>
+    <li>To enforce fair-use rate limits</li>
+  </ul>
+  <p>We do not use your data for advertising, profiling, or any purpose unrelated to the features you actively use.</p>
 
-  <div class="section">
-    <h2>🔒 Data Security</h2>
-    <ul>
-      <li>All communication is encrypted via HTTPS</li>
-      <li>Cloud data is stored securely on Supabase's infrastructure</li>
-      <li>The application contains no analytics, tracking, or advertising code</li>
-      <li>Access is restricted to TAÜ institutional Google accounts</li>
-    </ul>
-  </div>
+  <h2>4. Where Your Data Is Stored</h2>
+  <p>AkademiX is a hosted web application. Your data is stored in the following services:</p>
+  <ul>
+    <li><strong>Supabase</strong> (EU region) — database and file storage for materials, notes, AI outputs, chat history, and session tokens. <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a></li>
+    <li><strong>Vercel</strong> (serverless backend hosting). <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">vercel.com/legal/privacy-policy</a></li>
+    <li><strong>Your browser</strong> — some preferences and a cached copy of your materials are kept in <code>localStorage</code> for faster loading</li>
+  </ul>
 
-  <div class="section">
-    <h2>🗑️ Deleting Your Data</h2>
-    <p>You can delete your data at any time:</p>
-    <ul>
-      <li>Clear site data from your browser settings to remove all local data</li>
-      <li>To remove cloud-stored data, contact us via GitHub</li>
-      <li>To revoke Google access, visit <a href="https://myaccount.google.com/permissions" target="_blank">myaccount.google.com/permissions</a> and remove AkademiX</li>
-    </ul>
-  </div>
+  <h2>5. AI Providers (Third-Party Processing)</h2>
+  <p>When you use an AI feature, the relevant content (material text, your question, or chat history) is sent to one of the following providers for processing. These providers act as data processors on our behalf and do not use your data to train their models under our current agreements:</p>
+  <ul>
+    <li><strong>Anthropic (Claude)</strong> — used for summaries, exam generation, and flashcards. <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">anthropic.com/privacy</a></li>
+    <li><strong>Google (Gemini API)</strong> — used for chat, AI Studio, and RAG answers. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></li>
+    <li><strong>Hugging Face</strong> — used to create embeddings of uploaded material text for the RAG search feature. <a href="https://huggingface.co/privacy" target="_blank" rel="noopener">huggingface.co/privacy</a></li>
+  </ul>
+  <p>Content sent to these providers is transmitted over HTTPS and is used only to generate the response you requested.</p>
 
-  <div class="section">
-    <h2>📬 Contact</h2>
-    <p>For any questions regarding this privacy policy, please reach out via GitHub:</p>
-    <p><a href="https://github.com/lefos5/akademix" target="_blank">github.com/lefos5/akademix</a></p>
+  <h2>6. Google Workspace Limited Use Disclosure</h2>
+  <div class="callout">
+    AkademiX's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.
   </div>
+  <p>This means that data obtained from Google APIs (your profile, Classroom courses, course work, and announcements) is only used to provide the features you see in the app. It is not sold, not used for advertising, not used to train AI models, and not shared with third parties except the sub-processors listed in Section 5.</p>
+
+  <h2>7. Data Retention</h2>
+  <ul>
+    <li><strong>Session tokens:</strong> stored while your session is active. Sessions expire after 7 days of inactivity and are then automatically deleted.</li>
+    <li><strong>User-generated content</strong> (materials, notes, AI outputs, chat history): retained until you delete it from the app or until you request account deletion.</li>
+    <li><strong>Google Classroom data:</strong> not stored persistently. It is fetched live from Google each time you open the Classroom page.</li>
+  </ul>
+
+  <h2>8. Your Rights</h2>
+  <p>You have the right to:</p>
+  <ul>
+    <li><strong>Access</strong> the data we hold about you</li>
+    <li><strong>Correct</strong> inaccurate data</li>
+    <li><strong>Delete</strong> your data — by removing individual items in the app, or by emailing us to delete your entire account</li>
+    <li><strong>Export</strong> a copy of your data</li>
+    <li><strong>Revoke</strong> Google access at any time via <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a></li>
+  </ul>
+  <p>To exercise any of these rights, email <a href="mailto:akademix.contact@gmail.com">akademix.contact@gmail.com</a>. We will respond within 30 days.</p>
+
+  <h2>9. Security</h2>
+  <p>All traffic between your browser and our servers is encrypted using HTTPS. Sensitive tokens are held only on the server side and are not exposed to the frontend. Database access is restricted by row-level security. Only the account owner can read or modify their own data.</p>
+  <p>No system is completely secure. If we become aware of a breach that affects your personal data, we will notify affected users without undue delay.</p>
+
+  <h2>10. Children</h2>
+  <p>AkademiX is intended for university students (typically 18+). We do not knowingly collect data from users under 13. If you believe a minor has provided us with personal data, please contact us and we will delete it.</p>
+
+  <h2>11. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. The "Last updated" date at the top of this page will reflect the latest version. For significant changes we will post a notice in the app.</p>
+
+  <h2>12. Contact</h2>
+  <p>Questions or concerns about this Privacy Policy, or requests to exercise your rights:</p>
+  <ul>
+    <li>Email: <a href="mailto:akademix.contact@gmail.com">akademix.contact@gmail.com</a></li>
+    <li>GitHub: <a href="https://github.com/lefos5/akademix" target="_blank" rel="noopener">github.com/lefos5/akademix</a></li>
+  </ul>
 
   <div class="footer">
-    <p>© 2026 AkademiX — Built for Türk-Alman Üniversitesi students.</p>
-    <p style="margin-top:6px"><a href="index.html">Back to App</a></p>
+    © 2026 AkademiX — Built for Türk-Alman Üniversitesi students.
   </div>
 </div>
 </body>
