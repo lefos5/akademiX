@@ -2329,7 +2329,7 @@ async function sbLoadSummaries(email){ return null; }
 async function sbCreateConversation(title){
   const { data, error } = await apiDb({
     table: 'ai_conversations', action: 'insert',
-    data: { kind: 'studio', title: title || 'Yeni Sohbet', metadata: {} }
+    data: { title: title || 'Yeni Sohbet', material_ids: [] }
   });
   if(error || !data) return null;
   return data;
@@ -2337,8 +2337,7 @@ async function sbCreateConversation(title){
 
 async function sbLoadConversations(){
   const { data, error } = await apiDb({
-    table: 'ai_conversations', action: 'select',
-    filters: { kind: 'studio' }
+    table: 'ai_conversations', action: 'select'
   });
   return error ? [] : (data || []);
 }
@@ -2362,7 +2361,7 @@ async function sbSaveStudioMessage(conversationId, role, content, materialIds=[]
   if(!conversationId) return null;
   const { data, error } = await apiDb({
     table: 'studio_messages', action: 'insert',
-    data: { conversation_id: conversationId, role, content }
+    data: { conversation_id: conversationId, role, content, material_ids: materialIds }
   });
   if(error || !data) return null;
   // updated_at güncelle
