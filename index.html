@@ -2260,7 +2260,7 @@ async function sbSaveAiOutput(materialId, type, content, metadata={}){
   if(!materialId) return null;
   const { data, error } = await apiDb({
     table: 'ai_outputs', action: 'insert',
-    data: { material_id: materialId, kind: type, content, metadata }
+    data: { material_id: materialId, type, content, metadata }
   });
   if(error || !data) return null;
   return data.id;
@@ -2269,7 +2269,7 @@ async function sbSaveAiOutput(materialId, type, content, metadata={}){
 async function sbLoadAiOutputs(materialId, type=null){
   if(!materialId) return [];
   const filters = { material_id: materialId };
-  if(type) filters.kind = type;
+  if(type) filters.type = type;
   const { data, error } = await apiDb({ table: 'ai_outputs', action: 'select', filters });
   return error ? [] : (data || []);
 }
@@ -2282,9 +2282,9 @@ async function sbDeleteAiOutput(id){
 async function sbDeleteAiOutputsByType(materialId, type){
   if(!materialId) return;
   const dbType = type === 'quiz' ? 'exam' : type;
-  await apiDb({ table: 'ai_outputs', action: 'delete', filters: { material_id: materialId, kind: dbType } });
+  await apiDb({ table: 'ai_outputs', action: 'delete', filters: { material_id: materialId, type: dbType } });
   if(type === 'quiz'){
-    await apiDb({ table: 'ai_outputs', action: 'delete', filters: { material_id: materialId, kind: 'quiz' } });
+    await apiDb({ table: 'ai_outputs', action: 'delete', filters: { material_id: materialId, type: 'quiz' } });
   }
 }
 
