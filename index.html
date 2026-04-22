@@ -437,9 +437,54 @@
   .loading { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px; gap:14px; color:var(--muted); }
   .spinner { width:32px; height:32px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
-  .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
-  .empty-state .icon { font-size:48px; margin-bottom:12px; opacity:0.4; }
-  .empty-state p { font-size:14px; }
+  /* Empty State — tüm boş durumlar için tutarlı tasarım */
+  .empty-state {
+    text-align:center; padding:50px 24px; color:var(--muted);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:12px; max-width:420px; margin:0 auto;
+  }
+  .empty-state .icon {
+    font-size:56px; line-height:1; opacity:0.6;
+    background: linear-gradient(135deg, var(--accent-glow), transparent);
+    width:96px; height:96px; border-radius:24px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:4px;
+    animation: emptyIconFloat 3s ease-in-out infinite;
+  }
+  @keyframes emptyIconFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .empty-state h3 {
+    font-family:'Outfit', sans-serif; font-size:18px; font-weight:700;
+    color:var(--text); margin:0; letter-spacing:-0.2px;
+  }
+  .empty-state p {
+    font-size:13px; line-height:1.6; color:var(--muted); margin:0;
+    max-width:320px;
+  }
+  .empty-state-cta {
+    display:inline-flex; align-items:center; gap:8px;
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    color:#fff; border:none; border-radius:10px;
+    padding:10px 18px; font-size:13px; font-weight:600;
+    font-family:inherit; cursor:pointer; margin-top:8px;
+    box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+    transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+  }
+  .empty-state-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
+  .empty-state-cta:active { transform: translateY(0); }
+  .empty-state-cta svg { width:14px; height:14px; }
+  .empty-state-hint {
+    font-size:11px; color:var(--muted); opacity:0.7;
+    margin-top:4px; font-style:italic;
+  }
+
+  /* Kompakt sürüm — sidebar ve dar alanlar için */
+  .empty-state.compact { padding:28px 16px; gap:8px; }
+  .empty-state.compact .icon { width:56px; height:56px; font-size:32px; border-radius:16px; }
+  .empty-state.compact h3 { font-size:14px; }
+  .empty-state.compact p { font-size:12px; }
   .error-box { background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:8px; padding:14px 16px; font-size:13px; color:var(--red); margin-bottom:16px; line-height:1.6; }
 
   .modal-overlay { display:none; position:fixed; inset:0; background:rgba(4,8,20,0.8); backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; }
@@ -1633,7 +1678,12 @@
     </div>
     <div id="schedule-empty" class="empty-state" style="display:none">
       <div class="icon">📅</div>
-      <p>Henüz ders eklemediniz.<br>Tüm Dersler sayfasından derslerinizi seçin.</p>
+      <h3>Haftalık program boş</h3>
+      <p>Derslerini seçince buraya otomatik haftalık programın gelir. Aradığın ne varsa Tüm Dersler sayfasında.</p>
+      <button class="empty-state-cta" onclick="showPage('courses')">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Derslerimi Seç
+      </button>
     </div>
     <div class="schedule-grid" id="schedule-grid">
       <div class="schedule-header">
@@ -1799,7 +1849,11 @@
           </select>
         </div>
         <div class="mat-list" id="mat-list">
-          <div class="mat-list-empty"><div style="font-size:32px;opacity:0.25;margin-bottom:10px">📂</div><p>Henüz materyal yok</p></div>
+          <div class="empty-state compact">
+            <div class="icon">📂</div>
+            <h3>İlk materyalini ekle</h3>
+            <p>PDF, link ya da not — hepsi buradan.</p>
+          </div>
         </div>
       </div>
       <button class="panel-toggle left" id="mat-panel-toggle" onclick="togglePanel('mat-sidebar','mat-panel-toggle')" title="Paneli daralt" style="position:relative;flex-shrink:0;border-radius:0;border-top:none;border-bottom:none;height:auto;width:16px;transform:none;top:0;">‹</button>
@@ -2906,9 +2960,10 @@ function renderStudioRecents(){
   const container = document.getElementById('studio-recents');
   if(!container) return;
   if(!studioConversations.length){
-    container.innerHTML = `<div class="studio-empty-state">
+    container.innerHTML = `<div class="empty-state compact">
       <div class="icon">💬</div>
-      <p>Henüz sohbet yok.<br>Yeni bir sohbet başlat!</p>
+      <h3>İlk sohbetini başlat</h3>
+      <p>Aşağıdan soru sormaya başla — AI Studio materyallerinle çalışır.</p>
     </div>`;
     return;
   }
@@ -3357,7 +3412,11 @@ function renderExams(){
     </div>`;
 
   if(!allExams.length){
-    container.innerHTML = addFormHTML + '<div class="empty-state"><div class="icon">🎓</div><p>Kayıtlı derslerine ait ara sınav bulunamadı.<br>Yukarıdan ekleyebilirsin.</p></div>';
+    container.innerHTML = addFormHTML + `<div class="empty-state">
+      <div class="icon">🎓</div>
+      <h3>Sınavın yok, tebrikler!</h3>
+      <p>Kayıtlı derslerinde henüz sınav bulunmuyor. Kendin eklemek istersen yukarıdaki formu kullan.</p>
+    </div>`;
     return;
   }
 
@@ -3828,7 +3887,14 @@ async function loadClassroomData(){
 
 function renderClCourses(){
   const p=document.getElementById('tab-courses');
-  if(!clData.courses.length){p.innerHTML='<div class="empty-state"><div class="icon">📚</div><p>Aktif ders bulunamadı.</p></div>';return;}
+  if(!clData.courses.length){
+    p.innerHTML=`<div class="empty-state">
+      <div class="icon">📚</div>
+      <h3>Aktif ders bulunamadı</h3>
+      <p>Google Classroom'daki aktif derslerin burada görünür. Henüz bir derse kayıtlı değilsin.</p>
+    </div>`;
+    return;
+  }
   p.innerHTML=`<div class="cl-courses-grid">${clData.courses.map((c,i)=>{
     const col=BANNER_COLORS[i%BANNER_COLORS.length];
     return`<div class="cl-course-card" data-cl-link="${escHtml(c.alternateLink||'')}">
@@ -3843,7 +3909,14 @@ function renderClCourses(){
 
 function renderClAssignments(){
   const p=document.getElementById('tab-assignments');
-  if(!clData.assignments.length){p.innerHTML='<div class="empty-state"><div class="icon">📝</div><p>Ödev bulunamadı.</p></div>';return;}
+  if(!clData.assignments.length){
+    p.innerHTML=`<div class="empty-state">
+      <div class="icon">🎉</div>
+      <h3>Bekleyen ödev yok</h3>
+      <p>Harika — Classroom'daki tüm ödevlerini tamamladın ya da yeni ödev yok. Rahat bir nefes al.</p>
+    </div>`;
+    return;
+  }
   const now=new Date();
   p.innerHTML=`<div class="assignment-list">${clData.assignments.map(a=>{
     let ds='',dc='';
@@ -3870,7 +3943,14 @@ function renderClAssignments(){
 
 function renderClAnnouncements(){
   const p=document.getElementById('tab-announcements');
-  if(!clData.announcements.length){p.innerHTML='<div class="empty-state"><div class="icon">📢</div><p>Duyuru bulunamadı.</p></div>';return;}
+  if(!clData.announcements.length){
+    p.innerHTML=`<div class="empty-state">
+      <div class="icon">📢</div>
+      <h3>Duyuru yok</h3>
+      <p>Derslerinde yeni bir duyuru paylaşıldığında burada görürsün.</p>
+    </div>`;
+    return;
+  }
   p.innerHTML=`<div class="announcement-list">${clData.announcements.map(a=>{
     const ini=(a.courseName||'?')[0].toUpperCase();
     const dt=new Date(a.creationTime).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
@@ -4827,7 +4907,24 @@ function renderMaterials(){
   if(!list) return;
 
   if(!filtered.length){
-    list.innerHTML = '<div class="mat-list-empty"><div style="font-size:36px;opacity:0.2;margin-bottom:10px">📂</div><p>Henüz materyal eklemedin</p></div>';
+    const isFiltered = filter !== 'ALL';
+    if(isFiltered){
+      list.innerHTML = `<div class="empty-state compact">
+        <div class="icon">🔍</div>
+        <h3>Bu derste materyal yok</h3>
+        <p>Başka bir ders seç veya üstten yeni bir materyal ekle.</p>
+      </div>`;
+    } else {
+      list.innerHTML = `<div class="empty-state compact">
+        <div class="icon">📂</div>
+        <h3>İlk materyalini ekle</h3>
+        <p>Ders notu, PDF veya link — hepsini tek yerden yönet, AI ile özetle.</p>
+        <button class="empty-state-cta" onclick="openMatModal()">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Materyal Ekle
+        </button>
+      </div>`;
+    }
     return;
   }
 
@@ -5948,7 +6045,11 @@ function renderRagConvList(m){
   const list = document.getElementById('rag-conv-list');
   if(!list) return;
   if(!ragConvList.length){
-    list.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px;">Henüz sohbet yok</div>';
+    list.innerHTML = `<div class="empty-state compact" style="padding:20px 12px;">
+      <div class="icon">🔍</div>
+      <h3>RAG sohbeti yok</h3>
+      <p>Aşağıdan soru sor, kaynaklarından cevap alalım.</p>
+    </div>`;
     return;
   }
   list.innerHTML = ragConvList.map(c => `
