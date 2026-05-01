@@ -5019,14 +5019,17 @@ async function selectMat(idx){
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
         let fullText = '';
+        const pages = []; // sayfa-bazlı text — paged özet için
         const maxPages = Math.min(pdf.numPages, 150);
         for(let i = 1; i <= maxPages; i++){
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
-          fullText += `[Sayfa ${i}]\n${textContent.items.map(item => item.str).join(' ')}\n\n`;
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          pages.push({ page: i, text: pageText });
+          fullText += `[Sayfa ${i}]\n${pageText}\n\n`;
         }
         if(pdf.numPages > 150) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 150 sayfa analiz edildi]`;
-        matFileData = { type: 'text', content: fullText.substring(0, 100000), fullContent: fullText, pageCount: pdf.numPages };
+        matFileData = { type: 'text', content: fullText.substring(0, 100000), fullContent: fullText, pages: pages, pageCount: pdf.numPages };
         showToast(`✅ PDF analiz edildi (${pdf.numPages} sayfa)`);
       } else if(fileSize > FILE_DIRECT_LIMIT){
         // Büyük non-PDF dosya — indirme yapma, sadece başlık bilgisi tut
@@ -5362,6 +5365,13 @@ async function matRunVariant(mode, variant){
   const CHUNK_SIZE = 90000; // her chunk max 90K karakter
   const needsChunking = fullContent.length > CHUNK_SIZE;
 
+  // ÖZEL DURUM: Sayfa sayfa özet — PDF'in gerçek sayfalarını kullan
+  // (karakter chunking yerine sayfa-bazlı batch'ler)
+  if(mode === 'summary' && variant === 'paged' && Array.isArray(matFileData?.pages) && matFileData.pages.length > 0){
+    await matRunPagedSummary(m, matFileData.pages);
+    return;
+  }
+
   if(needsChunking && (mode === 'summary' || mode === 'quiz' || mode === 'flashcard')){
     await matRunVariantChunked(mode, variant, m, fullContent, CHUNK_SIZE);
     return;
@@ -5377,6 +5387,162 @@ async function matRunVariant(mode, variant){
   const content = matFileData?.content || matFileData?.fullContent || m.title;
   const prompt = promptFn(content);
   await matCallAI(prompt, { forcePrompt: true, mode, variant, skipContentAppend: true });
+}
+
+async function matRunPagedSummary(m, pages){
+  const mode = 'summary';
+  const variant = 'paged';
+  const panel = getPanel(mode);
+  const sessionId = localStorage.getItem('akademix_session');
+  if(!sessionId){
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">❌ Giriş yapman gerekiyor.</span>');
+    return;
+  }
+
+  // Sayfaları 5'erli batch'lere böl — her batch ayrı AI çağrısı
+  const PAGES_PER_BATCH = 5;
+  const batches = [];
+  for(let i = 0; i < pages.length; i += PAGES_PER_BATCH){
+    batches.push(pages.slice(i, i + PAGES_PER_BATCH));
+  }
+
+  // Bilgi mesajı
+  matAddMsgToPanel(mode, 'ai', `<div style="padding:12px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;font-size:13px;color:var(--muted)">
+    📄 ${pages.length} sayfa, ${batches.length} bölüm halinde işlenecek. Her sayfa ayrı ayrı özetlenir, hiçbir sayfa atlanmaz.
+  </div>`);
+
+  // Progress göstergesi
+  const progressEl = document.createElement('div');
+  progressEl.className = 'chunk-progress';
+  progressEl.style.cssText = 'font-size:12px;color:var(--muted);margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;';
+  progressEl.textContent = `⏳ Hazırlanıyor... (0/${pages.length} sayfa)`;
+  if(panel) panel.appendChild(progressEl);
+
+  const systemPrompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademik asistansın.
+
+Kuralların:
+- Her zaman Türkçe cevap ver.
+- Materyal Almanca veya İngilizce olabilir — içeriği tam olarak anlayıp Türkçe yaz.
+- Teknik terimleri orijinal dilde yaz, yanına Türkçe karşılığını ekle: **Streckgrenze** (akma sınırı).
+- Formüller, denklemler ve sayısal değerleri aynen koru, birimleri de yaz.
+- Sana verilen HER SAYFAYI ayrı ayrı özetle — sayfa atlama, sayfa birleştirme.
+- Her sayfa için en az 4-5 cümle yaz, yüzeysel geçme.`;
+
+  // Sonuçları toplayacak array — sayfa numarasına göre sıralanacak
+  const allPageSummaries = []; // [{page, summary}]
+  let processedPages = 0;
+
+  for(let bi = 0; bi < batches.length; bi++){
+    const batch = batches[bi];
+    const firstPage = batch[0].page;
+    const lastPage = batch[batch.length - 1].page;
+
+    progressEl.textContent = `⏳ Sayfa ${firstPage}-${lastPage} işleniyor... (${processedPages}/${pages.length})`;
+
+    // Batch içindeki sayfaları açık formatta gönder
+    const batchText = batch.map(p =>
+      `===== SAYFA ${p.page} =====\n${p.text}\n`
+    ).join('\n');
+
+    const batchPrompt = `Aşağıda bir ders materyalinin ${batch.length} sayfası verilmiştir. HER SAYFAYI ayrı ayrı, en az 4-5 cümle ile Türkçe özetle.
+
+KURALLAR:
+- Her sayfa için MUTLAKA "## 📄 Sayfa [gerçek sayfa numarası]" başlığı kullan
+- Sayfa numaraları materyalde belirtilen numaralar olsun (===== SAYFA X ===== içindeki X)
+- Hiçbir sayfayı atlama, birleştirme veya "önceki sayfayla aynı" deme
+- Teknik terimleri **Almanca/İngilizce** (Türkçe) formatında yaz
+- Formüller ve sayısal değerleri aynen koru
+- Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş
+
+Format örneği:
+## 📄 Sayfa ${firstPage}
+[Detaylı özet — tanımlar, formüller, örnekler...]
+
+## 📄 Sayfa ${firstPage + 1}
+[Detaylı özet...]
+
+Materyal:
+${batchText}`;
+
+    try{
+      const resp = await fetch(BACKEND_URL + '/api/ai', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-session-id': sessionId},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens: 8000,
+          system: systemPrompt,
+          messages:[{role:'user',content:[{type:'text',text:batchPrompt}]}]
+        })
+      });
+      const data = await resp.json();
+      if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
+      const result = data.content?.map(c=>c.text||'').join('')||'';
+
+      // Sonucu sayfa sayfa parse et — "## 📄 Sayfa N" başlıklarına göre böl
+      const pageBlocks = result.split(/^##\s*📄?\s*Sayfa\s+(\d+)/im);
+      // pageBlocks: ['', '1', 'içerik1', '2', 'içerik2', ...]
+      for(let k = 1; k < pageBlocks.length; k += 2){
+        const pageNum = parseInt(pageBlocks[k]);
+        const pageContent = (pageBlocks[k+1] || '').trim();
+        if(!isNaN(pageNum) && pageContent){
+          allPageSummaries.push({ page: pageNum, summary: pageContent });
+        }
+      }
+
+      processedPages += batch.length;
+    } catch(e){
+      // Hata olsa bile devam et, hata mesajını sayfa olarak ekle
+      batch.forEach(p => {
+        allPageSummaries.push({ page: p.page, summary: `_[Sayfa ${p.page} işlenirken hata: ${e.message}]_` });
+      });
+      processedPages += batch.length;
+    }
+  }
+
+  // Progress göstergesini kaldır
+  if(progressEl && progressEl.parentNode) progressEl.remove();
+
+  // Sayfa numarasına göre sırala (AI sırayı bozabilir)
+  allPageSummaries.sort((a, b) => a.page - b.page);
+
+  // Eksik sayfaları kontrol et — AI atlamış olabilir
+  const seenPages = new Set(allPageSummaries.map(s => s.page));
+  pages.forEach(p => {
+    if(!seenPages.has(p.page)){
+      allPageSummaries.push({ page: p.page, summary: '_[Bu sayfa için özet üretilemedi]_' });
+    }
+  });
+  allPageSummaries.sort((a, b) => a.page - b.page);
+
+  // Birleştirilmiş markdown çıktısı oluştur
+  const combined = allPageSummaries.map(s =>
+    `## 📄 Sayfa ${s.page}\n${s.summary}`
+  ).join('\n\n');
+
+  // HTML'e dök ve göster
+  const html = matMd(combined);
+  const msgEl = matAddMsgToPanel(mode, 'ai', html);
+
+  // PDF thumbnail'larını ekle
+  setTimeout(() => attachPageThumbnails(panel), 100);
+
+  // Yeniden Oluştur butonu
+  const resetBar = document.createElement('div');
+  resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;';
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'mat-ws-action';
+  resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+  resetBtn.textContent = '↺ Yeniden Oluştur';
+  resetBtn.onclick = () => matResetMode(mode);
+  resetBar.appendChild(resetBtn);
+  if(panel) panel.appendChild(resetBar);
+
+  // Supabase'e kaydet
+  if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, combined, { variant: 'paged' });
+  matModeReady[mode] = true;
+
+  showToast(`✅ ${pages.length} sayfa özetlendi!`);
 }
 
 async function matRunVariantChunked(mode, variant, m, fullContent, chunkSize){
