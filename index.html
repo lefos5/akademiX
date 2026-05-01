@@ -4759,18 +4759,22 @@ Her ana konu için gerçek mühendislik örneği ver.
 Materyal:
 ${t}`,
 
-    paged: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine ders veren deneyimli bir akademisyensin. Materyal Almanca olabilir — içeriği anlayıp Türkçe sayfa sayfa analiz yaz.
+    paged: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden bir akademik tercümansın. Slayt Almanca/İngilizce — bunu Türkçeye çevir + açıkla.
+
+ÖNEMLİ: Bu bir ÖZET DEĞİL, bir ÇEVİRİ+ çalışmasıdır. Slaytı KISALTMA, sadeleştirme. Slaytın söylediği her şeyi Türkçe olarak ver, hatta bazı yerlerde kısa açıklamalarla zenginleştir.
 
 KURALLAR:
-- Materyaldeki HER SAYFA için ayrı bölüm yaz — HİÇBİR SAYFAYI ATLAMA
-- Her sayfayı en az 4-5 cümleyle özetle — "bu sayfada X anlatılıyor" gibi yüzeysel geçme
-- Teknik terimleri: **Almanca** (Türkçe karşılığı) formatında yaz
-- Formüller ve sayısal değerler aynen korunsun
-- "Bir önceki sayfayla benzer" veya "devam ediyor" yazma — her sayfanın özgün içeriğini yaz
+- HER SAYFA için ayrı bölüm yaz — HİÇBİR SAYFAYI ATLAMA
+- Slaytın yapısını koru: bullet ise bullet, başlık ise başlık, formül ise formül
+- Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı — birleştirme, kısaltma yapma
+- Teknik terimleri orijinal dilde tut, **parantez içinde Türkçesini ekle**: \`Streckgrenze (akma sınırı)\`
+- Formüller, sayısal değerler, birimler aynen korunsun
+- Slaytta üstü kapalı geçilmiş, hocanın anlattığı varsayılan yerlerde 1-2 cümlelik **açıklama** ekle ki öğrenci anlasın
+- Sayfanın görsel yapısını (liste, tablo, akış) Markdown ile yansıt
 
 Format:
 ## 📄 Sayfa [N]
-[Sayfanın detaylı Türkçe özeti — formüller, tanımlar, örnekler dahil]
+[Slaytın Türkçe versiyonu — yapısı korunarak, kısaltılmadan, gerektiğinde açıklamalarla]
 
 Materyal:
 ${t}`,
@@ -5218,7 +5222,7 @@ function setMatMode(mode, btn){
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('summary','short')">⚡ Kısa — sadece ana noktalar</button>
         <button class="mat-option-btn" onclick="matRunVariant('summary','detailed')">📚 Detaylı — bölümlü kapsamlı analiz</button>
-        <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Sayfa sayfa — bölüm bölüm özet</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Sayfa Sayfa Türkçe — slaytı Türkçeleştir + açıkla, kısaltma yapma</button>
       </div>`);
   } else if(mode === 'quiz'){
     matAddMsgToPanel('quiz', 'ai', `<strong>Nasıl sorular oluşturayım?</strong>
@@ -5399,8 +5403,9 @@ async function matRunPagedSummary(m, pages){
     return;
   }
 
-  // Sayfaları 5'erli batch'lere böl — her batch ayrı AI çağrısı
-  const PAGES_PER_BATCH = 5;
+  // Sayfaları 4'erli batch'lere böl — her batch ayrı AI çağrısı
+  // (Çeviri+ olduğu için sayfalar uzun olabilir, 4 batch token sınırını aşmaz)
+  const PAGES_PER_BATCH = 4;
   const batches = [];
   for(let i = 0; i < pages.length; i += PAGES_PER_BATCH){
     batches.push(pages.slice(i, i + PAGES_PER_BATCH));
@@ -5408,7 +5413,7 @@ async function matRunPagedSummary(m, pages){
 
   // Bilgi mesajı
   matAddMsgToPanel(mode, 'ai', `<div style="padding:12px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;font-size:13px;color:var(--muted)">
-    📄 ${pages.length} sayfa, ${batches.length} bölüm halinde işlenecek. Her sayfa ayrı ayrı özetlenir, hiçbir sayfa atlanmaz.
+    📄 ${pages.length} sayfa, ${batches.length} bölüm halinde işlenecek. <strong>Bu mod özet değil, çeviri+ açıklamadır</strong> — slayt yapısı korunur, kısaltma yapılmaz.
   </div>`);
 
   // Progress göstergesi
@@ -5418,15 +5423,18 @@ async function matRunPagedSummary(m, pages){
   progressEl.textContent = `⏳ Hazırlanıyor... (0/${pages.length} sayfa)`;
   if(panel) panel.appendChild(progressEl);
 
-  const systemPrompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademik asistansın.
+  const systemPrompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden bir akademik tercümansın.
+
+Görevin: Almanca/İngilizce slaytları Türkçeye çevirmek + gerektiğinde kısa açıklamalarla zenginleştirmek.
 
 Kuralların:
-- Her zaman Türkçe cevap ver.
-- Materyal Almanca veya İngilizce olabilir — içeriği tam olarak anlayıp Türkçe yaz.
-- Teknik terimleri orijinal dilde yaz, yanına Türkçe karşılığını ekle: **Streckgrenze** (akma sınırı).
-- Formüller, denklemler ve sayısal değerleri aynen koru, birimleri de yaz.
-- Sana verilen HER SAYFAYI ayrı ayrı özetle — sayfa atlama, sayfa birleştirme.
-- Her sayfa için en az 4-5 cümle yaz, yüzeysel geçme.`;
+- Bu bir ÖZET DEĞİL, bir ÇEVİRİ+ çalışmasıdır.
+- Slaytı KISALTMA, sadeleştirme — slaytın söylediği her şey Türkçe karşılığında olmalı.
+- Slaytın yapısını koru: bullet ise bullet, başlık ise başlık, tablo ise tablo.
+- Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığını ekle: **Streckgrenze** (akma sınırı).
+- Formüller, denklemler, sayısal değerler, birimler aynen korunsun.
+- Slaytta üstü kapalı geçilen yerlerde, kavramı anlamayan öğrenci için 1-2 cümlelik açıklama ekleyebilirsin.
+- HER SAYFAYI ayrı yaz — sayfa atlama, sayfa birleştirme.`;
 
   // Sonuçları toplayacak array — sayfa numarasına göre sıralanacak
   const allPageSummaries = []; // [{page, summary}]
@@ -5444,22 +5452,25 @@ Kuralların:
       `===== SAYFA ${p.page} =====\n${p.text}\n`
     ).join('\n');
 
-    const batchPrompt = `Aşağıda bir ders materyalinin ${batch.length} sayfası verilmiştir. HER SAYFAYI ayrı ayrı, en az 4-5 cümle ile Türkçe özetle.
+    const batchPrompt = `Aşağıda bir ders materyalinin ${batch.length} sayfası verilmiştir. HER SAYFAYI Türkçeye çevir + gerektiğinde kısa açıklama ekle.
 
 KURALLAR:
 - Her sayfa için MUTLAKA "## 📄 Sayfa [gerçek sayfa numarası]" başlığı kullan
 - Sayfa numaraları materyalde belirtilen numaralar olsun (===== SAYFA X ===== içindeki X)
-- Hiçbir sayfayı atlama, birleştirme veya "önceki sayfayla aynı" deme
-- Teknik terimleri **Almanca/İngilizce** (Türkçe) formatında yaz
-- Formüller ve sayısal değerleri aynen koru
-- Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş
+- Bu bir ÖZET DEĞİL — slaytı KISALTMA, slaytın yapısını koru
+- Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı
+- Bullet point ise bullet point olarak, başlık ise başlık olarak yaz
+- Teknik terimleri **orijinal dilde** (Türkçe karşılığı) formatında yaz
+- Formüller, sayısal değerler, birimler aynen korunsun
+- Anlaşılması zor yerlerde 1-2 cümlelik kısa açıklama ekleyebilirsin
+- Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş ("Bu sayfa kapak/içindekiler tablosu" gibi)
 
 Format örneği:
 ## 📄 Sayfa ${firstPage}
-[Detaylı özet — tanımlar, formüller, örnekler...]
+[Slaytın Türkçe versiyonu — yapısı korunarak, bullet'lar bullet, formüller aynen]
 
 ## 📄 Sayfa ${firstPage + 1}
-[Detaylı özet...]
+[Slaytın Türkçe versiyonu...]
 
 Materyal:
 ${batchText}`;
