@@ -5464,39 +5464,78 @@ Format örneği:
 Materyal:
 ${batchText}`;
 
-    try{
-      const resp = await fetch(BACKEND_URL + '/api/ai', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-session-id': sessionId},
-        body:JSON.stringify({
-          model:'claude-sonnet-4-20250514',
-          max_tokens: 8000,
-          system: systemPrompt,
-          messages:[{role:'user',content:[{type:'text',text:batchPrompt}]}]
-        })
-      });
-      const data = await resp.json();
-      if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
-      const result = data.content?.map(c=>c.text||'').join('')||'';
+    // Bu batch'i çağır — rate limit alırsan bekleyip tekrar dene
+    const MAX_RETRIES = 3;
+    let attempt = 0;
+    let success = false;
+    let lastError = null;
 
-      // Sonucu sayfa sayfa parse et — "## 📄 Sayfa N" başlıklarına göre böl
-      const pageBlocks = result.split(/^##\s*📄?\s*Sayfa\s+(\d+)/im);
-      // pageBlocks: ['', '1', 'içerik1', '2', 'içerik2', ...]
-      for(let k = 1; k < pageBlocks.length; k += 2){
-        const pageNum = parseInt(pageBlocks[k]);
-        const pageContent = (pageBlocks[k+1] || '').trim();
-        if(!isNaN(pageNum) && pageContent){
-          allPageSummaries.push({ page: pageNum, summary: pageContent });
+    while(attempt <= MAX_RETRIES && !success){
+      try{
+        const resp = await fetch(BACKEND_URL + '/api/ai', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-session-id': sessionId},
+          body:JSON.stringify({
+            model:'claude-sonnet-4-20250514',
+            max_tokens: 8000,
+            system: systemPrompt,
+            messages:[{role:'user',content:[{type:'text',text:batchPrompt}]}]
+          })
+        });
+        const data = await resp.json();
+        if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
+        const result = data.content?.map(c=>c.text||'').join('')||'';
+
+        // Rate limit hatası response içinde de gelebilir (Gemini fallback)
+        const lowResult = result.toLowerCase();
+        const isRateLimitInBody = lowResult.includes('quota') || lowResult.includes('rate limit') || lowResult.includes('retry in');
+        if(isRateLimitInBody && result.length < 500){
+          throw new Error(result);
         }
-      }
 
-      processedPages += batch.length;
-    } catch(e){
-      // Hata olsa bile devam et, hata mesajını sayfa olarak ekle
+        // Sonucu sayfa sayfa parse et — "## 📄 Sayfa N" başlıklarına göre böl
+        const pageBlocks = result.split(/^##\s*📄?\s*Sayfa\s+(\d+)/im);
+        for(let k = 1; k < pageBlocks.length; k += 2){
+          const pageNum = parseInt(pageBlocks[k]);
+          const pageContent = (pageBlocks[k+1] || '').trim();
+          if(!isNaN(pageNum) && pageContent){
+            allPageSummaries.push({ page: pageNum, summary: pageContent });
+          }
+        }
+        success = true;
+      } catch(e){
+        lastError = e;
+        const msg = String(e.message || '').toLowerCase();
+        const isRateLimit = msg.includes('quota') || msg.includes('rate limit') || msg.includes('retry in') || msg.includes('429') || msg.includes('exceeded');
+
+        if(isRateLimit && attempt < MAX_RETRIES){
+          // "retry in 17.8s" gibi bir bilgi var mı bak
+          const retryMatch = String(e.message || '').match(/retry in (\d+(?:\.\d+)?)\s*s/i);
+          let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 30000;
+          if(waitMs > 90000) waitMs = 90000; // tavan: 90 saniye
+          attempt++;
+          progressEl.textContent = `⏸ Rate limit — ${Math.round(waitMs/1000)}sn bekleniyor (deneme ${attempt}/${MAX_RETRIES})... Sayfa ${firstPage}-${lastPage}`;
+          await new Promise(r => setTimeout(r, waitMs));
+          continue;
+        }
+        // Rate limit değilse veya retry tükenmişse bırak
+        break;
+      }
+    }
+
+    if(!success){
+      // Hatayı sayfa olarak ekle ama devam et
       batch.forEach(p => {
-        allPageSummaries.push({ page: p.page, summary: `_[Sayfa ${p.page} işlenirken hata: ${e.message}]_` });
+        allPageSummaries.push({ page: p.page, summary: `_[Sayfa ${p.page} işlenirken hata: ${lastError?.message || 'bilinmeyen'}]_` });
       });
-      processedPages += batch.length;
+    }
+
+    processedPages += batch.length;
+
+    // Batch'ler arasına küçük gecikme — Gemini ücretsiz tier'ı 20 req/dk
+    // Yani 3+ saniye bekleyince güvenli (60sn / 20req = 3sn/req)
+    if(bi < batches.length - 1){
+      await new Promise(r => setTimeout(r, 3500));
     }
   }
 
