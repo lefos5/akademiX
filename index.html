@@ -4833,7 +4833,14 @@ KURALLAR:
 - Her konuyu derinlemesine açıkla, defterimizdeki ders notları gibi
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
+- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+\`\`\`mermaid
+graph TD
+  A[Kök 7] --> B(Sol 5)
+  A --> C(Sağ 3)
+  B --> D[Yaprak 2]
+\`\`\`
 - Slaytta atlanmış / üstü kapalı geçilmiş yerleri tamamla — öğrencinin sınavda anlaması için bağlam ekle
 - Konular arası ilişkileri vurgula
 
@@ -4857,7 +4864,14 @@ KURALLAR:
 - Tüm bölümler ZORUNLU — boş olsa bile başlığı yaz, "(bu materyalde yok)" notu düş
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
+- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+\`\`\`mermaid
+graph TD
+  A[Kök 7] --> B(Sol 5)
+  A --> C(Sağ 3)
+  B --> D[Yaprak 2]
+\`\`\`
 - Yüzeysel geçme — sınavda işe yarayacak somut bilgi ver
 - Sözlük bölümünde her terimi ayrı satıra **bold-paren-iki nokta-tanım** formatında yaz
 
@@ -4899,7 +4913,14 @@ KURALLAR:
 - Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı — birleştirme, kısaltma yapma
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçesini ekle: Streckgrenze (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
+- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+\`\`\`mermaid
+graph TD
+  A[Kök 7] --> B(Sol 5)
+  A --> C(Sağ 3)
+  B --> D[Yaprak 2]
+\`\`\`
 - Slaytta üstü kapalı geçilmiş, hocanın anlattığı varsayılan yerlerde 1-2 cümlelik açıklama ekle ki öğrenci anlasın
 - Sayfanın görsel yapısını (liste, tablo, akış) Markdown ile yansıt
 
@@ -6144,7 +6165,14 @@ GÖREV: Bu konu için defter formatında, derinlemesine bir çalışma notu yaz.
 KURALLAR:
 - Türkçe yaz, teknik terimleri orijinal dilde tut, parantez içinde Türkçe ekle: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
+- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+\`\`\`mermaid
+graph TD
+  A[Kök 7] --> B(Sol 5)
+  A --> C(Sağ 3)
+  B --> D[Yaprak 2]
+\`\`\`
 - Slaytta üstü kapalı geçilmiş yerleri tamamla — bağlam ekle
 - Sadece bu konuyu yaz, başka konulara dalma
 - Konu başlığını TEKRAR YAZMA (zaten dışarıda var)
@@ -6415,7 +6443,14 @@ KURALLAR:
 - Bullet point ise bullet point olarak, başlık ise başlık olarak yaz
 - Teknik terimleri **orijinal dilde** (Türkçe karşılığı) formatında yaz
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
+- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+\`\`\`mermaid
+graph TD
+  A[Kök 7] --> B(Sol 5)
+  A --> C(Sağ 3)
+  B --> D[Yaprak 2]
+\`\`\`
 - Anlaşılması zor yerlerde 1-2 cümlelik kısa açıklama ekleyebilirsin
 - Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş ("Bu sayfa kapak/içindekiler tablosu" gibi)
 
@@ -6822,6 +6857,46 @@ function renderKatex(element){
   }
 }
 
+// AI'dan gelen mermaid kodunu render öncesi temizle.
+// Tipik hatalar: tek satıra sıkıştırılmış kod, fazla boşluklar, eksik newline'lar.
+function sanitizeMermaidCode(raw){
+  if(!raw) return '';
+  let code = String(raw).trim();
+
+  // Eğer kod 1-2 satır ama içinde ok varsa, tek satıra sıkıştırılmış demektir
+  // Bunu açalım: belirli token'lardan ÖNCE newline ekleyelim
+  const lines = code.split('\n');
+  const looksSquashed = lines.length <= 3 && (/-->/.test(code) || /^mindmap\s+\w/i.test(code));
+
+  if(looksSquashed){
+    // İlk diagram tipini ayır (graph TD, flowchart LR, mindmap, vs.)
+    code = code.replace(/^(graph\s+(?:TD|TB|BT|LR|RL)|flowchart\s+(?:TD|TB|BT|LR|RL)|mindmap|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|gantt|pie|erDiagram|journey|gitGraph)\s+/i, '$1\n');
+
+    // " --> " içeren tek satırları bul ve böl
+    // Strateji: 4+ boşluk veya tab varsa newline'a çevir (AI bazen indent yerine boşluk kullanır)
+    code = code.replace(/[ \t]{4,}/g, '\n  ');
+
+    // subgraph / end / direction gibi keyword'lerden önce newline
+    code = code.replace(/\s+(subgraph\s+)/gi, '\n$1');
+    code = code.replace(/\s+(end)\b/gi, '\n$1');
+    code = code.replace(/\s+(direction\s+)/gi, '\n$1');
+
+    // "A --> B  C --> D" gibi durumlarda iki ok arasında 2+ boşluk varsa newline ekle
+    code = code.replace(/(-->|---|==>|-\.->|\.\.>)([ \t]*)([A-Za-z])/g, function(m, arrow, ws, next){
+      // Boşluk az ise normal devam, çok ise yeni satır kabul et
+      return arrow + ' ' + (ws.length >= 2 ? '\n  ' : '') + next;
+    });
+  }
+
+  // Çoklu newline'ları normalize et
+  code = code.replace(/\n{3,}/g, '\n\n');
+
+  // Trailing whitespace
+  code = code.split('\n').map(function(l){ return l.replace(/[ \t]+$/, ''); }).join('\n');
+
+  return code.trim();
+}
+
 // Mermaid diagram render — verilen elementin içindeki ```mermaid``` bloklarını çizer.
 // matMd `.md-mermaid-container` div'leri oluşturur, biz onları burada render ederiz.
 async function renderMermaidIn(element){
@@ -6835,19 +6910,38 @@ async function renderMermaidIn(element){
     const targetEl = container.querySelector('.md-mermaid-target');
     if(!sourceEl || !targetEl) continue;
 
-    const code = sourceEl.textContent || '';
+    const rawCode = sourceEl.textContent || '';
+    const code = sanitizeMermaidCode(rawCode);
     const id = container.dataset.mermaidId || ('mm-' + Math.random().toString(36).substring(2, 10));
 
+    let renderError = null;
+    let svg = null;
+
+    // İlk deneme: temizlenmiş kodla
     try {
       const result = await window.mermaid.render(id, code);
-      targetEl.innerHTML = result.svg;
-      // Bind functions (mermaid bazen interaktif elementler döndürür)
+      svg = result.svg;
       if(result.bindFunctions) result.bindFunctions(targetEl);
-      container.setAttribute('data-rendered', '1');
     } catch(e){
-      console.warn('[Mermaid] render hatası:', e.message);
-      // Hata durumunda kaynak kodu göster (debug için)
-      targetEl.innerHTML = '<pre style="text-align:left;color:var(--red);font-size:12px;padding:10px;background:rgba(239,68,68,0.05);border-radius:6px;white-space:pre-wrap;">⚠️ Diyagram çizilemedi: ' + escHtml(e.message) + '\n\n--- Kaynak ---\n' + escHtml(code) + '</pre>';
+      renderError = e;
+      // İkinci deneme: orijinal kodla (sanitize bozmuş olabilir)
+      if(rawCode !== code){
+        try {
+          const result2 = await window.mermaid.render(id + '-r', rawCode);
+          svg = result2.svg;
+          renderError = null;
+        } catch(e2){
+          renderError = e2;
+        }
+      }
+    }
+
+    if(svg){
+      targetEl.innerHTML = svg;
+      container.setAttribute('data-rendered', '1');
+    } else {
+      console.warn('[Mermaid] render hatası:', renderError && renderError.message);
+      targetEl.innerHTML = '<pre style="text-align:left;color:var(--red);font-size:12px;padding:10px;background:rgba(239,68,68,0.05);border-radius:6px;white-space:pre-wrap;">⚠️ Diyagram çizilemedi: ' + escHtml(renderError ? renderError.message : 'bilinmeyen hata') + '\n\n--- Kaynak (temizlenmiş) ---\n' + escHtml(code) + '</pre>';
       container.setAttribute('data-rendered', '1');
     }
   }
