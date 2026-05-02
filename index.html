@@ -5133,9 +5133,12 @@ async function loadMatHistory(materialId){
 
       matAddMsgToPanel(mode, 'ai', html);
 
-      // Sayfa sayfa özet için thumbnail'ları ekle (paged variant)
+      // Sayfa sayfa özet için thumbnail'ları ekle (paged variant) — bubble içinde ara
       if(mode === 'summary' && variant === 'paged'){
-        setTimeout(() => attachPageThumbnails(panel), 100);
+        setTimeout(() => {
+          const bubble = panel.querySelector('.mat-msg-bubble');
+          if(bubble) attachPageThumbnails(bubble);
+        }, 100);
       }
 
       // Yeniden Oluştur butonu
@@ -5344,19 +5347,19 @@ function attachPageThumbnails(panelEl){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   if(!m || m.type !== 'file' || !(m.fileName||'').toLowerCase().endsWith('.pdf')) return;
 
-  // "Sayfa X" başlıklarını bul ve thumbnail ekle
-  const h3s = panelEl.querySelectorAll('.md-h3, h3');
-  h3s.forEach(h3 => {
-    const match = h3.textContent.match(/Sayfa\s+(\d+)/i);
+  // "Sayfa X" başlıklarını bul ve thumbnail ekle (h2, h3 ve md-h2/md-h3 hepsi destekleniyor)
+  const headings = panelEl.querySelectorAll('h2, h3, .md-h2, .md-h3');
+  headings.forEach(h => {
+    const match = h.textContent.match(/Sayfa\s+(\d+)/i);
     if(!match) return;
     const pageNum = parseInt(match[1]);
     // Zaten thumbnail eklenmişse geç
-    if(h3.nextElementSibling && h3.nextElementSibling.classList.contains('summary-page-section')) return;
+    if(h.nextElementSibling && h.nextElementSibling.classList && h.nextElementSibling.classList.contains('summary-page-section')) return;
 
-    // Başlıktan sonraki metin içeriğini al
+    // Başlıktan sonraki metin içeriğini al — bir sonraki başlığa kadar
     let contentText = '';
-    let sibling = h3.nextSibling;
-    while(sibling && !(sibling.nodeType === 1 && (sibling.tagName === 'H3' || sibling.classList?.contains('md-h3')))){
+    let sibling = h.nextSibling;
+    while(sibling && !(sibling.nodeType === 1 && (sibling.tagName === 'H2' || sibling.tagName === 'H3' || (sibling.classList && (sibling.classList.contains('md-h2') || sibling.classList.contains('md-h3')))))){
       if(sibling.nodeType === 1) contentText += sibling.outerHTML;
       else if(sibling.nodeType === 3) contentText += sibling.textContent;
       sibling = sibling.nextSibling;
@@ -5375,13 +5378,13 @@ function attachPageThumbnails(panelEl){
 
     // Başlığı ve sonraki içeriği section ile değiştir
     let toRemove = [];
-    sibling = h3.nextSibling;
-    while(sibling && !(sibling.nodeType === 1 && (sibling.tagName === 'H3' || sibling.classList?.contains('md-h3')))){
+    sibling = h.nextSibling;
+    while(sibling && !(sibling.nodeType === 1 && (sibling.tagName === 'H2' || sibling.tagName === 'H3' || (sibling.classList && (sibling.classList.contains('md-h2') || sibling.classList.contains('md-h3')))))){
       toRemove.push(sibling);
       sibling = sibling.nextSibling;
     }
     toRemove.forEach(n => n.remove());
-    h3.replaceWith(section);
+    h.replaceWith(section);
 
     // Thumbnail'ı async render et
     renderPdfPageThumbnail(pageNum, thumbDiv);
