@@ -14,6 +14,27 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<!-- Mermaid — diyagram, akış, ağaç, kavram haritası için -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  // Mermaid'i karanlık temaya uygun başlat — manuel render kullanacağız
+  if(typeof mermaid !== 'undefined'){
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      securityLevel: 'loose',
+      flowchart: { curve: 'basis', useMaxWidth: true },
+      themeVariables: {
+        primaryColor: '#1e293b',
+        primaryTextColor: '#e2e8f0',
+        primaryBorderColor: '#475569',
+        lineColor: '#94a3b8',
+        secondaryColor: '#334155',
+        tertiaryColor: '#0f172a'
+      }
+    });
+  }
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -4812,6 +4833,7 @@ KURALLAR:
 - Her konuyu derinlemesine açıkla, defterimizdeki ders notları gibi
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
 - Slaytta atlanmış / üstü kapalı geçilmiş yerleri tamamla — öğrencinin sınavda anlaması için bağlam ekle
 - Konular arası ilişkileri vurgula
 
@@ -4835,6 +4857,7 @@ KURALLAR:
 - Tüm bölümler ZORUNLU — boş olsa bile başlığı yaz, "(bu materyalde yok)" notu düş
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler aynen korunsun
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
 - Yüzeysel geçme — sınavda işe yarayacak somut bilgi ver
 - Sözlük bölümünde her terimi ayrı satıra **bold-paren-iki nokta-tanım** formatında yaz
 
@@ -4876,6 +4899,7 @@ KURALLAR:
 - Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı — birleştirme, kısaltma yapma
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçesini ekle: Streckgrenze (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
 - Slaytta üstü kapalı geçilmiş, hocanın anlattığı varsayılan yerlerde 1-2 cümlelik açıklama ekle ki öğrenci anlasın
 - Sayfanın görsel yapısını (liste, tablo, akış) Markdown ile yansıt
 
@@ -5000,7 +5024,40 @@ A: [cevap — kısa ama eksiksiz, en az 1-2 cümle]
 Materyal:
 ${t}`,
   chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
-  mindmap: (t) => `Sen bir akademik görsel tasarım uzmanısın. Aşağıdaki materyali analiz edip konular arası ilişkileri gösteren bir kavram haritası SVG diyagramı üret. SADECE geçerli SVG kodu üret, başka hiçbir şey yazma. SVG viewBox="0 0 900 600" olsun. Ana konu ortada büyük bir daire içinde, alt konular etrafında küçük daireler içinde. Ok ve çizgilerle ilişkileri göster. Renk: Ana konu #3b82f6, birincil #6366f1, ikincil #34d399, üçüncül #fb923c. Türkçe etiketler, en az 8 en fazla 15 kavram. SVG dışında HİÇBİR ŞEY yazma.\n\nMateryal:\n${t}`,
+  mindmap: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencileri için akademik içerik analiz eden bir uzmansın. Aşağıdaki materyali analiz edip konular arası ilişkileri gösteren bir kavram haritası üret.
+
+ÇIKTI: SADECE geçerli Mermaid mindmap kodu üret, başka HİÇBİR ŞEY yazma. \`\`\`mermaid ile başla \`\`\` ile bitir.
+
+Mermaid mindmap syntax kuralları:
+- İlk satır: \`mindmap\`
+- İkinci satır: kök node, parantezli isim: \`  root((Ana Konu))\`
+- Alt seviyeler 4'er boşluk girinti
+- Node şekilleri: \`Konu\` (düz), \`(Konu)\` (oval), \`((Konu))\` (daire), \`[Konu]\` (kare)
+- Türkçe etiketler kullan
+- En az 8, en fazla 20 dal/yaprak olsun
+- Hiyerarşi 3-4 seviyeyi geçmesin
+- Etiketler kısa olsun (1-4 kelime)
+
+ÖRNEK:
+\`\`\`mermaid
+mindmap
+  root((Malzeme Bilimi))
+    Mekanik Özellikler
+      Çekme Dayanımı
+      Akma Sınırı
+      Sertlik
+    Yapısal Özellikler
+      Kristal Yapı
+      Tane Boyutu
+    Termal Özellikler
+      Erime Noktası
+      Isı İletkenliği
+\`\`\`
+
+ÖNEMLİ: Sadece \`\`\`mermaid bloğu döndür. Yorum, açıklama, başka yazı YOK.
+
+Materyal:
+${t}`,
 };
 
 function renderMaterials(){
@@ -5404,7 +5461,7 @@ function matAddMsgToPanel(panelMode, role, html){
   panel.appendChild(div);
   panel.scrollTop = panel.scrollHeight;
   // LaTeX render — KaTeX yüklendiyse bubble içindeki $ ... $ ifadelerini render eder
-  setTimeout(function(){ renderKatex(div); }, 0);
+  setTimeout(function(){ renderRichContent(div); }, 0);
   return div;
 }
 
@@ -5627,7 +5684,7 @@ function renderExamFromMarkdown(resultMd, panel, material){
 
   examContainer.appendChild(actionBar);
   panel.appendChild(examContainer);
-  setTimeout(function(){ renderKatex(examContainer); }, 0);
+  setTimeout(function(){ renderRichContent(examContainer); }, 0);
 }
 
 // ===== SINAV MODU =====
@@ -5753,7 +5810,7 @@ async function matRunExamMode(m, fullContent, CHUNK_SIZE){
 
   examContainer.appendChild(actionBar);
   if(panel) panel.appendChild(examContainer);
-  setTimeout(function(){ renderKatex(examContainer); }, 0);
+  setTimeout(function(){ renderRichContent(examContainer); }, 0);
 
   if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, resultMd, { variant: 'exam' });
   matModeReady[mode] = true;
@@ -6087,6 +6144,7 @@ GÖREV: Bu konu için defter formatında, derinlemesine bir çalışma notu yaz.
 KURALLAR:
 - Türkçe yaz, teknik terimleri orijinal dilde tut, parantez içinde Türkçe ekle: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
 - Slaytta üstü kapalı geçilmiş yerleri tamamla — bağlam ekle
 - Sadece bu konuyu yaz, başka konulara dalma
 - Konu başlığını TEKRAR YAZMA (zaten dışarıda var)
@@ -6255,7 +6313,7 @@ function renderStudyTopics(topics, panel, material){
 
   studyContainer.appendChild(actionBar);
   panel.appendChild(studyContainer);
-  setTimeout(function(){ renderKatex(studyContainer); }, 0);
+  setTimeout(function(){ renderRichContent(studyContainer); }, 0);
 }
 
 // Yenileme sonrası kayıtlı çalışma notu markdown'ından kart UI'ını rebuild et
@@ -6357,6 +6415,7 @@ KURALLAR:
 - Bullet point ise bullet point olarak, başlık ise başlık olarak yaz
 - Teknik terimleri **orijinal dilde** (Türkçe karşılığı) formatında yaz
 - Formüller, sayısal değerler, birimler aynen korunsun
+- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor. Mermaid örnekler: graph TD (akış), flowchart, mindmap, stateDiagram, classDiagram. Türkçe label kullan.
 - Anlaşılması zor yerlerde 1-2 cümlelik kısa açıklama ekleyebilirsin
 - Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş ("Bu sayfa kapak/içindekiler tablosu" gibi)
 
@@ -6693,6 +6752,18 @@ function matMd(text){
     return `<div class="md-svg-container">${svg}</div>`;
   });
 
+  // Mermaid blokları — diyagram, akış, ağaç, kavram haritası
+  // (escape edildiği için < > etc. encoded; mermaid bunları handle eder ama yine de decode edelim)
+  s = s.replace(/```mermaid\n([\s\S]*?)```/g, (_, codeEscaped) => {
+    const code = codeEscaped
+      .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
+      .replace(/&quot;/g,'"').replace(/&#039;/g,"'");
+    // Benzersiz id (her render için farklı olmalı)
+    const id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
+    // Code'u textarea olarak gömüyoruz, sonra renderMermaidIn() onu işleyecek
+    return `<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="text-align:center;padding:12px;background:var(--surface2);border-radius:10px;margin:8px 0;overflow-x:auto;"><div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">📊 Diyagram</div><div class="md-mermaid-target">⏳ Diyagram yükleniyor...</div></div></div>`;
+  });
+
   // Kod blokları (```)
   s = s.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
     `<div class="md-code-block"><div class="md-code-lang">${lang||'code'}</div><pre><code>${code.trim()}</code></pre></div>`);
@@ -6749,6 +6820,43 @@ function renderKatex(element){
   } catch(e){
     console.warn('[KaTeX] render hatası:', e.message);
   }
+}
+
+// Mermaid diagram render — verilen elementin içindeki ```mermaid``` bloklarını çizer.
+// matMd `.md-mermaid-container` div'leri oluşturur, biz onları burada render ederiz.
+async function renderMermaidIn(element){
+  if(!element || typeof window === 'undefined') return;
+  if(typeof window.mermaid === 'undefined') return;
+
+  const containers = element.querySelectorAll('.md-mermaid-container:not([data-rendered="1"])');
+  for(let i = 0; i < containers.length; i++){
+    const container = containers[i];
+    const sourceEl = container.querySelector('.md-mermaid-source');
+    const targetEl = container.querySelector('.md-mermaid-target');
+    if(!sourceEl || !targetEl) continue;
+
+    const code = sourceEl.textContent || '';
+    const id = container.dataset.mermaidId || ('mm-' + Math.random().toString(36).substring(2, 10));
+
+    try {
+      const result = await window.mermaid.render(id, code);
+      targetEl.innerHTML = result.svg;
+      // Bind functions (mermaid bazen interaktif elementler döndürür)
+      if(result.bindFunctions) result.bindFunctions(targetEl);
+      container.setAttribute('data-rendered', '1');
+    } catch(e){
+      console.warn('[Mermaid] render hatası:', e.message);
+      // Hata durumunda kaynak kodu göster (debug için)
+      targetEl.innerHTML = '<pre style="text-align:left;color:var(--red);font-size:12px;padding:10px;background:rgba(239,68,68,0.05);border-radius:6px;white-space:pre-wrap;">⚠️ Diyagram çizilemedi: ' + escHtml(e.message) + '\n\n--- Kaynak ---\n' + escHtml(code) + '</pre>';
+      container.setAttribute('data-rendered', '1');
+    }
+  }
+}
+
+// Hem KaTeX hem Mermaid render et — her render fonksiyonunda kullanılacak ortak helper
+function renderRichContent(element){
+  renderKatex(element);
+  renderMermaidIn(element);
 }
 
 // Markdown dosyası olarak indir
@@ -6808,7 +6916,7 @@ function downloadAsPdf(sourceEl, title){
 
   // KaTeX render — klonda da formüller render olsun
   setTimeout(function(){
-    renderKatex(area);
+    renderRichContent(area);
     // Print tetikle
     setTimeout(function(){
       window.print();
@@ -6857,11 +6965,17 @@ function buildDownloadButtons(materialTitle, getMarkdown, sourceElGetter){
 }
 
 function matBuildMindmap(text){
-  // SVG içeriyorsa direkt render et
+  // Mermaid bloğu var mı? (yeni format)
+  const mermaidMatch = text.match(/```mermaid\s*\n([\s\S]*?)```/);
+  if(mermaidMatch){
+    // matMd() zaten mermaid bloklarını işliyor, doğrudan onu çağır
+    return matMd(text);
+  }
+
+  // Eski format: SVG içeriyorsa direkt render et (geriye uyum)
   const svgMatch = text.match(/<svg[\s\S]*<\/svg>/i);
   if(svgMatch){
     let svg = svgMatch[0];
-    // Güvenlik: event handler ve script temizle
     svg = svg.replace(/\bon\w+\s*=/gi, 'data-blocked=');
     svg = svg.replace(/<script[\s\S]*?<\/script>/gi, '');
     return `<div class="md-svg-container" style="background:var(--surface2);border-radius:12px;padding:16px;overflow:auto;">
@@ -6870,7 +6984,14 @@ function matBuildMindmap(text){
       <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">Tam ekran için sağ tık → Resmi yeni sekmede aç</div>
     </div>`;
   }
-  // SVG yoksa markdown olarak render et
+
+  // Hiçbiri yoksa: tüm metni mermaid bloğu olarak sarmaya çalış (AI bazen sadece kod döndürür)
+  const trimmed = text.trim();
+  if(/^(mindmap|graph|flowchart|stateDiagram|classDiagram|sequenceDiagram)/i.test(trimmed)){
+    return matMd('```mermaid\n' + trimmed + '\n```');
+  }
+
+  // Son çare: markdown olarak render et
   return matMd(text);
 }
 
