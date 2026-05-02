@@ -7319,8 +7319,9 @@ function toggleQuizSolution(cardId, btn){
  * PDF'den metin çıkar (pdfjs ile) ve backend'e gönder
  */
 async function ragIndexMaterial(materialSbId, file){
-  // pdfjs ile metin çıkar
+  // pdfjs ile metin çıkar — hem birleşik text hem sayfa array'i
   let text = '';
+  let pages = [];
   try{
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -7328,7 +7329,9 @@ async function ragIndexMaterial(materialSbId, file){
     for(let i = 1; i <= pdf.numPages; i++){
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      pageTexts.push(content.items.map(s => s.str).join(' '));
+      const pageText = content.items.map(s => s.str).join(' ');
+      pageTexts.push(pageText);
+      pages.push({ page: i, text: pageText });
     }
     text = pageTexts.join('\n\n');
   }catch(e){
@@ -7342,7 +7345,7 @@ async function ragIndexMaterial(materialSbId, file){
   const resp = await fetch(BACKEND_URL + '/api/embed?action=index', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'x-session-id': sessionId },
-    body: JSON.stringify({ material_id: materialSbId, text })
+    body: JSON.stringify({ material_id: materialSbId, text, pages })
   });
   const data = await resp.json();
   if(!resp.ok) throw new Error(data.error || 'İndeksleme başarısız');
@@ -7748,10 +7751,14 @@ async function ragSend(){
       srcEl.className = 'rag-sources';
       srcEl.innerHTML = `
         <summary>📎 ${chunks.length} kaynak bölüm</summary>
-        ${chunks.map((c,i) => `
-          <div class="rag-source-item">
-            <span class="rag-source-num">[${i+1}]</span>${escHtml(c.content.slice(0,200))}${c.content.length>200?'…':''}
-          </div>`).join('')}`;
+        ${chunks.map((c,i) => {
+          const pageBadge = c.page_number
+            ? `<span style="display:inline-block;font-size:10px;background:rgba(59,130,246,0.15);color:#3b82f6;padding:1px 6px;border-radius:8px;margin-right:6px;">📄 Sayfa ${c.page_number}</span>`
+            : '';
+          return `<div class="rag-source-item">
+            <span class="rag-source-num">[${i+1}]</span>${pageBadge}${escHtml(c.content.slice(0,200))}${c.content.length>200?'…':''}
+          </div>`;
+        }).join('')}`;
       msgs.appendChild(srcEl);
       msgs.scrollTop = msgs.scrollHeight;
     }
