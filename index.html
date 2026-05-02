@@ -5895,13 +5895,13 @@ async function matExamChunked(fullContent, chunkSize, sessionId, progressEl){
         success = true;
       } catch(e){
         const msg = String(e.message || '').toLowerCase();
-        const isRateLimit = msg.indexOf('quota') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('retry in') >= 0 || msg.indexOf('429') >= 0;
-        if(isRateLimit && attempt < MAX_RETRIES){
+        const isRetryable = msg.indexOf('quota') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('retry in') >= 0 || msg.indexOf('429') >= 0 || msg.indexOf('high demand') >= 0 || msg.indexOf('overload') >= 0 || msg.indexOf('experiencing') >= 0 || msg.indexOf('try again') >= 0 || msg.indexOf('temporary') >= 0 || msg.indexOf('503') >= 0 || msg.indexOf('502') >= 0 || msg.indexOf('529') >= 0 || msg.indexOf('500') >= 0;
+        if(isRetryable && attempt < MAX_RETRIES){
           const retryMatch = String(e.message || '').match(/retry in (\d+(?:\.\d+)?)\s*s/i);
-          let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 30000;
+          let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 15000;
           if(waitMs > 90000) waitMs = 90000;
           attempt++;
-          progressEl.textContent = 'Rate limit — ' + Math.round(waitMs/1000) + 'sn bekleniyor (' + attempt + '/' + MAX_RETRIES + ')...';
+          progressEl.textContent = '⏸ Sunucu yoğun — ' + Math.round(waitMs/1000) + 'sn bekleniyor (deneme ' + attempt + '/' + MAX_RETRIES + ')';
           await new Promise(function(r){ setTimeout(r, waitMs); });
           continue;
         }
@@ -6186,13 +6186,13 @@ ${combinedText}`;
       return (data.content || []).map(function(c){ return c.text || ''; }).join('');
     } catch(e){
       const msg = String(e.message || '').toLowerCase();
-      const isRateLimit = msg.indexOf('quota') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('retry in') >= 0 || msg.indexOf('429') >= 0;
-      if(isRateLimit && attempt < MAX_RETRIES){
+      const isRetryable = msg.indexOf('quota') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('retry in') >= 0 || msg.indexOf('429') >= 0 || msg.indexOf('high demand') >= 0 || msg.indexOf('overload') >= 0 || msg.indexOf('experiencing') >= 0 || msg.indexOf('try again') >= 0 || msg.indexOf('temporary') >= 0 || msg.indexOf('503') >= 0 || msg.indexOf('502') >= 0 || msg.indexOf('529') >= 0 || msg.indexOf('500') >= 0;
+      if(isRetryable && attempt < MAX_RETRIES){
         const retryMatch = String(e.message || '').match(/retry in (\d+(?:\.\d+)?)\s*s/i);
-        let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 30000;
+        let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 15000;
         if(waitMs > 90000) waitMs = 90000;
         attempt++;
-        if(progressEl) progressEl.textContent = 'Rate limit — ' + Math.round(waitMs/1000) + 'sn bekleniyor (Konu ' + currentIdx + '/' + totalCount + ', deneme ' + attempt + '/' + MAX_RETRIES + ')...';
+        if(progressEl) progressEl.textContent = '⏸ Sunucu yoğun — ' + Math.round(waitMs/1000) + 'sn bekleniyor (Konu ' + currentIdx + '/' + totalCount + ', deneme ' + attempt + '/' + MAX_RETRIES + ')';
         await new Promise(function(r){ setTimeout(r, waitMs); });
         continue;
       }
@@ -6451,10 +6451,10 @@ ${batchText}`;
         if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
         const result = data.content?.map(c=>c.text||'').join('')||'';
 
-        // Rate limit hatası response içinde de gelebilir (Gemini fallback)
+        // Rate limit / yoğunluk hatası response içinde de gelebilir (Gemini fallback veya Anthropic 5xx)
         const lowResult = result.toLowerCase();
-        const isRateLimitInBody = lowResult.includes('quota') || lowResult.includes('rate limit') || lowResult.includes('retry in');
-        if(isRateLimitInBody && result.length < 500){
+        const isRetryableInBody = lowResult.includes('quota') || lowResult.includes('rate limit') || lowResult.includes('retry in') || lowResult.includes('high demand') || lowResult.includes('overload') || lowResult.includes('experiencing') || lowResult.includes('try again');
+        if(isRetryableInBody && result.length < 500){
           throw new Error(result);
         }
 
@@ -6471,15 +6471,15 @@ ${batchText}`;
       } catch(e){
         lastError = e;
         const msg = String(e.message || '').toLowerCase();
-        const isRateLimit = msg.includes('quota') || msg.includes('rate limit') || msg.includes('retry in') || msg.includes('429') || msg.includes('exceeded');
+        const isRetryable = msg.includes('quota') || msg.includes('rate limit') || msg.includes('retry in') || msg.includes('429') || msg.includes('exceeded') || msg.includes('high demand') || msg.includes('overload') || msg.includes('experiencing') || msg.includes('try again') || msg.includes('temporary') || msg.includes('503') || msg.includes('502') || msg.includes('529') || msg.includes('500');
 
-        if(isRateLimit && attempt < MAX_RETRIES){
+        if(isRetryable && attempt < MAX_RETRIES){
           // "retry in 17.8s" gibi bir bilgi var mı bak
           const retryMatch = String(e.message || '').match(/retry in (\d+(?:\.\d+)?)\s*s/i);
-          let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 30000;
+          let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 15000;
           if(waitMs > 90000) waitMs = 90000; // tavan: 90 saniye
           attempt++;
-          progressEl.textContent = `⏸ Rate limit — ${Math.round(waitMs/1000)}sn bekleniyor (deneme ${attempt}/${MAX_RETRIES})... Sayfa ${firstPage}-${lastPage}`;
+          progressEl.textContent = `⏸ Sunucu yoğun — ${Math.round(waitMs/1000)}sn bekleniyor (deneme ${attempt}/${MAX_RETRIES}) — Sayfa ${firstPage}-${lastPage}`;
           await new Promise(r => setTimeout(r, waitMs));
           continue;
         }
