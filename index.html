@@ -23,14 +23,25 @@
       startOnLoad: false,
       theme: 'dark',
       securityLevel: 'loose',
-      flowchart: { curve: 'basis', useMaxWidth: true },
+      flowchart: {
+        curve: 'basis',
+        useMaxWidth: true,
+        htmlLabels: true,
+        nodeSpacing: 50,
+        rankSpacing: 60,
+        padding: 20
+      },
+      mindmap: { padding: 16, maxNodeWidth: 200 },
       themeVariables: {
         primaryColor: '#1e293b',
         primaryTextColor: '#e2e8f0',
         primaryBorderColor: '#475569',
         lineColor: '#94a3b8',
         secondaryColor: '#334155',
-        tertiaryColor: '#0f172a'
+        tertiaryColor: '#0f172a',
+        clusterBkg: '#1e1b4b',
+        clusterBorder: '#6366f1',
+        fontSize: '14px'
       }
     });
   }
@@ -4833,13 +4844,34 @@ KURALLAR:
 - Her konuyu derinlemesine açıkla, defterimizdeki ders notları gibi
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
-- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+- Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
+- DİYAGRAM ÇİZİYORSAN: \`\`\`mermaid ... \`\`\` bloğu kullan. ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz.
+- MERMAID FORMAT KURALLARI:
+  • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
+  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), mindmap (kavram), stateDiagram-v2 (durum)
+  • Her bağlantı yeni satıra, 2 boşluk indent
+  • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
+  • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
+  • Aynı diyagrama 2 farklı durumu (öncesi/sonrası) sıkıştırma — her biri AYRI \`\`\`mermaid bloğu olsun, başlık yaz aralarına
+  • subgraph kullanmaktan kaçın, gerekmedikçe kullanma — ana ağaca müdahale ediyor
+- ÖRNEK DOĞRU FORMAT (AVL ağacı, sol rotasyon adımları):
+
+ÖNCE:
 \`\`\`mermaid
 graph TD
-  A[Kök 7] --> B(Sol 5)
-  A --> C(Sağ 3)
-  B --> D[Yaprak 2]
+  A[10] --> B[5]
+  A --> C[15]
+  C --> D[12]
+  C --> E[20]
+\`\`\`
+
+SONRA (ROTASYON):
+\`\`\`mermaid
+graph TD
+  A[15] --> B[10]
+  A --> C[20]
+  B --> D[5]
+  B --> E[12]
 \`\`\`
 - Slaytta atlanmış / üstü kapalı geçilmiş yerleri tamamla — öğrencinin sınavda anlaması için bağlam ekle
 - Konular arası ilişkileri vurgula
@@ -4864,13 +4896,34 @@ KURALLAR:
 - Tüm bölümler ZORUNLU — boş olsa bile başlığı yaz, "(bu materyalde yok)" notu düş
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
-- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+- Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
+- DİYAGRAM ÇİZİYORSAN: \`\`\`mermaid ... \`\`\` bloğu kullan. ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz.
+- MERMAID FORMAT KURALLARI:
+  • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
+  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), mindmap (kavram), stateDiagram-v2 (durum)
+  • Her bağlantı yeni satıra, 2 boşluk indent
+  • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
+  • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
+  • Aynı diyagrama 2 farklı durumu (öncesi/sonrası) sıkıştırma — her biri AYRI \`\`\`mermaid bloğu olsun, başlık yaz aralarına
+  • subgraph kullanmaktan kaçın, gerekmedikçe kullanma — ana ağaca müdahale ediyor
+- ÖRNEK DOĞRU FORMAT (AVL ağacı, sol rotasyon adımları):
+
+ÖNCE:
 \`\`\`mermaid
 graph TD
-  A[Kök 7] --> B(Sol 5)
-  A --> C(Sağ 3)
-  B --> D[Yaprak 2]
+  A[10] --> B[5]
+  A --> C[15]
+  C --> D[12]
+  C --> E[20]
+\`\`\`
+
+SONRA (ROTASYON):
+\`\`\`mermaid
+graph TD
+  A[15] --> B[10]
+  A --> C[20]
+  B --> D[5]
+  B --> E[12]
 \`\`\`
 - Yüzeysel geçme — sınavda işe yarayacak somut bilgi ver
 - Sözlük bölümünde her terimi ayrı satıra **bold-paren-iki nokta-tanım** formatında yaz
@@ -4913,13 +4966,34 @@ KURALLAR:
 - Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı — birleştirme, kısaltma yapma
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçesini ekle: Streckgrenze (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
-- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+- Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
+- DİYAGRAM ÇİZİYORSAN: \`\`\`mermaid ... \`\`\` bloğu kullan. ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz.
+- MERMAID FORMAT KURALLARI:
+  • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
+  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), mindmap (kavram), stateDiagram-v2 (durum)
+  • Her bağlantı yeni satıra, 2 boşluk indent
+  • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
+  • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
+  • Aynı diyagrama 2 farklı durumu (öncesi/sonrası) sıkıştırma — her biri AYRI \`\`\`mermaid bloğu olsun, başlık yaz aralarına
+  • subgraph kullanmaktan kaçın, gerekmedikçe kullanma — ana ağaca müdahale ediyor
+- ÖRNEK DOĞRU FORMAT (AVL ağacı, sol rotasyon adımları):
+
+ÖNCE:
 \`\`\`mermaid
 graph TD
-  A[Kök 7] --> B(Sol 5)
-  A --> C(Sağ 3)
-  B --> D[Yaprak 2]
+  A[10] --> B[5]
+  A --> C[15]
+  C --> D[12]
+  C --> E[20]
+\`\`\`
+
+SONRA (ROTASYON):
+\`\`\`mermaid
+graph TD
+  A[15] --> B[10]
+  A --> C[20]
+  B --> D[5]
+  B --> E[12]
 \`\`\`
 - Slaytta üstü kapalı geçilmiş, hocanın anlattığı varsayılan yerlerde 1-2 cümlelik açıklama ekle ki öğrenci anlasın
 - Sayfanın görsel yapısını (liste, tablo, akış) Markdown ile yansıt
@@ -6165,13 +6239,34 @@ GÖREV: Bu konu için defter formatında, derinlemesine bir çalışma notu yaz.
 KURALLAR:
 - Türkçe yaz, teknik terimleri orijinal dilde tut, parantez içinde Türkçe ekle: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
-- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+- Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
+- DİYAGRAM ÇİZİYORSAN: \`\`\`mermaid ... \`\`\` bloğu kullan. ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz.
+- MERMAID FORMAT KURALLARI:
+  • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
+  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), mindmap (kavram), stateDiagram-v2 (durum)
+  • Her bağlantı yeni satıra, 2 boşluk indent
+  • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
+  • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
+  • Aynı diyagrama 2 farklı durumu (öncesi/sonrası) sıkıştırma — her biri AYRI \`\`\`mermaid bloğu olsun, başlık yaz aralarına
+  • subgraph kullanmaktan kaçın, gerekmedikçe kullanma — ana ağaca müdahale ediyor
+- ÖRNEK DOĞRU FORMAT (AVL ağacı, sol rotasyon adımları):
+
+ÖNCE:
 \`\`\`mermaid
 graph TD
-  A[Kök 7] --> B(Sol 5)
-  A --> C(Sağ 3)
-  B --> D[Yaprak 2]
+  A[10] --> B[5]
+  A --> C[15]
+  C --> D[12]
+  C --> E[20]
+\`\`\`
+
+SONRA (ROTASYON):
+\`\`\`mermaid
+graph TD
+  A[15] --> B[10]
+  A --> C[20]
+  B --> D[5]
+  B --> E[12]
 \`\`\`
 - Slaytta üstü kapalı geçilmiş yerleri tamamla — bağlam ekle
 - Sadece bu konuyu yaz, başka konulara dalma
@@ -6443,13 +6538,34 @@ KURALLAR:
 - Bullet point ise bullet point olarak, başlık ise başlık olarak yaz
 - Teknik terimleri **orijinal dilde** (Türkçe karşılığı) formatında yaz
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagram, ağaç, akış şeması, hiyerarşi, ilişki gösterimi gerekiyorsa MUTLAKA Mermaid syntax kullan (\`\`\`mermaid ... \`\`\`). ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz çıkıyor.
-- MERMAID KURALLARI: Her ifade AYRI SATIRDA olmalı. İlk satır diagram tipi (graph TD, flowchart LR, mindmap, vb.). Her ok/bağlantı yeni satıra. Düzgün indent (2 boşluk). ASLA tek satıra sıkıştırma. Türkçe label kullan, parantez/köşeli parantez içinde yaz: A[Kök Düğüm] --> B(Alt Düğüm). Örnek doğru format:
+- Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
+- DİYAGRAM ÇİZİYORSAN: \`\`\`mermaid ... \`\`\` bloğu kullan. ASCII art (/, \\, |, - ile çizim) KULLANMA — okunmaz.
+- MERMAID FORMAT KURALLARI:
+  • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
+  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), mindmap (kavram), stateDiagram-v2 (durum)
+  • Her bağlantı yeni satıra, 2 boşluk indent
+  • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
+  • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
+  • Aynı diyagrama 2 farklı durumu (öncesi/sonrası) sıkıştırma — her biri AYRI \`\`\`mermaid bloğu olsun, başlık yaz aralarına
+  • subgraph kullanmaktan kaçın, gerekmedikçe kullanma — ana ağaca müdahale ediyor
+- ÖRNEK DOĞRU FORMAT (AVL ağacı, sol rotasyon adımları):
+
+ÖNCE:
 \`\`\`mermaid
 graph TD
-  A[Kök 7] --> B(Sol 5)
-  A --> C(Sağ 3)
-  B --> D[Yaprak 2]
+  A[10] --> B[5]
+  A --> C[15]
+  C --> D[12]
+  C --> E[20]
+\`\`\`
+
+SONRA (ROTASYON):
+\`\`\`mermaid
+graph TD
+  A[15] --> B[10]
+  A --> C[20]
+  B --> D[5]
+  B --> E[12]
 \`\`\`
 - Anlaşılması zor yerlerde 1-2 cümlelik kısa açıklama ekleyebilirsin
 - Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş ("Bu sayfa kapak/içindekiler tablosu" gibi)
@@ -6796,7 +6912,7 @@ function matMd(text){
     // Benzersiz id (her render için farklı olmalı)
     const id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
     // Code'u textarea olarak gömüyoruz, sonra renderMermaidIn() onu işleyecek
-    return `<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="text-align:center;padding:12px;background:var(--surface2);border-radius:10px;margin:8px 0;overflow-x:auto;"><div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">📊 Diyagram</div><div class="md-mermaid-target">⏳ Diyagram yükleniyor...</div></div></div>`;
+    return `<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="padding:16px;background:var(--surface2);border-radius:10px;margin:12px 0;overflow-x:auto;max-width:100%;"><div style="font-size:11px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">📊 Diyagram</div><div class="md-mermaid-target" style="text-align:center;min-height:100px;display:flex;align-items:center;justify-content:center;">⏳ Diyagram yükleniyor...</div></div></div>`;
   });
 
   // Kod blokları (```)
@@ -6938,6 +7054,14 @@ async function renderMermaidIn(element){
 
     if(svg){
       targetEl.innerHTML = svg;
+      // SVG'nin genişlik/yüksekliğini stretch et — daha okunaklı
+      const svgEl = targetEl.querySelector('svg');
+      if(svgEl){
+        svgEl.style.maxWidth = '100%';
+        svgEl.style.height = 'auto';
+        svgEl.removeAttribute('width');
+        svgEl.removeAttribute('height');
+      }
       container.setAttribute('data-rendered', '1');
     } else {
       console.warn('[Mermaid] render hatası:', renderError && renderError.message);
