@@ -10,6 +10,10 @@
 <!-- Supabase JS kütüphanesi kaldırıldı — artık tüm DB işlemleri backend üzerinden -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- KaTeX — LaTeX matematik notasyonu render etmek için -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -5301,6 +5305,8 @@ function matAddMsgToPanel(panelMode, role, html){
     <div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
   panel.appendChild(div);
   panel.scrollTop = panel.scrollHeight;
+  // LaTeX render — KaTeX yüklendiyse bubble içindeki $ ... $ ifadelerini render eder
+  setTimeout(function(){ renderKatex(div); }, 0);
   return div;
 }
 
@@ -5515,6 +5521,7 @@ function renderExamFromMarkdown(resultMd, panel, material){
 
   examContainer.appendChild(actionBar);
   panel.appendChild(examContainer);
+  setTimeout(function(){ renderKatex(examContainer); }, 0);
 }
 
 // ===== SINAV MODU =====
@@ -5632,6 +5639,7 @@ async function matRunExamMode(m, fullContent, CHUNK_SIZE){
 
   examContainer.appendChild(actionBar);
   if(panel) panel.appendChild(examContainer);
+  setTimeout(function(){ renderKatex(examContainer); }, 0);
 
   if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, resultMd, { variant: 'exam' });
   matModeReady[mode] = true;
@@ -6119,6 +6127,7 @@ function renderStudyTopics(topics, panel, material){
 
   studyContainer.appendChild(actionBar);
   panel.appendChild(studyContainer);
+  setTimeout(function(){ renderKatex(studyContainer); }, 0);
 }
 
 // Yenileme sonrası kayıtlı çalışma notu markdown'ından kart UI'ını rebuild et
@@ -6519,6 +6528,21 @@ function matMd(text){
   if(!text) return '';
   let s = escHtml(text);
 
+  // LaTeX bloklarını koru — markdown işlemleri içlerine müdahale etmesin
+  // ($$...$$ display, $...$ inline, \[...\] display, \(...\) inline)
+  const latexBlocks = [];
+  const stash = function(match){
+    const idx = latexBlocks.length;
+    latexBlocks.push(match);
+    return '\u0000LATEX' + idx + '\u0000';
+  };
+  // Önce display ($$...$$ ve \[...\]) — açgözlü olmasın
+  s = s.replace(/\$\$([\s\S]+?)\$\$/g, stash);
+  s = s.replace(/\\\[([\s\S]+?)\\\]/g, stash);
+  // Sonra inline ($...$ ve \(...\)) — tek satırda kalsın
+  s = s.replace(/\$([^\$\n]+?)\$/g, stash);
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, stash);
+
   // SVG blokları — escape edilmiş SVG'yi geri çöz ve güvenli render et
   s = s.replace(/```svg\n([\s\S]*?)```/g, (_, svgEscaped) => {
     // Sadece SVG etiketlerini geri çöz, script/event handler'ları temizle
@@ -6560,7 +6584,35 @@ function matMd(text){
   s = s.replace(/\n/g, '<br>');
   // İç içe ul/ol temizliği
   s = s.replace(/<br><\/?(ul|ol)/g, '</$1');
+
+  // LaTeX placeholder'ları geri koy — KaTeX auto-render bunları yakalayacak
+  s = s.replace(/\u0000LATEX(\d+)\u0000/g, function(_, idx){
+    return latexBlocks[parseInt(idx)] || '';
+  });
+
   return s;
+}
+
+// KaTeX auto-render — verilen DOM elementinin içindeki LaTeX'i render eder.
+// Güvenli çağrı: KaTeX yüklenmemişse sessizce çıkar.
+function renderKatex(element){
+  if(!element || typeof window === 'undefined') return;
+  if(typeof window.renderMathInElement !== 'function') return;
+  try {
+    window.renderMathInElement(element, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\[', right: '\\]', display: true },
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false }
+      ],
+      throwOnError: false,
+      errorColor: '#cc0000',
+      strict: false
+    });
+  } catch(e){
+    console.warn('[KaTeX] render hatası:', e.message);
+  }
 }
 
 function matBuildMindmap(text){
