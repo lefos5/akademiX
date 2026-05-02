@@ -5103,16 +5103,12 @@ async function loadMatHistory(materialId){
       const list = byType[mode];
       if(!list.length) return;
       const latest = list[0];
-      const html = mode === 'flashcard'
-        ? matBuildFlashcards(latest.content)
-        : mode === 'quiz'
-        ? matBuildQuiz(latest.content)
-        : matMd(latest.content);
 
       const panel = getPanel(mode);
       if(!panel) return;
       panel.innerHTML = '';
 
+      // Tarih rozeti
       if(mode === 'summary'){
         const dateBadge = document.createElement('div');
         dateBadge.style.cssText = 'font-size:11px;color:var(--muted);padding:4px 0 8px;text-align:right;';
@@ -5120,7 +5116,27 @@ async function loadMatHistory(materialId){
         panel.appendChild(dateBadge);
       }
 
+      // ÖZEL DURUM: Sınav Modu — kart UI'ı yeniden oluştur
+      const variant = latest.metadata?.variant;
+      if(mode === 'summary' && variant === 'exam'){
+        renderExamFromMarkdown(latest.content, panel, materials.find(x => (x._sbId || x.id) === materialId));
+        matModeReady[mode] = true;
+        return;
+      }
+
+      // Diğer modlar için klasik render
+      const html = mode === 'flashcard'
+        ? matBuildFlashcards(latest.content)
+        : mode === 'quiz'
+        ? matBuildQuiz(latest.content)
+        : matMd(latest.content);
+
       matAddMsgToPanel(mode, 'ai', html);
+
+      // Sayfa sayfa özet için thumbnail'ları ekle (paged variant)
+      if(mode === 'summary' && variant === 'paged'){
+        setTimeout(() => attachPageThumbnails(panel), 100);
+      }
 
       // Yeniden Oluştur butonu
       const resetBar = document.createElement('div');
@@ -5414,6 +5430,74 @@ async function matRunVariant(mode, variant){
   const content = matFileData?.content || matFileData?.fullContent || m.title;
   const prompt = promptFn(content);
   await matCallAI(prompt, { forcePrompt: true, mode, variant, skipContentAppend: true });
+}
+
+// Kayıtlı sınav modu markdown'ından kart UI'ını yeniden oluştur (sayfa yenileme sonrası)
+function renderExamFromMarkdown(resultMd, panel, material){
+  if(!panel) return;
+  const sections = parseExamSections(resultMd);
+
+  const examContainer = document.createElement('div');
+  examContainer.className = 'exam-cards-container';
+  examContainer.style.cssText = 'display:flex;flex-direction:column;gap:14px;margin-top:8px;';
+
+  // Üst bilgi
+  const glossaryCount = (sections.glossary.match(/\*\*[^*]+\*\*/g) || []).length;
+  const criticalLines = sections.critical.split('\n').filter(l => /^\s*[-•*]/.test(l));
+  const summaryBar = document.createElement('div');
+  summaryBar.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;padding:12px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--muted);';
+  summaryBar.innerHTML = '<div>📖 <strong>' + glossaryCount + '</strong> kavram</div>' +
+    '<div>⚡ <strong>' + criticalLines.length + '</strong> kritik nokta</div>' +
+    '<div>📦 Sınav cevheri</div>';
+  examContainer.appendChild(summaryBar);
+
+  const cardConfigs = [
+    { key: 'formulas', icon: '📐', title: 'Formüller ve Sayısal Değerler', color: '#10b981' },
+    { key: 'glossary', icon: '📖', title: 'Kavram Sözlüğü', color: '#3b82f6' },
+    { key: 'critical', icon: '⚡', title: 'Kesin Bilmen Gerekenler', color: '#f59e0b' },
+    { key: 'comparisons', icon: '🔄', title: 'Karşılaştırmalar', color: '#8b5cf6' },
+    { key: 'mistakes', icon: '⚠️', title: 'Sık Yapılan Hatalar', color: '#ef4444' }
+  ];
+
+  cardConfigs.forEach(function(cfg){
+    const content = sections[cfg.key];
+    if(!content || content.trim().length < 5) return;
+    examContainer.appendChild(buildExamCard(cfg, content));
+  });
+
+  // Aksiyonlar
+  const actionBar = document.createElement('div');
+  actionBar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:8px;padding-bottom:16px;';
+
+  if(glossaryCount >= 3){
+    const flashBtn = document.createElement('button');
+    flashBtn.className = 'mat-option-btn';
+    flashBtn.style.cssText = 'flex:0 0 auto;font-size:13px;padding:8px 14px;';
+    flashBtn.innerHTML = '🃏 Sözlükten Flashcard Üret';
+    flashBtn.onclick = function(){ examGlossaryToFlashcards(sections.glossary, material); };
+    actionBar.appendChild(flashBtn);
+  }
+
+  const quizBtn = document.createElement('button');
+  quizBtn.className = 'mat-option-btn';
+  quizBtn.style.cssText = 'flex:0 0 auto;font-size:13px;padding:8px 14px;';
+  quizBtn.innerHTML = '✏️ Bu Konularda Kendini Test Et';
+  quizBtn.onclick = function(){
+    const qBtn = document.querySelector('.mat-mode-btn[data-mode="quiz"]');
+    if(qBtn) setMatMode('quiz', qBtn);
+    setTimeout(function(){ matRunVariant('quiz', 'mixed'); }, 200);
+  };
+  actionBar.appendChild(quizBtn);
+
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'mat-ws-action';
+  resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+  resetBtn.textContent = '↺ Yeniden Oluştur';
+  resetBtn.onclick = function(){ matResetMode('summary'); };
+  actionBar.appendChild(resetBtn);
+
+  examContainer.appendChild(actionBar);
+  panel.appendChild(examContainer);
 }
 
 // ===== SINAV MODU =====
