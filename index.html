@@ -1535,6 +1535,92 @@
   .file-remove-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; }
   .file-remove-btn:hover { color: var(--red); }
 
+/* ===== PRINT STYLES (PDF indirme için) ===== */
+#akademix-print-area { display: none; }
+
+@media print {
+  /* Tüm sayfayı gizle, sadece print-area'yı göster */
+  body > *:not(#akademix-print-area) { display: none !important; }
+  #akademix-print-area {
+    display: block !important;
+    position: static !important;
+    background: white !important;
+    color: black !important;
+    padding: 20mm 15mm !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    max-width: 100%;
+  }
+  #akademix-print-area * {
+    color: black !important;
+    background: transparent !important;
+    border-color: #ccc !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #akademix-print-area .print-header {
+    border-bottom: 2px solid #333 !important;
+    padding-bottom: 10pt;
+    margin-bottom: 14pt;
+  }
+  #akademix-print-area .print-header h1 {
+    font-size: 18pt !important;
+    margin: 0 0 4pt 0 !important;
+    color: black !important;
+  }
+  #akademix-print-area .print-meta {
+    font-size: 9pt !important;
+    color: #666 !important;
+  }
+  #akademix-print-area h1, #akademix-print-area h2, #akademix-print-area h3, #akademix-print-area h4,
+  #akademix-print-area .md-h2, #akademix-print-area .md-h3, #akademix-print-area .md-h4 {
+    color: black !important;
+    page-break-after: avoid;
+    margin-top: 12pt !important;
+    margin-bottom: 6pt !important;
+  }
+  #akademix-print-area .md-h3 { font-size: 14pt !important; }
+  #akademix-print-area .md-h4 { font-size: 12pt !important; }
+  #akademix-print-area p, #akademix-print-area li { orphans: 3; widows: 3; }
+  #akademix-print-area .exam-card, #akademix-print-area .study-card,
+  #akademix-print-area .summary-page-section {
+    page-break-inside: avoid;
+    border: 1px solid #ddd !important;
+    margin: 10pt 0 !important;
+    padding: 8pt !important;
+    border-radius: 4pt !important;
+  }
+  #akademix-print-area .exam-card-body, #akademix-print-area .study-card-body {
+    display: block !important;
+  }
+  #akademix-print-area .summary-page-thumb canvas {
+    max-width: 80pt !important;
+    height: auto !important;
+  }
+  #akademix-print-area .summary-page-section {
+    display: flex !important;
+    gap: 10pt !important;
+  }
+  #akademix-print-area code, #akademix-print-area pre {
+    background: #f4f4f4 !important;
+    color: black !important;
+    border: 1px solid #ddd !important;
+  }
+  #akademix-print-area .md-inline-code {
+    padding: 1pt 4pt !important;
+    border-radius: 3pt !important;
+  }
+  #akademix-print-area table { border-collapse: collapse; width: 100%; }
+  #akademix-print-area th, #akademix-print-area td {
+    border: 1px solid #999 !important;
+    padding: 4pt 6pt !important;
+  }
+  /* Sayfa boyutu ve marjlar */
+  @page { size: A4; margin: 0; }
+}
+
 </style>
 </head>
 <body>
@@ -5152,9 +5238,21 @@ async function loadMatHistory(materialId){
         }, 100);
       }
 
-      // Yeniden Oluştur butonu
+      // Yeniden Oluştur + (paged için) indirme butonları
       const resetBar = document.createElement('div');
-      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;';
+      resetBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;align-items:center;';
+
+      // Sadece paged variant için indirme butonları (study/exam kendi kart akışlarında zaten ekleniyor)
+      if(mode === 'summary' && variant === 'paged'){
+        const m = materials.find(x => (x._sbId || x.id) === materialId);
+        const dlBtns = buildDownloadButtons(
+          ((m && m.title) || 'sayfa-sayfa') + ' - Sayfa Sayfa Türkçe',
+          function(){ return latest.content; },
+          function(){ return panel.querySelector('.mat-msg-bubble'); }
+        );
+        resetBar.appendChild(dlBtns);
+      }
+
       const resetBtn = document.createElement('button');
       resetBtn.className = 'mat-ws-action';
       resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
@@ -5512,6 +5610,14 @@ function renderExamFromMarkdown(resultMd, panel, material){
   };
   actionBar.appendChild(quizBtn);
 
+  // İndirme butonları
+  const dlBtns = buildDownloadButtons(
+    ((material && material.title) || 'sinav-modu') + ' - Sınav Modu',
+    function(){ return resultMd; },
+    function(){ return examContainer; }
+  );
+  actionBar.appendChild(dlBtns);
+
   const resetBtn = document.createElement('button');
   resetBtn.className = 'mat-ws-action';
   resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
@@ -5629,6 +5735,14 @@ async function matRunExamMode(m, fullContent, CHUNK_SIZE){
     setTimeout(function(){ matRunVariant('quiz', 'mixed'); }, 200);
   };
   actionBar.appendChild(quizBtn);
+
+  // İndirme butonları
+  const dlBtns = buildDownloadButtons(
+    ((m && m.title) || 'sinav-modu') + ' - Sınav Modu',
+    function(){ return resultMd; },
+    function(){ return examContainer; }
+  );
+  actionBar.appendChild(dlBtns);
 
   const resetBtn = document.createElement('button');
   resetBtn.className = 'mat-ws-action';
@@ -6118,6 +6232,20 @@ function renderStudyTopics(topics, panel, material){
   };
   actionBar.appendChild(quizBtn);
 
+  // İndirme butonları — markdown'ı topic listesinden rebuild et
+  const studyMdBuilder = function(){
+    return topics.map(function(t){
+      const pageRange = (t.pages && t.pages.length) ? ' (Sayfa ' + t.pages.join(', ') + ')' : '';
+      return '## 📚 ' + t.title + pageRange + '\n' + t.content;
+    }).join('\n\n');
+  };
+  const dlBtns = buildDownloadButtons(
+    ((material && material.title) || 'calisma-notu') + ' - Çalışma Notu',
+    studyMdBuilder,
+    function(){ return studyContainer; }
+  );
+  actionBar.appendChild(dlBtns);
+
   const resetBtn = document.createElement('button');
   resetBtn.className = 'mat-ws-action';
   resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
@@ -6344,9 +6472,17 @@ ${batchText}`;
   // PDF thumbnail'larını ekle
   setTimeout(() => attachPageThumbnails(panel), 100);
 
-  // Yeniden Oluştur butonu
+  // Yeniden Oluştur + indirme butonları
   const resetBar = document.createElement('div');
-  resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;';
+  resetBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;align-items:center;';
+
+  const dlBtns = buildDownloadButtons(
+    (m.title || 'sayfa-sayfa') + ' - Sayfa Sayfa Türkçe',
+    function(){ return combined; },
+    function(){ return msgEl ? msgEl.querySelector('.mat-msg-bubble') : null; }
+  );
+  resetBar.appendChild(dlBtns);
+
   const resetBtn = document.createElement('button');
   resetBtn.className = 'mat-ws-action';
   resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
@@ -6613,6 +6749,111 @@ function renderKatex(element){
   } catch(e){
     console.warn('[KaTeX] render hatası:', e.message);
   }
+}
+
+// Markdown dosyası olarak indir
+function downloadMarkdown(filename, md){
+  const safe = String(filename || 'akademix').replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 80);
+  const blob = new Blob([md || ''], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = safe + '.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  showToast('📥 Markdown indirildi: ' + safe + '.md');
+}
+
+// PDF olarak indir — browser'ın print özelliğini kullanır (kullanıcı "PDF olarak kaydet" seçer)
+// Hedef elementin içeriğini print-area'ya kopyalar, tüm kartları açar, ekrandaki diğer her şeyi gizler.
+function downloadAsPdf(sourceEl, title){
+  if(!sourceEl){
+    showToast('İndirilecek içerik bulunamadı.');
+    return;
+  }
+
+  // Var olan print-area varsa kaldır
+  let area = document.getElementById('akademix-print-area');
+  if(area) area.remove();
+
+  // Print-area oluştur
+  area = document.createElement('div');
+  area.id = 'akademix-print-area';
+
+  // Başlık
+  const headerHtml = '<div class="print-header"><h1>' + escHtml(title || 'AkademiX Notu') + '</h1>' +
+    '<div class="print-meta">' + new Date().toLocaleDateString('tr-TR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) + ' • AkademiX</div></div>';
+
+  // Kaynak içeriği klonla — orijinali bozma
+  const clone = sourceEl.cloneNode(true);
+
+  // Klondaki butonları, "↺ Yeniden Oluştur"u, "Tümünü Daralt"ı gizle
+  clone.querySelectorAll('button, .mat-option-btn, .mat-ws-action').forEach(function(b){ b.remove(); });
+  // Aksiyon barlarını da temizle
+  clone.querySelectorAll('.exam-cards-container > div:last-child, .study-cards-container > div:last-child').forEach(function(b){
+    // Sadece içinde sadece buton kalan barlar boş geldi, onları da kaldır
+    if(b.children.length === 0 || b.textContent.trim() === '') b.remove();
+  });
+
+  // Tüm collapsible kartları aç
+  clone.querySelectorAll('.exam-card-body, .study-card-body').forEach(function(body){
+    body.style.display = 'block';
+  });
+
+  area.innerHTML = headerHtml;
+  area.appendChild(clone);
+  document.body.appendChild(area);
+
+  // KaTeX render — klonda da formüller render olsun
+  setTimeout(function(){
+    renderKatex(area);
+    // Print tetikle
+    setTimeout(function(){
+      window.print();
+      // Print sonrası temizle (afterprint event ile, fallback timeout ile)
+      const cleanup = function(){
+        const a = document.getElementById('akademix-print-area');
+        if(a) a.remove();
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      setTimeout(cleanup, 60000); // 60sn sonra her halükarda temizle
+    }, 200);
+  }, 50);
+}
+
+// İndirme butonlarını oluştur — aksiyon barına eklenecek küçük yardımcı
+function buildDownloadButtons(materialTitle, getMarkdown, sourceElGetter){
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:inline-flex;gap:6px;';
+
+  const mdBtn = document.createElement('button');
+  mdBtn.className = 'mat-ws-action';
+  mdBtn.style.cssText = 'font-size:11px;padding:4px 10px;color:var(--muted);';
+  mdBtn.innerHTML = '📥 .md';
+  mdBtn.title = 'Markdown olarak indir';
+  mdBtn.onclick = function(){
+    try { downloadMarkdown(materialTitle || 'akademix', getMarkdown()); }
+    catch(e){ showToast('İndirilemedi: ' + e.message); }
+  };
+  wrap.appendChild(mdBtn);
+
+  const pdfBtn = document.createElement('button');
+  pdfBtn.className = 'mat-ws-action';
+  pdfBtn.style.cssText = 'font-size:11px;padding:4px 10px;color:var(--muted);';
+  pdfBtn.innerHTML = '📄 PDF';
+  pdfBtn.title = 'PDF olarak indir (yazdırma penceresi)';
+  pdfBtn.onclick = function(){
+    try {
+      const el = typeof sourceElGetter === 'function' ? sourceElGetter() : sourceElGetter;
+      downloadAsPdf(el, materialTitle || 'AkademiX Notu');
+    } catch(e){ showToast('İndirilemedi: ' + e.message); }
+  };
+  wrap.appendChild(pdfBtn);
+
+  return wrap;
 }
 
 function matBuildMindmap(text){
