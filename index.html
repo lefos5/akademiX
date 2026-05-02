@@ -4713,48 +4713,65 @@ let matFileData = null;
 
 const MAT_PROMPTS = {
   summary: {
-    short: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine ders veren deneyimli bir akademisyensin. Materyal Almanca olabilir — içeriği anlayıp Türkçe özet yaz.
+    study: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademisyensin. Materyal Almanca/İngilizce olabilir — içeriği anlayıp Türkçe çalışma notu hazırla.
 
-Aşağıdaki ders materyalini analiz et ve Türkçe KISA bir özet yaz.
+GÖREV: Materyali konularına göre grupla ve her konu için defter formatında not yaz. Sayfa-sayfa değil, KONU-KONU organize et.
 
 KURALLAR:
-- Maksimum 4-5 paragraf
-- Her paragraf en az 3 cümle olsun
-- Teknik terimleri Almanca orijinaliyle yaz, yanına Türkçe açıklamasını ekle: **Werkstoff** (malzeme)
-- Formüller, sayısal değerler ve birimler aynen korunsun
-- Yüzeysel geçme — mühendislik detaylarını dahil et
+- Materyaldeki ana konuları tespit et — slaytın bölümlerini, başlıklarını rehber al
+- Her konuyu derinlemesine açıkla, defterimizdeki ders notları gibi
+- Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
+- Formüller, sayısal değerler, birimler aynen korunsun
+- Slaytta atlanmış / üstü kapalı geçilmiş yerleri tamamla — öğrencinin sınavda anlaması için bağlam ekle
+- Konular arası ilişkileri vurgula
+
+Format her konu için:
+
+## 📚 [Konu başlığı]
+**Tanım:** [Net tanım, 2-3 cümle]
+**Neden önemli:** [Bu kavram nerede karşımıza çıkar, ne işe yarar]
+**Nasıl çalışır:** [Detaylı açıklama, formüllerle]
+**Örnek:** [Somut bir mühendislik örneği]
+**İlgili sayfalar:** [Slaytın hangi sayfalarında]
 
 Materyal:
 ${t}`,
 
-    detailed: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine ders veren deneyimli bir akademisyensin. Materyal Almanca olabilir — içeriği anlayıp Türkçe kapsamlı analiz yaz.
+    exam: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine sınava hazırlayan deneyimli bir hocasın. Materyal Almanca/İngilizce olabilir — içeriği anlayıp Türkçe sınav cevheri çıkar.
+
+GÖREV: Materyalden SADECE sınava çıkacak kritik bilgileri damıt. Bu bir özet veya çalışma notu DEĞİL — bu, sınav öncesi son revizyon listesidir.
 
 KURALLAR:
-- Teknik terimleri Almanca orijinaliyle yaz, yanına Türkçe açıklamasını ekle: **Streckgrenze** (akma sınırı)
-- Formüller, denklemler ve sayısal değerler aynen korunsun, birimleri de yaz
-- Her bölümü gerçekten detaylı yaz — "kısaca" veya "özetle" deme
-- Sınava hazırlık açısından kritik bilgileri ⚡ ile işaretle
-- Konu görsel anlatıma uygunsa (veri yapısı, algoritma, devre, akış şeması, karşılaştırma vb.) MUTLAKA SVG diyagram çiz. Diyagramı ilgili bölümün hemen altına ekle. SVG viewBox en az 600 genişliğinde olsun, Türkçe etiket kullan.
+- Tüm bölümler ZORUNLU — boş olsa bile başlığı yaz, "(bu materyalde yok)" notu düş
+- Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
+- Formüller, sayısal değerler aynen korunsun
+- Yüzeysel geçme — sınavda işe yarayacak somut bilgi ver
+- Sözlük bölümünde her terimi ayrı satıra **bold-paren-iki nokta-tanım** formatında yaz
 
-Şu bölümleri MUTLAKA dahil et:
-
-## 📌 Genel Bakış
-Materyalin konusu ve kapsamı — 3-4 cümle.
-
-## 🎯 Ana Konular ve Açıklamalar
-Her ana konuyu başlık altında en az 4-5 cümleyle açıkla. Tanımları, mekanizmaları, neden-sonuç ilişkilerini yaz.
+ZORUNLU FORMAT (başlıkları aynen kullan):
 
 ## 📐 Formüller ve Sayısal Değerler
-Tüm formülleri, denklemleri, sabitleri ve eşik değerlerini listele. Her birini açıkla.
+[Tüm formülleri, denklemleri, sabitleri ve sayısal eşikleri listele. Her formülün altına ne olduğunu ve ne zaman kullanıldığını yaz.]
 
-## 📖 Teknik Terimler Sözlüğü
-Almanca/İngilizce teknik terimleri → Türkçe karşılığı ve tanımı şeklinde listele.
+## 📖 Kavram Sözlüğü
+[Materyaldeki TÜM önemli teknik terimleri liste. En az 15-25 madde olsun. Format her terim için:]
+**[Terim] (Türkçe karşılığı)**: [Tanım — 1-2 cümle]
 
-## ⚡ Sınava Hazırlık — Kritik Noktalar
-Sınavda kesinlikle çıkabilecek tanımlar, formüller, karşılaştırmalar ve ezber gerektiren bilgiler.
+## ⚡ Kesin Bilmen Gerekenler
+[Sınavda mutlaka çıkacak kritik bilgileri madde madde listele. 15-25 madde. Her madde 1-2 cümle, somut bilgi.]
+- [Kritik bilgi 1]
+- [Kritik bilgi 2]
 
-## 💡 Somut Örnekler ve Uygulamalar
-Her ana konu için gerçek mühendislik örneği ver.
+## 🔄 Karşılaştırmalar
+[Birbirine karıştırılan kavramları tablo halinde sun. Yoksa "(bu materyalde karşılaştırmalı tablo gerekmiyor)" yaz.]
+
+| Kavram A | Kavram B |
+|----------|----------|
+| ... | ... |
+
+## ⚠️ Sık Yapılan Hatalar
+[Materyalde "dikkat", "Achtung", "Note" denen yerleri ve sık karışan noktaları listele. En az 5-10 madde.]
+- [Hata/karışıklık 1]: [Doğrusu nedir]
 
 Materyal:
 ${t}`,
@@ -4767,9 +4784,9 @@ KURALLAR:
 - HER SAYFA için ayrı bölüm yaz — HİÇBİR SAYFAYI ATLAMA
 - Slaytın yapısını koru: bullet ise bullet, başlık ise başlık, formül ise formül
 - Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı — birleştirme, kısaltma yapma
-- Teknik terimleri orijinal dilde tut, **parantez içinde Türkçesini ekle**: \`Streckgrenze (akma sınırı)\`
+- Teknik terimleri orijinal dilde tut, parantez içinde Türkçesini ekle: Streckgrenze (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Slaytta üstü kapalı geçilmiş, hocanın anlattığı varsayılan yerlerde 1-2 cümlelik **açıklama** ekle ki öğrenci anlasın
+- Slaytta üstü kapalı geçilmiş, hocanın anlattığı varsayılan yerlerde 1-2 cümlelik açıklama ekle ki öğrenci anlasın
 - Sayfanın görsel yapısını (liste, tablo, akış) Markdown ile yansıt
 
 Format:
@@ -5218,11 +5235,11 @@ function setMatMode(mode, btn){
 
   if(mode === 'summary'){
     // Kaydedilen özetleri en üstte göster
-    matAddMsgToPanel('summary', 'ai', `<strong>Özet türünü seç:</strong>
+    matAddMsgToPanel('summary', 'ai', `<strong>Hangi tür çıktı istersin?</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-        <button class="mat-option-btn" onclick="matRunVariant('summary','short')">⚡ Kısa — sadece ana noktalar</button>
-        <button class="mat-option-btn" onclick="matRunVariant('summary','detailed')">📚 Detaylı — bölümlü kapsamlı analiz</button>
         <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Sayfa Sayfa Türkçe — slaytı Türkçeleştir + açıkla, kısaltma yapma</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','study')">📚 Çalışma Notu — konu konu defter formatında</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','exam')">⚡ Sınav Modu — formüller, sözlük, kritik bilgiler</button>
       </div>`);
   } else if(mode === 'quiz'){
     matAddMsgToPanel('quiz', 'ai', `<strong>Nasıl sorular oluşturayım?</strong>
@@ -5376,6 +5393,12 @@ async function matRunVariant(mode, variant){
     return;
   }
 
+  // ÖZEL DURUM: Sınav Modu — özel kart UI ve flashcard/quiz entegrasyonu
+  if(mode === 'summary' && variant === 'exam'){
+    await matRunExamMode(m, fullContent, CHUNK_SIZE);
+    return;
+  }
+
   if(needsChunking && (mode === 'summary' || mode === 'quiz' || mode === 'flashcard')){
     await matRunVariantChunked(mode, variant, m, fullContent, CHUNK_SIZE);
     return;
@@ -5391,6 +5414,296 @@ async function matRunVariant(mode, variant){
   const content = matFileData?.content || matFileData?.fullContent || m.title;
   const prompt = promptFn(content);
   await matCallAI(prompt, { forcePrompt: true, mode, variant, skipContentAppend: true });
+}
+
+// ===== SINAV MODU =====
+// Damıtılmış sınav cevheri çıkarır: Formüller / Sözlük / Kritik / Karşılaştırma / Hatalar
+// 5 ayrı kart olarak render eder, sözlükten flashcard üretebilir, quiz'e bağlanır.
+async function matRunExamMode(m, fullContent, CHUNK_SIZE){
+  const mode = 'summary';
+  const variant = 'exam';
+  const panel = getPanel(mode);
+  const sessionId = localStorage.getItem('akademix_session');
+  if(!sessionId){
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Giris yapman gerekiyor.</span>');
+    return;
+  }
+
+  matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;font-size:13px;color:var(--muted)">⚡ <strong>Sınav Modu</strong> — Materyalden sınava çıkacak kritik bilgiler damıtılıyor: formüller, kavram sözlüğü, kritik noktalar, karşılaştırmalar, sık yapılan hatalar.</div>');
+
+  const progressEl = document.createElement('div');
+  progressEl.className = 'chunk-progress';
+  progressEl.style.cssText = 'font-size:12px;color:var(--muted);margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;';
+  progressEl.textContent = 'Sınav cevheri çıkarılıyor...';
+  if(panel) panel.appendChild(progressEl);
+
+  let resultMd = '';
+  try {
+    if(fullContent.length > CHUNK_SIZE){
+      resultMd = await matExamChunked(fullContent, CHUNK_SIZE, sessionId, progressEl);
+    } else {
+      const prompt = MAT_PROMPTS.summary.exam(fullContent || m.title);
+      const resp = await fetch(BACKEND_URL + '/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 8000,
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
+        })
+      });
+      const data = await resp.json();
+      if(!resp.ok) throw new Error(data.error || 'Server error: ' + resp.status);
+      resultMd = (data.content || []).map(c => c.text || '').join('');
+    }
+  } catch(e){
+    if(progressEl && progressEl.parentNode) progressEl.remove();
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Hata: ' + e.message + '</span>');
+    return;
+  }
+
+  if(progressEl && progressEl.parentNode) progressEl.remove();
+
+  // Markdown'ı 5 bölüme ayır
+  const sections = parseExamSections(resultMd);
+
+  // Container
+  const examContainer = document.createElement('div');
+  examContainer.className = 'exam-cards-container';
+  examContainer.style.cssText = 'display:flex;flex-direction:column;gap:14px;margin-top:8px;';
+
+  // Üst bilgi şeridi
+  const glossaryCount = (sections.glossary.match(/\*\*[^*]+\*\*/g) || []).length;
+  const criticalLines = sections.critical.split('\n').filter(l => /^\s*[-•*]/.test(l));
+  const summaryBar = document.createElement('div');
+  summaryBar.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;padding:12px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--muted);';
+  summaryBar.innerHTML = '<div>📖 <strong>' + glossaryCount + '</strong> kavram</div>' +
+    '<div>⚡ <strong>' + criticalLines.length + '</strong> kritik nokta</div>' +
+    '<div>📦 Sınav cevheri hazır</div>';
+  examContainer.appendChild(summaryBar);
+
+  // 5 kart
+  const cardConfigs = [
+    { key: 'formulas', icon: '📐', title: 'Formüller ve Sayısal Değerler', color: '#10b981' },
+    { key: 'glossary', icon: '📖', title: 'Kavram Sözlüğü', color: '#3b82f6' },
+    { key: 'critical', icon: '⚡', title: 'Kesin Bilmen Gerekenler', color: '#f59e0b' },
+    { key: 'comparisons', icon: '🔄', title: 'Karşılaştırmalar', color: '#8b5cf6' },
+    { key: 'mistakes', icon: '⚠️', title: 'Sık Yapılan Hatalar', color: '#ef4444' }
+  ];
+
+  cardConfigs.forEach(function(cfg){
+    const content = sections[cfg.key];
+    if(!content || content.trim().length < 5) return;
+    const card = buildExamCard(cfg, content);
+    examContainer.appendChild(card);
+  });
+
+  // Aksiyon barı
+  const actionBar = document.createElement('div');
+  actionBar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:8px;padding-bottom:16px;';
+
+  if(glossaryCount >= 3){
+    const flashBtn = document.createElement('button');
+    flashBtn.className = 'mat-option-btn';
+    flashBtn.style.cssText = 'flex:0 0 auto;font-size:13px;padding:8px 14px;';
+    flashBtn.innerHTML = '🃏 Sözlükten Flashcard Üret';
+    flashBtn.onclick = function(){ examGlossaryToFlashcards(sections.glossary, m); };
+    actionBar.appendChild(flashBtn);
+  }
+
+  const quizBtn = document.createElement('button');
+  quizBtn.className = 'mat-option-btn';
+  quizBtn.style.cssText = 'flex:0 0 auto;font-size:13px;padding:8px 14px;';
+  quizBtn.innerHTML = '✏️ Bu Konularda Kendini Test Et';
+  quizBtn.onclick = function(){
+    const qBtn = document.querySelector('.mat-mode-btn[data-mode="quiz"]');
+    if(qBtn) setMatMode('quiz', qBtn);
+    setTimeout(function(){ matRunVariant('quiz', 'mixed'); }, 200);
+  };
+  actionBar.appendChild(quizBtn);
+
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'mat-ws-action';
+  resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+  resetBtn.textContent = '↺ Yeniden Oluştur';
+  resetBtn.onclick = function(){ matResetMode(mode); };
+  actionBar.appendChild(resetBtn);
+
+  examContainer.appendChild(actionBar);
+  if(panel) panel.appendChild(examContainer);
+
+  if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, resultMd, { variant: 'exam' });
+  matModeReady[mode] = true;
+  showToast('Sınav modu hazır!');
+}
+
+// Markdown'ı 5 bölüme ayır
+function parseExamSections(md){
+  const sections = { formulas: '', glossary: '', critical: '', comparisons: '', mistakes: '' };
+  const patterns = [
+    { key: 'formulas', regex: /##\s*📐[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i },
+    { key: 'glossary', regex: /##\s*📖[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i },
+    { key: 'critical', regex: /##\s*⚡[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i },
+    { key: 'comparisons', regex: /##\s*🔄[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i },
+    { key: 'mistakes', regex: /##\s*⚠️[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i }
+  ];
+  patterns.forEach(function(p){
+    const match = md.match(p.regex);
+    if(match) sections[p.key] = match[1].trim();
+  });
+  return sections;
+}
+
+// Tek kart oluştur (collapsible)
+function buildExamCard(cfg, content){
+  const card = document.createElement('div');
+  card.className = 'exam-card';
+  card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-left:4px solid ' + cfg.color + ';border-radius:12px;overflow:hidden;';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:12px 16px;background:linear-gradient(90deg,' + cfg.color + '15,transparent);cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;';
+  header.innerHTML = '<div style="display:flex;align-items:center;gap:10px;font-weight:600;"><span style="font-size:18px;">' + cfg.icon + '</span><span>' + cfg.title + '</span></div><span class="exam-card-toggle" style="color:var(--muted);transition:transform 0.2s;">▼</span>';
+
+  const body = document.createElement('div');
+  body.className = 'exam-card-body';
+  body.style.cssText = 'padding:14px 16px;font-size:14px;line-height:1.6;';
+  body.innerHTML = matMd(content);
+
+  let collapsed = false;
+  header.addEventListener('click', function(){
+    collapsed = !collapsed;
+    body.style.display = collapsed ? 'none' : 'block';
+    const t = header.querySelector('.exam-card-toggle');
+    if(t) t.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+  });
+
+  card.appendChild(header);
+  card.appendChild(body);
+  return card;
+}
+
+// Büyük dosya için chunked exam
+async function matExamChunked(fullContent, chunkSize, sessionId, progressEl){
+  const chunks = [];
+  for(let i = 0; i < fullContent.length; i += chunkSize){
+    chunks.push(fullContent.substring(i, i + chunkSize));
+  }
+
+  const partialResults = [];
+
+  for(let ci = 0; ci < chunks.length; ci++){
+    progressEl.textContent = 'Bölüm ' + (ci+1) + '/' + chunks.length + ' analiz ediliyor...';
+    const prompt = MAT_PROMPTS.summary.exam(chunks[ci]);
+    const MAX_RETRIES = 3;
+    let attempt = 0;
+    let success = false;
+    while(attempt <= MAX_RETRIES && !success){
+      try {
+        const resp = await fetch(BACKEND_URL + '/api/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 8000,
+            messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
+          })
+        });
+        const data = await resp.json();
+        if(!resp.ok) throw new Error(data.error || 'Server error: ' + resp.status);
+        const text = (data.content || []).map(c => c.text || '').join('');
+        partialResults.push(text);
+        success = true;
+      } catch(e){
+        const msg = String(e.message || '').toLowerCase();
+        const isRateLimit = msg.indexOf('quota') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('retry in') >= 0 || msg.indexOf('429') >= 0;
+        if(isRateLimit && attempt < MAX_RETRIES){
+          const retryMatch = String(e.message || '').match(/retry in (\d+(?:\.\d+)?)\s*s/i);
+          let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 30000;
+          if(waitMs > 90000) waitMs = 90000;
+          attempt++;
+          progressEl.textContent = 'Rate limit — ' + Math.round(waitMs/1000) + 'sn bekleniyor (' + attempt + '/' + MAX_RETRIES + ')...';
+          await new Promise(function(r){ setTimeout(r, waitMs); });
+          continue;
+        }
+        throw e;
+      }
+    }
+    if(ci < chunks.length - 1) await new Promise(function(r){ setTimeout(r, 3500); });
+  }
+
+  progressEl.textContent = 'Sonuçlar birleştiriliyor...';
+  const merged = { formulas: [], glossary: [], critical: [], comparisons: [], mistakes: [] };
+  partialResults.forEach(function(md){
+    const s = parseExamSections(md);
+    Object.keys(merged).forEach(function(k){ if(s[k]) merged[k].push(s[k]); });
+  });
+
+  return '## 📐 Formüller ve Sayısal Değerler\n' + merged.formulas.join('\n\n') +
+    '\n\n## 📖 Kavram Sözlüğü\n' + merged.glossary.join('\n\n') +
+    '\n\n## ⚡ Kesin Bilmen Gerekenler\n' + merged.critical.join('\n\n') +
+    '\n\n## 🔄 Karşılaştırmalar\n' + merged.comparisons.join('\n\n') +
+    '\n\n## ⚠️ Sık Yapılan Hatalar\n' + merged.mistakes.join('\n\n');
+}
+
+// Sözlük markdown'ından flashcard üret (AI'a sormadan)
+function examGlossaryToFlashcards(glossaryMd, material){
+  const cards = [];
+  const lines = glossaryMd.split('\n');
+  for(let li = 0; li < lines.length; li++){
+    const line = lines[li];
+    const m = line.match(/\*\*([^*]+)\*\*\s*[:：]\s*(.+)/);
+    if(m){
+      const front = m[1].trim();
+      const back = m[2].trim();
+      if(front && back && back.length > 5){
+        cards.push({ front: front, back: back });
+      }
+    }
+  }
+
+  if(cards.length === 0){
+    showToast('Sözlükten flashcard çıkarılamadı.');
+    return;
+  }
+
+  const fcBtn = document.querySelector('.mat-mode-btn[data-mode="flashcard"]');
+  if(fcBtn) setMatMode('flashcard', fcBtn);
+
+  setTimeout(function(){
+    const panel = getPanel('flashcard');
+    if(!panel) return;
+    panel.innerHTML = '';
+    matModeReady['flashcard'] = true;
+
+    if(typeof matFlashcards !== 'undefined'){
+      try { matFlashcards = cards; matFlashIdx = 0; } catch(e){}
+    }
+
+    matAddMsgToPanel('flashcard', 'ai', '<div style="padding:12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;font-size:13px;color:var(--muted)">🃏 Sınav Modu sözlüğünden <strong>' + cards.length + ' flashcard</strong> üretildi.</div>');
+
+    if(typeof renderFlashcards === 'function'){
+      try { renderFlashcards(cards); } catch(e){ console.warn(e); }
+    } else if(typeof matRenderFlashcards === 'function'){
+      try { matRenderFlashcards(cards); } catch(e){ console.warn(e); }
+    } else {
+      const cardWrap = document.createElement('div');
+      cardWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+      cards.forEach(function(c, i){
+        const cardEl = document.createElement('div');
+        cardEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;';
+        cardEl.innerHTML = '<div style="font-weight:600;margin-bottom:6px;">' + (i+1) + '. ' + c.front + '</div><div style="color:var(--muted);font-size:14px;">' + c.back + '</div>';
+        cardWrap.appendChild(cardEl);
+      });
+      panel.appendChild(cardWrap);
+    }
+
+    if(material && (material._sbId || material.id)){
+      const fcMd = cards.map(function(c){ return '**' + c.front + '**: ' + c.back; }).join('\n\n');
+      sbSaveAiOutput(material._sbId || material.id, 'flashcard', fcMd, { source: 'exam_glossary', count: cards.length });
+    }
+
+    showToast(cards.length + ' flashcard hazır!');
+  }, 200);
 }
 
 async function matRunPagedSummary(m, pages){
@@ -5649,13 +5962,25 @@ Format:
 
 Materyal Bölümü:
 ${chunks[i]}`;
-      } else if(variant === 'short'){
-        chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe özetle. Bu materyal bölümü ${i+1}/${chunks.length}. bölümdür.
+      } else if(variant === 'study'){
+        chunkPrompt = `Sen TAÜ Mühendislik Fakültesi öğrencileri için çalışma notu hazırlıyorsun. Bu materyal bölümü ${i+1}/${chunks.length}. numaralı bölümdür.
 
-Bu bölümün ana noktalarını 3-4 paragrafla özetle. Teknik terimleri: **Almanca** (Türkçe) formatında yaz. Formüller aynen korunsun.
+Bu bölümdeki konuları KONU-KONU grupla ve her konu için defter formatında not yaz. Sayfa-sayfa değil, KONU-KONU.
+
+Format her konu için:
+## 📚 [Konu başlığı]
+**Tanım:** [...]
+**Neden önemli:** [...]
+**Nasıl çalışır:** [...]
+**Örnek:** [...]
+
+Teknik terimleri: **Almanca/İngilizce** (Türkçe) formatında. Formüller aynen korunsun.
 
 Materyal Bölümü:
 ${chunks[i]}`;
+      } else if(variant === 'exam'){
+        // Exam normalde matRunExamMode'dan akar; buraya düşerse de doğru prompt çalışsın
+        chunkPrompt = MAT_PROMPTS.summary.exam(chunks[i]);
       } else {
         chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe kapsamlı analiz yaz. Bu materyal bölümü ${i+1}/${chunks.length}. bölümdür.
 
