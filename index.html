@@ -5006,76 +5006,6 @@ Materyal:
 ${t}`,
   },
   quiz: {
-    easy_mc: (t) => `Sen TAÜ mühendislik sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe sorular yaz.
-
-Aşağıdaki materyalden 10 KOLAY çoktan seçmeli soru oluştur.
-
-KURALLAR:
-- Sorular materyalin farklı konularından olsun — aynı konudan 2'den fazla soru yapma
-- Teknik terimleri Türkçe yaz, gerekirse Almancasını parantezde ekle
-- Şıklar kısa ve net olsun
-- Yanlış şıklar makul ama açıkça yanlış olsun
-- SOUR değil SORU yaz
-
-Her soru için AYNEN bu formatı kullan:
-
-SORU: [soru metni]
-A) [seçenek]
-B) [seçenek]
-C) [seçenek]
-D) [seçenek]
-CEVAP: [harf]
-AÇIKLAMA: [neden doğru, 1-2 cümle]
-
----
-
-Materyal:
-${t}`,
-
-    hard_mc: (t) => `Sen TAÜ mühendislik final sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe sorular yaz.
-
-Aşağıdaki materyalden 10 ZOR çoktan seçmeli soru oluştur.
-
-KURALLAR:
-- Sorular analiz, hesaplama, karşılaştırma veya uygulama gerektirsin — bilgi sorma değil
-- Şıklar birbirine yakın ve yanıltıcı olsun — "hiçbiri" veya "hepsi" gibi kolaylaştırıcı şıklar kullanma
-- Formül veya sayısal hesap gerektiren en az 3 soru olsun
-- Her sorunun açıklaması neden diğer şıkların yanlış olduğunu da anlatsın
-
-Her soru için AYNEN bu formatı kullan:
-
-SORU: [soru metni]
-A) [seçenek]
-B) [seçenek]
-C) [seçenek]
-D) [seçenek]
-CEVAP: [harf]
-AÇIKLAMA: [detaylı açıklama — neden doğru ve neden diğerleri yanlış]
-
----
-
-Materyal:
-${t}`,
-
-    open: (t) => `Sen TAÜ mühendislik sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe sorular yaz.
-
-Aşağıdaki materyalden 8 açık uçlu sınav sorusu oluştur. Kolay (2) → Orta (3) → Zor (3) sırasıyla.
-
-KURALLAR:
-- Sorular gerçekten materyale özgü olsun — genel mühendislik bilgisi sorma
-- Model cevaplar en az 4-5 cümle olsun, formül varsa dahil et
-- Zor sorular hesaplama, tasarım veya karşılaştırma gerektirsin
-
-Her soru için AYNEN bu formatı kullan:
-
-SORU: [soru metni] [Kolay/Orta/Zor]
-MODEL_CEVAP: [kapsamlı model cevap]
-
----
-
-Materyal:
-${t}`,
-
     mixed: (t) => `Sen TAÜ mühendislik sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe karışık sınav oluştur.
 
 5 çoktan seçmeli + 3 doğru/yanlış + 3 açık uçlu soru oluştur.
@@ -5524,10 +5454,7 @@ function setMatMode(mode, btn){
   } else if(mode === 'quiz'){
     matAddMsgToPanel('quiz', 'ai', `<strong>Nasıl sorular oluşturayım?</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-        <button class="mat-option-btn" onclick="matRunVariant('quiz','easy_mc')">🟢 Kolay — çoktan seçmeli</button>
-        <button class="mat-option-btn" onclick="matRunVariant('quiz','hard_mc')">🔴 Zor — çoktan seçmeli</button>
-        <button class="mat-option-btn" onclick="matRunVariant('quiz','open')">✏️ Açık uçlu sorular</button>
-        <button class="mat-option-btn" onclick="matRunVariant('quiz','mixed')">🎯 Karışık — tüm türler</button>
+        <button class="mat-option-btn" onclick="matRunVariant('quiz','mixed')">🎯 Karışık Sınav — çoktan seçmeli + açık uçlu</button>
       </div>`);
   } else if(mode === 'flashcard'){
     matAddMsgToPanel('flashcard', 'ai', `<strong>Flashcard oluştur:</strong>
