@@ -5124,6 +5124,13 @@ async function loadMatHistory(materialId){
         return;
       }
 
+      // ÖZEL DURUM: Çalışma Notu — konu kartlarını yeniden oluştur
+      if(mode === 'summary' && variant === 'study'){
+        renderStudyFromMarkdown(latest.content, panel, materials.find(x => (x._sbId || x.id) === materialId));
+        matModeReady[mode] = true;
+        return;
+      }
+
       // Diğer modlar için klasik render
       const html = mode === 'flashcard'
         ? matBuildFlashcards(latest.content)
@@ -5415,6 +5422,13 @@ async function matRunVariant(mode, variant){
   // ÖZEL DURUM: Sınav Modu — özel kart UI ve flashcard/quiz entegrasyonu
   if(mode === 'summary' && variant === 'exam'){
     await matRunExamMode(m, fullContent, CHUNK_SIZE);
+    return;
+  }
+
+  // ÖZEL DURUM: Çalışma Notu — iki aşamalı (önce konu tespiti, sonra her konu için ayrı yazım)
+  // PDF'de sayfa-bazlı yapı varsa kullan (en kaliteli), yoksa tüm metni gönder
+  if(mode === 'summary' && variant === 'study' && Array.isArray(matFileData?.pages) && matFileData.pages.length > 0){
+    await matRunStudyMode(m, matFileData.pages);
     return;
   }
 
@@ -5791,6 +5805,350 @@ function examGlossaryToFlashcards(glossaryMd, material){
 
     showToast(cards.length + ' flashcard hazır!');
   }, 200);
+}
+
+// ===== ÇALIŞMA NOTU (iki aşamalı) =====
+// Aşama 1: Konuları tespit et (sayfa başlığı + ilk 200 karakter ile)
+// Aşama 2: Her konu için ilgili sayfaları toplayıp ayrı ayrı yaz
+// Sonuç: Konu konu collapsible kartlar + flashcard/quiz entegrasyonu
+async function matRunStudyMode(m, pages){
+  const mode = 'summary';
+  const panel = getPanel(mode);
+  const sessionId = localStorage.getItem('akademix_session');
+  if(!sessionId){
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Giriş yapman gerekiyor.</span>');
+    return;
+  }
+
+  // Bilgi mesajı
+  matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:13px;color:var(--muted)">📚 <strong>Çalışma Notu</strong> — Materyalin konuları tespit edilip her konu için defter formatında not hazırlanıyor. İki aşamalı: önce konular bulunur, sonra ayrı ayrı yazılır.</div>');
+
+  const progressEl = document.createElement('div');
+  progressEl.className = 'chunk-progress';
+  progressEl.style.cssText = 'font-size:12px;color:var(--muted);margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;';
+  progressEl.textContent = 'Aşama 1/2: Konular tespit ediliyor...';
+  if(panel) panel.appendChild(progressEl);
+
+  let topics = [];
+  try {
+    topics = await studyDetectTopics(pages, sessionId);
+  } catch(e){
+    if(progressEl && progressEl.parentNode) progressEl.remove();
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Konu tespit hatası: ' + e.message + '</span>');
+    return;
+  }
+
+  if(!topics || topics.length === 0){
+    if(progressEl && progressEl.parentNode) progressEl.remove();
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Konu bulunamadı. Materyal çok kısa veya yapısı belirsiz olabilir.</span>');
+    return;
+  }
+
+  // Aşama 2: Her konu için ayrı yazım
+  const writtenTopics = []; // [{title, content, pages}]
+  for(let ti = 0; ti < topics.length; ti++){
+    const topic = topics[ti];
+    progressEl.textContent = 'Aşama 2/2: Konu ' + (ti+1) + '/' + topics.length + ' yazılıyor: ' + topic.title;
+    try {
+      const content = await studyWriteTopic(topic, pages, sessionId, progressEl, ti+1, topics.length);
+      writtenTopics.push({ title: topic.title, content: content, pages: topic.pages });
+    } catch(e){
+      writtenTopics.push({ title: topic.title, content: '_[Bu konu işlenirken hata: ' + e.message + ']_', pages: topic.pages });
+    }
+    // Konular arası gecikme — rate limit için
+    if(ti < topics.length - 1) await new Promise(function(r){ setTimeout(r, 3500); });
+  }
+
+  if(progressEl && progressEl.parentNode) progressEl.remove();
+
+  // Birleştirilmiş markdown (kayıt için)
+  const combinedMd = writtenTopics.map(function(t){
+    const pageRange = (t.pages && t.pages.length) ? ' (Sayfa ' + t.pages.join(', ') + ')' : '';
+    return '## 📚 ' + t.title + pageRange + '\n' + t.content;
+  }).join('\n\n');
+
+  // UI render
+  renderStudyTopics(writtenTopics, panel, m);
+
+  // Kaydet
+  if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, combinedMd, { variant: 'study' });
+  matModeReady[mode] = true;
+  showToast(writtenTopics.length + ' konu hazır!');
+}
+
+// Aşama 1: Konu tespiti — sayfa başlığı + ilk 200 karakter
+async function studyDetectTopics(pages, sessionId){
+  // Her sayfanın özet snippet'ini çıkar
+  const snippets = pages.map(function(p){
+    const text = (p.text || '').trim();
+    // İlk satırı başlık olarak al, sonraki 200 karakteri özet olarak
+    const lines = text.split('\n').filter(function(l){ return l.trim().length > 0; });
+    const heading = (lines[0] || '').trim().substring(0, 100);
+    const snippet = text.substring(0, 250).replace(/\s+/g, ' ').trim();
+    return 'SAYFA ' + p.page + ' | Başlık: "' + heading + '" | İçerik: ' + snippet;
+  }).join('\n');
+
+  const prompt = `Sen bir ders materyalini analiz ediyorsun. Aşağıda her sayfanın başlığı ve ilk içeriği var. Bu materyaldeki ANA KONULARI tespit et.
+
+GÖREV: Bu materyal hangi konuları işliyor? Her konunun hangi sayfalarda olduğunu da belirt.
+
+KURALLAR:
+- Konular ayrık olmalı — aynı konuyu iki kez listeleme
+- Bir konu birden fazla sayfaya yayılabilir, hepsini birleştir
+- Kapak, içindekiler, kaynakça gibi ana konu olmayan sayfaları "Giriş" veya "Kaynaklar" gibi tek konuya topla — ya da hiç dahil etme
+- Konu sayısı 5-15 arası olsun (çok az ise birleştirme bozulur, çok fazla ise konu bütünlüğü gider)
+- Konu başlıkları Türkçe olsun (orijinal Almanca başlık varsa parantezde ekle)
+
+ÇIKTI FORMATI — KESİN JSON, başka hiçbir şey yazma:
+{
+  "topics": [
+    {"title": "Konu başlığı (Almanca/İngilizce orijinal)", "pages": [3,4,5]},
+    {"title": "İkinci konu", "pages": [6,7]}
+  ]
+}
+
+Materyal sayfaları:
+${snippets}`;
+
+  const resp = await fetch(BACKEND_URL + '/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
+    })
+  });
+  const data = await resp.json();
+  if(!resp.ok) throw new Error(data.error || 'Server error: ' + resp.status);
+  const text = (data.content || []).map(function(c){ return c.text || ''; }).join('');
+
+  // JSON parse — bazen ```json ... ``` ile gelebilir
+  let cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
+  // İlk { ile son } arasını al
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if(firstBrace >= 0 && lastBrace > firstBrace){
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch(e){
+    throw new Error('Konu listesi parse edilemedi (JSON hatası): ' + e.message);
+  }
+
+  if(!parsed.topics || !Array.isArray(parsed.topics)) return [];
+  // Sayfa numaralarını filtrele (gerçek sayfa olanları al)
+  const validPages = new Set(pages.map(function(p){ return p.page; }));
+  return parsed.topics.map(function(t){
+    return {
+      title: String(t.title || '').trim(),
+      pages: (Array.isArray(t.pages) ? t.pages : []).map(function(p){ return parseInt(p); }).filter(function(p){ return validPages.has(p); })
+    };
+  }).filter(function(t){ return t.title && t.pages.length > 0; });
+}
+
+// Aşama 2: Tek konu için ilgili sayfaları topla, defter formatında yaz
+async function studyWriteTopic(topic, pages, sessionId, progressEl, currentIdx, totalCount){
+  // İlgili sayfaların metnini topla
+  const relevantPages = pages.filter(function(p){ return topic.pages.indexOf(p.page) >= 0; });
+  const combinedText = relevantPages.map(function(p){
+    return '===== SAYFA ' + p.page + ' =====\n' + p.text;
+  }).join('\n\n');
+
+  const prompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademisyensin. Aşağıda "${topic.title}" konusunun materyaldeki sayfaları verilmiştir.
+
+GÖREV: Bu konu için defter formatında, derinlemesine bir çalışma notu yaz. Bu sayfalardaki bilgileri birleştir, slaytın atladığı yerleri tamamla.
+
+KURALLAR:
+- Türkçe yaz, teknik terimleri orijinal dilde tut, parantez içinde Türkçe ekle: **Streckgrenze** (akma sınırı)
+- Formüller, sayısal değerler, birimler aynen korunsun
+- Slaytta üstü kapalı geçilmiş yerleri tamamla — bağlam ekle
+- Sadece bu konuyu yaz, başka konulara dalma
+- Konu başlığını TEKRAR YAZMA (zaten dışarıda var)
+
+ZORUNLU FORMAT:
+
+**Tanım:** [Konunun net tanımı, 2-3 cümle]
+
+**Neden önemli:** [Bu kavram nerede karşımıza çıkar, ne işe yarar — 2-3 cümle]
+
+**Nasıl çalışır / mekanizma:** [Detaylı açıklama, formüllerle. En önemli bölüm.]
+
+**Anahtar formüller:** [Varsa formüller listesi, her birinin altında ne için kullanıldığı]
+
+**Örnek:** [Somut bir mühendislik örneği]
+
+**Kavramlar ve terimler:** [Bu konudaki teknik terimler — **Almanca/İngilizce** (Türkçe): tanım]
+
+**Sınava hazırlık ipucu:** [Bu konudan sınavda ne tür sorular gelebilir]
+
+Sayfalar:
+${combinedText}`;
+
+  const MAX_RETRIES = 3;
+  let attempt = 0;
+  while(attempt <= MAX_RETRIES){
+    try {
+      const resp = await fetch(BACKEND_URL + '/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 6000,
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
+        })
+      });
+      const data = await resp.json();
+      if(!resp.ok) throw new Error(data.error || 'Server error: ' + resp.status);
+      return (data.content || []).map(function(c){ return c.text || ''; }).join('');
+    } catch(e){
+      const msg = String(e.message || '').toLowerCase();
+      const isRateLimit = msg.indexOf('quota') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('retry in') >= 0 || msg.indexOf('429') >= 0;
+      if(isRateLimit && attempt < MAX_RETRIES){
+        const retryMatch = String(e.message || '').match(/retry in (\d+(?:\.\d+)?)\s*s/i);
+        let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 30000;
+        if(waitMs > 90000) waitMs = 90000;
+        attempt++;
+        if(progressEl) progressEl.textContent = 'Rate limit — ' + Math.round(waitMs/1000) + 'sn bekleniyor (Konu ' + currentIdx + '/' + totalCount + ', deneme ' + attempt + '/' + MAX_RETRIES + ')...';
+        await new Promise(function(r){ setTimeout(r, waitMs); });
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error('Max retry aşıldı');
+}
+
+// Tek konu kartı oluştur (collapsible)
+function buildStudyCard(topic, idx, total){
+  const card = document.createElement('div');
+  card.className = 'study-card';
+  card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-left:4px solid #6366f1;border-radius:12px;overflow:hidden;';
+
+  const pageBadge = (topic.pages && topic.pages.length)
+    ? '<span style="font-size:11px;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:10px;margin-left:8px;">📄 ' + topic.pages.join(', ') + '</span>'
+    : '';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:12px 16px;background:linear-gradient(90deg,#6366f115,transparent);cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;';
+  header.innerHTML = '<div style="display:flex;align-items:center;gap:10px;font-weight:600;flex:1;min-width:0;">' +
+    '<span style="font-size:13px;color:var(--muted);min-width:24px;">' + idx + '/' + total + '</span>' +
+    '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;">📚 ' + topic.title + '</span>' +
+    pageBadge +
+    '</div><span class="study-card-toggle" style="color:var(--muted);transition:transform 0.2s;margin-left:8px;">▼</span>';
+
+  const body = document.createElement('div');
+  body.className = 'study-card-body';
+  body.style.cssText = 'padding:14px 16px;font-size:14px;line-height:1.6;';
+  body.innerHTML = matMd(topic.content);
+
+  let collapsed = false;
+  header.addEventListener('click', function(){
+    collapsed = !collapsed;
+    body.style.display = collapsed ? 'none' : 'block';
+    const t = header.querySelector('.study-card-toggle');
+    if(t) t.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+  });
+
+  card.appendChild(header);
+  card.appendChild(body);
+  return card;
+}
+
+// Konuları kart olarak render et + aksiyon butonları
+function renderStudyTopics(topics, panel, material){
+  if(!panel) return;
+
+  const studyContainer = document.createElement('div');
+  studyContainer.className = 'study-cards-container';
+  studyContainer.style.cssText = 'display:flex;flex-direction:column;gap:14px;margin-top:8px;';
+
+  // Üst bilgi şeridi
+  const totalPages = new Set();
+  topics.forEach(function(t){ (t.pages || []).forEach(function(p){ totalPages.add(p); }); });
+  const summaryBar = document.createElement('div');
+  summaryBar.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;padding:12px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--muted);';
+  summaryBar.innerHTML = '<div>📚 <strong>' + topics.length + '</strong> konu</div>' +
+    '<div>📄 <strong>' + totalPages.size + '</strong> sayfa kapsanıyor</div>' +
+    '<div>📦 Çalışma notu hazır</div>';
+  studyContainer.appendChild(summaryBar);
+
+  // Konu kartları
+  topics.forEach(function(t, i){
+    studyContainer.appendChild(buildStudyCard(t, i+1, topics.length));
+  });
+
+  // Aksiyon barı
+  const actionBar = document.createElement('div');
+  actionBar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:8px;padding-bottom:16px;';
+
+  // Tümünü genişlet/daralt
+  const expandAllBtn = document.createElement('button');
+  expandAllBtn.className = 'mat-ws-action';
+  expandAllBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+  let allCollapsed = false;
+  expandAllBtn.textContent = '▼ Tümünü Daralt';
+  expandAllBtn.onclick = function(){
+    allCollapsed = !allCollapsed;
+    studyContainer.querySelectorAll('.study-card-body').forEach(function(b){ b.style.display = allCollapsed ? 'none' : 'block'; });
+    studyContainer.querySelectorAll('.study-card-toggle').forEach(function(t){ t.style.transform = allCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'; });
+    expandAllBtn.textContent = allCollapsed ? '▶ Tümünü Genişlet' : '▼ Tümünü Daralt';
+  };
+  actionBar.appendChild(expandAllBtn);
+
+  const quizBtn = document.createElement('button');
+  quizBtn.className = 'mat-option-btn';
+  quizBtn.style.cssText = 'flex:0 0 auto;font-size:13px;padding:8px 14px;';
+  quizBtn.innerHTML = '✏️ Bu Konularda Kendini Test Et';
+  quizBtn.onclick = function(){
+    const qBtn = document.querySelector('.mat-mode-btn[data-mode="quiz"]');
+    if(qBtn) setMatMode('quiz', qBtn);
+    setTimeout(function(){ matRunVariant('quiz', 'mixed'); }, 200);
+  };
+  actionBar.appendChild(quizBtn);
+
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'mat-ws-action';
+  resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+  resetBtn.textContent = '↺ Yeniden Oluştur';
+  resetBtn.onclick = function(){ matResetMode('summary'); };
+  actionBar.appendChild(resetBtn);
+
+  studyContainer.appendChild(actionBar);
+  panel.appendChild(studyContainer);
+}
+
+// Yenileme sonrası kayıtlı çalışma notu markdown'ından kart UI'ını rebuild et
+function renderStudyFromMarkdown(combinedMd, panel, material){
+  if(!panel) return;
+  // Markdown formatı: ## 📚 [Başlık] (Sayfa X, Y, Z)
+  // Sonrası içerik (sonraki ## 📚 başlığına kadar)
+  const topics = [];
+  // Başlık + sayfaları yakala
+  const headingRegex = /^##\s*📚\s+(.+?)(?:\s*\(Sayfa\s+([0-9,\s]+)\))?\s*$/gm;
+  const matches = [];
+  let match;
+  while((match = headingRegex.exec(combinedMd)) !== null){
+    matches.push({ index: match.index, title: match[1].trim(), pagesStr: match[2] || '', endIndex: match.index + match[0].length });
+  }
+  for(let i = 0; i < matches.length; i++){
+    const start = matches[i].endIndex;
+    const end = (i + 1 < matches.length) ? matches[i+1].index : combinedMd.length;
+    const content = combinedMd.substring(start, end).trim();
+    const pages = matches[i].pagesStr.split(',').map(function(s){ return parseInt(s.trim()); }).filter(function(n){ return !isNaN(n); });
+    topics.push({ title: matches[i].title, content: content, pages: pages });
+  }
+
+  if(topics.length === 0){
+    // Fallback: düz markdown
+    panel.innerHTML += '<div>' + matMd(combinedMd) + '</div>';
+    return;
+  }
+
+  renderStudyTopics(topics, panel, material);
 }
 
 async function matRunPagedSummary(m, pages){
