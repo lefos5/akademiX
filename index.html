@@ -2392,11 +2392,91 @@ async function sbSaveMaterial(email, mat){
       type: mat.type || 'other',
       description: mat.note || '',
       url: mat.url || mat.fileUrl || '',
-      file_name: mat.fileName || ''
+      file_name: mat.fileName || '',
+      file_hash: mat.fileHash || null
     }
   });
   if(error || !data) return null;
   return data.id;
+}
+
+// SHA-256 hash hesabı — dosya bazlı paylaşımlı cache için
+// Aynı dosyayı yükleyen farklı kullanıcılar aynı hash'e sahip olur,
+// böylece daha önce üretilmiş AI çıktıları (özet, sınav, vb.) tekrar üretilmeden alınır.
+async function computeFileHash(file){
+  try {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const bytes = new Uint8Array(hashBuffer);
+    let hex = '';
+    for(let i = 0; i < bytes.length; i++){
+      hex += bytes[i].toString(16).padStart(2, '0');
+    }
+    return hex;
+  } catch(e){
+    console.warn('[hash] hesaplama başarısız:', e.message);
+    return null;
+  }
+}
+
+// Hash-bazlı paylaşımlı AI cache — kullanıcılar arası
+// (file_hash, mode, variant) anahtarına bakar, varsa içeriği döner, yoksa null
+async function checkSharedCache(fileHash, mode, variant){
+  if(!fileHash) return null;
+  try {
+    const sessionId = localStorage.getItem('akademix_session');
+    const resp = await fetch(BACKEND_URL + '/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+      body: JSON.stringify({
+        table: 'cached_ai_outputs',
+        action: 'select',
+        filters: { file_hash: fileHash, mode: mode, variant: variant || null }
+      })
+    });
+    const data = await resp.json();
+    if(!resp.ok || !data.data || !data.data.length) return null;
+    return data.data[0]; // { content, metadata, created_at }
+  } catch(e){
+    console.warn('[cache] check hatası:', e.message);
+    return null;
+  }
+}
+
+// Cache'e yaz — başarılı bir AI üretiminden sonra çağrılır (ilk üreten kazanır)
+async function saveSharedCache(fileHash, mode, variant, content, metadata){
+  if(!fileHash || !content) return;
+  try {
+    const sessionId = localStorage.getItem('akademix_session');
+    const resp = await fetch(BACKEND_URL + '/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+      body: JSON.stringify({
+        table: 'cached_ai_outputs',
+        action: 'insert',
+        data: {
+          file_hash: fileHash,
+          mode: mode,
+          variant: variant || null,
+          content: content,
+          metadata: metadata || {}
+        }
+      })
+    });
+    // UNIQUE constraint hatası gelirse (zaten var) sessizce geç —
+    // bu, "ilk üreten kazanır" mantığını otomatik sağlar.
+    if(!resp.ok){
+      const data = await resp.json().catch(() => ({}));
+      const msg = String(data.error || '').toLowerCase();
+      if(msg.includes('duplicate') || msg.includes('unique')){
+        // Beklenen durum, log'a düşmeden geç
+        return;
+      }
+      console.warn('[cache] save hatası:', data.error);
+    }
+  } catch(e){
+    console.warn('[cache] save exception:', e.message);
+  }
 }
 
 async function sbDeleteMaterial(sbId){
@@ -5649,6 +5729,34 @@ async function matRunVariant(mode, variant){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
 
+  // Hash-bazlı paylaşımlı cache check — quiz/flashcard/mindmap için
+  // (summary için her runner kendi içinde check yapıyor)
+  if(m.fileHash && (mode === 'quiz' || mode === 'flashcard' || mode === 'mindmap')){
+    const cached = await checkSharedCache(m.fileHash, mode, variant || null);
+    if(cached && cached.content){
+      const html = mode === 'flashcard' ? matBuildFlashcards(cached.content)
+        : mode === 'quiz' ? matBuildQuiz(cached.content)
+        : mode === 'mindmap' ? matBuildMindmap(cached.content)
+        : matMd(cached.content);
+      matAddMsgToPanel(mode, 'ai', html);
+
+      // Yeniden Oluştur butonu
+      const resetBar = document.createElement('div');
+      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;';
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'mat-ws-action';
+      resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+      resetBtn.textContent = '↺ Yeniden Oluştur';
+      resetBtn.onclick = () => matResetMode(mode);
+      resetBar.appendChild(resetBtn);
+      if(panel) panel.appendChild(resetBar);
+
+      if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, cached.content, { variant: variant, from_cache: true });
+      matModeReady[mode] = true;
+      return;
+    }
+  }
+
   // Büyük dosya kontrolü — fullContent varsa ve 100K'yı aşıyorsa chunk sistemi
   const fullContent = matFileData?.fullContent || matFileData?.content || '';
   const CHUNK_SIZE = 90000; // her chunk max 90K karakter
@@ -5781,6 +5889,17 @@ async function matRunExamMode(m, fullContent, CHUNK_SIZE){
     return;
   }
 
+  // Hash-bazlı paylaşımlı cache check
+  if(m.fileHash){
+    const cached = await checkSharedCache(m.fileHash, mode, variant);
+    if(cached && cached.content){
+      renderExamFromMarkdown(cached.content, panel, m);
+      if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, cached.content, { variant: 'exam', from_cache: true });
+      matModeReady[mode] = true;
+      return;
+    }
+  }
+
   matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;font-size:13px;color:var(--muted)">⚡ <strong>Sınav Modu</strong> — Materyalden sınava çıkacak kritik bilgiler damıtılıyor: formüller, kavram sözlüğü, kritik noktalar, karşılaştırmalar, sık yapılan hatalar.</div>');
 
   const progressEl = document.createElement('div');
@@ -5894,6 +6013,7 @@ async function matRunExamMode(m, fullContent, CHUNK_SIZE){
   setTimeout(function(){ renderRichContent(examContainer); }, 0);
 
   if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, resultMd, { variant: 'exam' });
+  if(m.fileHash) saveSharedCache(m.fileHash, mode, 'exam', resultMd, {});
   matModeReady[mode] = true;
   showToast('Sınav modu hazır!');
 }
@@ -6080,6 +6200,17 @@ async function matRunStudyMode(m, pages){
     return;
   }
 
+  // Hash-bazlı paylaşımlı cache check
+  if(m.fileHash){
+    const cached = await checkSharedCache(m.fileHash, mode, 'study');
+    if(cached && cached.content){
+      renderStudyFromMarkdown(cached.content, panel, m);
+      if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, cached.content, { variant: 'study', from_cache: true });
+      matModeReady[mode] = true;
+      return;
+    }
+  }
+
   // Bilgi mesajı
   matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:13px;color:var(--muted)">📚 <strong>Çalışma Notu</strong> — Materyalin konuları tespit edilip her konu için defter formatında not hazırlanıyor. İki aşamalı: önce konular bulunur, sonra ayrı ayrı yazılır.</div>');
 
@@ -6132,6 +6263,7 @@ async function matRunStudyMode(m, pages){
 
   // Kaydet
   if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, combinedMd, { variant: 'study' });
+  if(m.fileHash) saveSharedCache(m.fileHash, mode, 'study', combinedMd, { topicCount: writtenTopics.length });
   matModeReady[mode] = true;
   showToast(writtenTopics.length + ' konu hazır!');
 }
@@ -6465,6 +6597,40 @@ async function matRunPagedSummary(m, pages){
     return;
   }
 
+  // Hash-bazlı paylaşımlı cache — aynı dosya daha önce işlendiyse direkt göster
+  if(m.fileHash){
+    const cached = await checkSharedCache(m.fileHash, mode, variant);
+    if(cached && cached.content){
+      const html = matMd(cached.content);
+      const msgEl = matAddMsgToPanel(mode, 'ai', html);
+      setTimeout(() => {
+        if(msgEl) attachPageThumbnails(msgEl.querySelector('.mat-msg-bubble'));
+      }, 100);
+
+      // Aksiyon barı
+      const resetBar = document.createElement('div');
+      resetBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;margin-top:8px;padding-bottom:16px;align-items:center;';
+      const dlBtns = buildDownloadButtons(
+        (m.title || 'sayfa-sayfa') + ' - Sayfa Sayfa Türkçe',
+        function(){ return cached.content; },
+        function(){ return msgEl ? msgEl.querySelector('.mat-msg-bubble') : null; }
+      );
+      resetBar.appendChild(dlBtns);
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'mat-ws-action';
+      resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+      resetBtn.textContent = '↺ Yeniden Oluştur';
+      resetBtn.onclick = () => matResetMode(mode);
+      resetBar.appendChild(resetBtn);
+      if(panel) panel.appendChild(resetBar);
+
+      // Kullanıcının kendi ai_outputs'ına da yaz (geçmişinde görsün)
+      if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, cached.content, { variant: 'paged', from_cache: true });
+      matModeReady[mode] = true;
+      return;
+    }
+  }
+
   // Sayfaları 4'erli batch'lere böl — her batch ayrı AI çağrısı
   // (Çeviri+ olduğu için sayfalar uzun olabilir, 4 batch token sınırını aşmaz)
   const PAGES_PER_BATCH = 4;
@@ -6689,6 +6855,8 @@ ${batchText}`;
 
   // Supabase'e kaydet
   if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, combined, { variant: 'paged' });
+  // Paylaşımlı cache'e yaz — aynı dosyayı yükleyen başka kullanıcılar tekrar üretmesin
+  if(m.fileHash) saveSharedCache(m.fileHash, mode, 'paged', combined, { pageCount: pages.length });
   matModeReady[mode] = true;
 
   showToast(`✅ ${pages.length} sayfa özetlendi!`);
@@ -7594,6 +7762,11 @@ Kuralların:
       // Supabase'e kaydet
       if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, result, { variant: opts.variant || null });
 
+      // Paylaşımlı cache'e yaz — quiz/flashcard/mindmap için (summary kendi runner'larında zaten yazıyor)
+      if(m.fileHash && (mode === 'quiz' || mode === 'flashcard' || mode === 'mindmap')){
+        saveSharedCache(m.fileHash, mode, opts.variant || null, result, {});
+      }
+
       // Panel dolu olarak işaretle — sekme değiştirince kaybolmasın
       matModeReady[mode] = true;
 
@@ -8042,7 +8215,12 @@ async function saveMaterial(){
       }
 
       const newMat = { title, course, type:'file', fileName, fileSize, fileUrl, filePath, addedAt: new Date().toISOString() };
-      const sbId = await sbSaveMaterial(currentUserEmail, { title, course, note:'', type:'file', fileName, fileUrl });
+
+      // Dosya hash'i hesapla — aynı dosyayı yükleyen kullanıcılar arası AI çıktısı paylaşımı için
+      const fileHash = await computeFileHash(selectedFile);
+      if(fileHash) newMat.fileHash = fileHash;
+
+      const sbId = await sbSaveMaterial(currentUserEmail, { title, course, note:'', type:'file', fileName, fileUrl, fileHash });
       if(sbId){
         newMat._sbId = sbId;
       } else {
