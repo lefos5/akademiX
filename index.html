@@ -7559,6 +7559,9 @@ function toggleQuizSolution(cardId, btn){
  * PDF'den metin çıkar (pdfjs ile) ve backend'e gönder
  */
 async function ragIndexMaterial(materialSbId, file){
+  // Önce dosya hash'ini hesapla — backend cache check için
+  const fileHash = await computeFileHash(file);
+
   // pdfjs ile metin çıkar — hem birleşik text hem sayfa array'i
   let text = '';
   let pages = [];
@@ -7585,10 +7588,11 @@ async function ragIndexMaterial(materialSbId, file){
   const resp = await fetch(BACKEND_URL + '/api/embed?action=index', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'x-session-id': sessionId },
-    body: JSON.stringify({ material_id: materialSbId, text, pages })
+    body: JSON.stringify({ material_id: materialSbId, text, pages, file_hash: fileHash })
   });
   const data = await resp.json();
   if(!resp.ok) throw new Error(data.error || 'İndeksleme başarısız');
+  if(data.from_cache) console.log('[RAG] Embedding cache hit — HF çağrısı yok');
   return data.indexed || 0;
 }
 
