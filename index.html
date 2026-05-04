@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- Supabase JS kütüphanesi kaldırıldı — artık tüm DB işlemleri backend üzerinden -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs"></script>
 <!-- KaTeX — LaTeX matematik notasyonu render etmek için -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -3457,7 +3457,7 @@ async function studioSend(){
         try{
           if(ext === 'pdf'){
             // PDF: pdfjs ile URL'den metin çıkar
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
             const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
             const maxP = Math.min(pdf.numPages, 40);
             const pages = [];
@@ -5163,7 +5163,7 @@ async function selectMat(idx){
       if(ext === 'pdf'){
         // PDF: pdfjs ile URL'den direkt aç — tüm dosyayı belleğe almadan
         showToast('⏳ PDF analiz ediliyor...');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
         const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
         const rawPages = []; // ham sayfa metni
         const maxPages = Math.min(pdf.numPages, 150);
@@ -5524,7 +5524,7 @@ async function renderPdfPageThumbnail(pageNum, container){
   if(!fileUrl) return;
 
   try{
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
     // Cache pdf document — URL bazlı açma (range request ile, belleği doldurmaz)
     if(!window._pdfThumbCache) window._pdfThumbCache = {};
     let pdf = window._pdfThumbCache[fileUrl];
@@ -7638,7 +7638,7 @@ async function prepareFileForClaude(f){
   if(ext === 'pdf'){
     try {
       const pdfData = f.buffer ? new Uint8Array(f.buffer) : Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
       const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
       let fullText = '';
       const maxPages = Math.min(pdf.numPages, 150);
