@@ -210,7 +210,25 @@
     .sidebar.collapsed .user-info,
     .sidebar.collapsed .signout-btn { display: none; }
     .sidebar.collapsed .semester-badge { display: none; }
-    .sidebar.collapsed #theme-toggle { display: none; }
+    .sidebar.collapsed .theme-toggle-btn {
+      justify-content: center; padding: 10px 0; gap: 0;
+      margin: 0 8px 6px; width: calc(100% - 16px); position: relative;
+      transform: none !important;
+    }
+    .sidebar.collapsed .theme-toggle-btn #theme-label { display: none; }
+    .sidebar.collapsed .theme-toggle-btn::after {
+      content: attr(data-label);
+      position: absolute; left: calc(100% + 10px); top: 50%;
+      transform: translateY(-50%);
+      background: var(--surface3); color: var(--text);
+      font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+      padding: 6px 10px; border-radius: 8px;
+      border: 1px solid var(--border2);
+      white-space: nowrap; pointer-events: none;
+      opacity: 0; transition: opacity 0.15s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 200;
+    }
+    .sidebar.collapsed .theme-toggle-btn:hover::after { opacity: 1; }
   }
 
   .logo {
@@ -1594,6 +1612,20 @@
   .ai-settings-link { font-size:11px; color:var(--muted); text-align:right; display:block; margin-top:6px; cursor:pointer; }
   .ai-settings-link:hover { color:var(--accent2); }
 
+  /* ── TEMA TOGGLE ── */
+  .theme-toggle-btn {
+    display: flex; align-items: center; gap: 11px;
+    margin: 0 12px 6px; padding: 10px 14px;
+    border-radius: 12px; cursor: pointer;
+    font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+    color: var(--muted); background: none; border: none;
+    width: calc(100% - 24px); transition: all 0.2s ease;
+    letter-spacing: 0.1px;
+  }
+  .theme-toggle-btn:hover { background: var(--surface2); color: var(--text2); transform: translateX(2px); }
+  .theme-svg-icon { display: flex; align-items: center; flex-shrink: 0; }
+  .theme-svg-icon svg { width: 16px; height: 16px; }
+
 
   /* ── DOSYA YÜKLEME ── */
   .file-drop-zone {
@@ -1814,15 +1846,8 @@
     </div>
     <button class="signout-btn" onclick="signOut()">✕</button>
   </div>
-  <button id="theme-toggle" onclick="toggleTheme()" style="
-    margin: 0 12px 10px; padding: 9px 14px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; cursor: pointer; color: var(--muted);
-    font-size: 12px; font-weight: 600; font-family: inherit;
-    display: flex; align-items: center; gap: 8px;
-    transition: all 0.2s;
-  ">
-    <span id="theme-icon">☀️</span>
+  <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" data-label="Tema" title="Temayı değiştir">
+    <span id="theme-icon" class="theme-svg-icon"></span>
     <span id="theme-label">Light Tema</span>
   </button>
   <div class="semester-badge">MF Fakültesi<br>Bahar 2025–2026</div>
@@ -8437,22 +8462,27 @@ function toggleTheme(){
   localStorage.setItem('akademix_theme', newTheme);
 }
 
+const _SVG_SUN = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+const _SVG_MOON = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+
 function applyTheme(theme){
+  const icon = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
   if(theme === 'light'){
     document.documentElement.setAttribute('data-theme', 'light');
-    document.getElementById('theme-icon').textContent = '🌙';
-    document.getElementById('theme-label').textContent = 'Dark Tema';
+    if(icon) icon.innerHTML = _SVG_MOON;
+    if(label) label.textContent = 'Dark Tema';
   } else {
     document.documentElement.removeAttribute('data-theme');
-    document.getElementById('theme-icon').textContent = '☀️';
-    document.getElementById('theme-label').textContent = 'Light Tema';
+    if(icon) icon.innerHTML = _SVG_SUN;
+    if(label) label.textContent = 'Light Tema';
   }
 }
 
 // Sayfa yüklenince kayıtlı temayı uygula
 (function(){
   const saved = localStorage.getItem('akademix_theme');
-  if(saved) applyTheme(saved);
+  applyTheme(saved || 'dark');
 })();
 
 window.addEventListener('load',()=>{
