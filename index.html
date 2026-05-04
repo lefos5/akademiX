@@ -5797,7 +5797,7 @@ async function matRunExamMode(m, fullContent, CHUNK_SIZE){
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
         body: JSON.stringify({
-          provider: 'anthropic',
+          mode: 'exam',
           max_tokens: 8000,
           messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
         })
@@ -5963,7 +5963,7 @@ async function matExamChunked(fullContent, chunkSize, sessionId, progressEl){
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
           body: JSON.stringify({
-            provider: 'anthropic',
+            mode: 'exam',
             max_tokens: 8000,
             messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
           })
@@ -6185,7 +6185,7 @@ ${snippets}`;
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
     body: JSON.stringify({
-      provider: 'anthropic',
+      mode: 'study',
       max_tokens: 4000,
       messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
     })
@@ -6296,7 +6296,7 @@ ${combinedText}`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
         body: JSON.stringify({
-          provider: 'anthropic',
+          mode: 'study',
           max_tokens: 6000,
           messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
         })
@@ -6741,7 +6741,7 @@ Kuralların:
     // ---------- AI ÇAĞRISI (RETRY İLE) ----------
     try {
       const result = await callAiWithRetry(sessionId, {
-        provider: 'anthropic',
+        mode: 'paged',
         max_tokens: 8000,
         system: systemPrompt,
         messages: [{role:'user', content: messageContent}]
@@ -6977,7 +6977,7 @@ ${chunks[i]}`;
         method:'POST',
         headers:{'Content-Type':'application/json','x-session-id': sessionId},
         body:JSON.stringify({
-          provider: 'anthropic',
+          mode: 'flashcard',
           max_tokens: maxTokens,
           system: systemPrompt,
           messages:[{role:'user',content:[{type:'text',text:chunkPrompt}]}]
