@@ -5830,6 +5830,18 @@ async function matRunVariant(mode, variant){
   // ÖZEL DURUM: Sayfa sayfa özet — PDF'in gerçek sayfalarını kullan
   // (karakter chunking yerine sayfa-bazlı batch'ler)
   if(mode === 'summary' && variant === 'paged' && Array.isArray(matFileData?.pages) && matFileData.pages.length > 0){
+    // Görsel tabanlı PDF kontrolü — sayfaların %70'inden fazlası boşsa uyar
+    const emptyPages = matFileData.pages.filter(p => !p.text || p.text.trim().length < 20).length;
+    if(emptyPages / matFileData.pages.length > 0.7){
+      const panel = getPanel('summary');
+      const enableBtns = () => { if(panel) panel.querySelectorAll('.mat-option-btn').forEach(b=>{ b.disabled=false; b.style.opacity=''; }); };
+      matAddMsgToPanel('summary', 'ai', `<div style="padding:14px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);border-radius:12px;font-size:13px;">
+        ⚠️ <strong>Bu PDF görsel tabanlı görünüyor</strong> — metin katmanı bulunamadı (${emptyPages}/${matFileData.pages.length} sayfa boş).<br><br>
+        Sayfa sayfa çeviri için PDF'in metin içermesi gerekiyor. Bunun yerine <strong>Çalışma Notu</strong> veya <strong>Sınav Modu</strong>'nu dene — bunlar dosyayı direkt AI'a gönderiyor.
+      </div>`);
+      enableBtns();
+      return;
+    }
     await matRunPagedSummary(m, matFileData.pages);
     return;
   }
@@ -5843,8 +5855,12 @@ async function matRunVariant(mode, variant){
   // ÖZEL DURUM: Çalışma Notu — iki aşamalı (önce konu tespiti, sonra her konu için ayrı yazım)
   // PDF'de sayfa-bazlı yapı varsa kullan (en kaliteli), yoksa tüm metni gönder
   if(mode === 'summary' && variant === 'study' && Array.isArray(matFileData?.pages) && matFileData.pages.length > 0){
-    await matRunStudyMode(m, matFileData.pages);
-    return;
+    const emptyPagesStudy = matFileData.pages.filter(p => !p.text || p.text.trim().length < 20).length;
+    // Görsel tabanlı PDF ise sayfa-bazlı modu atla, fullContent ile devam et
+    if(emptyPagesStudy / matFileData.pages.length <= 0.7){
+      await matRunStudyMode(m, matFileData.pages);
+      return;
+    }
   }
 
   if(needsChunking && (mode === 'summary' || mode === 'quiz' || mode === 'flashcard')){
