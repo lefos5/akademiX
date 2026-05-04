@@ -630,22 +630,6 @@
   .a-time { font-size:11px; color:var(--muted); white-space:nowrap; }
 
 
-  /* ===== NOT KARTLARI ===== */
-  .note-mat-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; transition:all 0.22s ease; position:relative; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
-  .note-mat-card:hover { border-color:rgba(251,146,60,0.5); transform:translateY(-4px); box-shadow:0 12px 36px rgba(251,146,60,0.1); }
-  .note-mat-card .note-body-text { font-size:12px; color:var(--muted); line-height:1.6; white-space:pre-wrap; word-break:break-word; margin-top:6px; flex:1; max-height:120px; overflow:hidden; mask-image:linear-gradient(to bottom, black 60%, transparent 100%); }
-  .note-mat-card .note-body-text.expanded { max-height:none; mask-image:none; }
-  .note-edit-area { width:100%; background:var(--surface2); border:1px solid var(--accent); border-radius:8px; padding:8px 10px; color:var(--text); font-size:12px; font-family:inherit; resize:vertical; min-height:80px; box-sizing:border-box; outline:none; line-height:1.6; margin-top:6px; }
-  /* Not ekleme kartı */
-  .note-add-card { background:var(--surface); border:2px dashed var(--border2); border-radius:14px; padding:18px; transition:all 0.2s; cursor:pointer; }
-  .note-add-card:hover { border-color:var(--accent); background:rgba(14,165,233,0.03); }
-  .note-add-card.open { border-style:solid; border-color:var(--accent); cursor:default; }
-  .note-add-card input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); font-size:13px; font-family:inherit; margin-bottom:8px; box-sizing:border-box; outline:none; }
-  .note-add-card input:focus { border-color:var(--accent); }
-  .note-add-card textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); font-size:12px; font-family:inherit; resize:vertical; min-height:80px; box-sizing:border-box; outline:none; line-height:1.6; }
-  .note-add-card textarea:focus { border-color:var(--accent); }
-
-
   /* ═══════════════════════════════════════
      YENİ MATERYALLER LAYOUT
   ═══════════════════════════════════════ */
@@ -2547,35 +2531,6 @@ async function saveSharedCache(fileHash, mode, variant, content, metadata){
 async function sbDeleteMaterial(sbId){
   if(!sbId) return;
   await apiDb({ table: 'materials', action: 'delete', filters: { id: sbId } });
-}
-
-async function sbLoadNotes(email, courseCode){
-  const { data, error } = await apiDb({ table: 'notes', action: 'select', filters: { course: courseCode } });
-  if(error || !data) return null;
-  return data.map(r => ({ id: r.id, title: r.title, body: r.body, _sbId: r.id, date: r.created_at ? new Date(r.created_at).toLocaleDateString('tr-TR', {day:'numeric', month:'short', year:'numeric'}) : '' }));
-}
-
-async function sbSaveNote(email, courseCode, note){
-  if(note._sbId){
-    const { error } = await apiDb({
-      table: 'notes', action: 'update',
-      data: { title: note.title, body: note.body },
-      filters: { id: note._sbId }
-    });
-    return error ? null : note._sbId;
-  } else {
-    const { data, error } = await apiDb({
-      table: 'notes', action: 'insert',
-      data: { course: courseCode, title: note.title || '', body: note.body || '' }
-    });
-    if(error || !data) return null;
-    return data.id;
-  }
-}
-
-async function sbDeleteNote(sbId){
-  if(!sbId) return;
-  await apiDb({ table: 'notes', action: 'delete', filters: { id: sbId } });
 }
 
 // ═══════════════════════════════════════
@@ -4822,152 +4777,6 @@ function saveMaterials(){
 
 const MAT_ICONS = {drive:'📁', youtube:'▶️', web:'🔗', other:'📎'};
 const MAT_COLORS = {drive:'rgba(26,115,232,0.15)', youtube:'rgba(255,0,0,0.15)', web:'rgba(34,211,165,0.15)', other:'rgba(108,99,255,0.15)'};
-
-
-// ===== NOT DEFTERİ =====
-function notesKey(courseCode){
-  const u = safeSessionStorage('guser', null);
-  return 'notes_' + (u ? u.email : 'guest') + '_' + courseCode;
-}
-function loadNotes(courseCode){
-  // localStorage'dan senkron dön (render için)
-  return safeLocalStorage(notesKey(courseCode), []);
-}
-async function loadNotesFromSupabase(courseCode){
-  if(!currentUserEmail || !sb) return null;
-  const sbNotes = await sbLoadNotes(currentUserEmail, courseCode);
-  if(sbNotes !== null){
-    try{ localStorage.setItem(notesKey(courseCode), JSON.stringify(sbNotes)); }catch(e){}
-    return sbNotes;
-  }
-  return null;
-}
-function saveNotes(courseCode, notes){
-  try { localStorage.setItem(notesKey(courseCode), JSON.stringify(notes)); } catch(e){}
-}
-async function syncNoteToSupabase(courseCode, note){
-  if(!currentUserEmail || !sb) return;
-  const sbId = await sbSaveNote(currentUserEmail, courseCode, note);
-  if(sbId) note._sbId = sbId;
-}
-
-function buildNoteAddCard(){
-  return `
-    <div class="note-add-card" id="note-add-card">
-      <div id="note-add-prompt" style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleNoteAddForm()">
-        <div class="mat-type-icon" style="background:rgba(245,158,11,0.15)">📝</div>
-        <div><div style="font-size:13px;font-weight:600;color:var(--text2)">Yeni Not Ekle</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Tıkla ve yazmaya başla</div></div>
-      </div>
-      <div id="note-add-form" style="display:none;margin-top:14px">
-        <input type="text" id="new-note-title" placeholder="Başlık (isteğe bağlı)">
-        <textarea id="new-note-body" placeholder="Notunu buraya yaz..."></textarea>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="add-btn" style="flex:1;justify-content:center" id="note-save-btn">💾 Kaydet</button>
-          <button class="mat-link" style="padding:8px 14px;border:none;cursor:pointer" onclick="toggleNoteAddForm()">İptal</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function buildNoteCard(n, courseCode){
-  const preview = n.body.length > 100 ? n.body.substring(0,100) + '…' : n.body;
-  return `
-    <div class="note-mat-card" id="note-card-${n.id}">
-      <div class="mat-card-top">
-        <div class="mat-type-icon" style="background:rgba(245,158,11,0.15)">📝</div>
-        <button class="mat-del" data-note-del="${n.id}" data-note-course="${escHtml(courseCode)}" title="Sil">✕</button>
-      </div>
-      <h4>${escHtml(n.title || 'Not')}</h4>
-      <div class="mat-course-tag" style="color:rgba(245,158,11,0.9)">${escHtml(n.date)}</div>
-      <div class="note-body-text">${escHtml(preview)}</div>
-      <div style="display:flex;gap:6px;margin-top:10px;flex-direction:column">
-        <button class="mat-link" style="justify-content:center;border:none;cursor:pointer" data-note-view="${n.id}" data-note-course="${escHtml(courseCode)}">📖 Görüntüle / Düzenle</button>
-      </div>
-    </div>`;
-}
-
-function toggleNoteAddForm(){
-  const form = document.getElementById('note-add-form');
-  const prompt = document.getElementById('note-add-prompt');
-  const card = document.getElementById('note-add-card');
-  if(!form) return;
-  const isOpen = form.style.display !== 'none';
-  form.style.display = isOpen ? 'none' : 'block';
-  prompt.style.display = isOpen ? 'flex' : 'none';
-  if(card) card.classList.toggle('open', !isOpen);
-  if(!isOpen){
-    setTimeout(() => {
-      const t = document.getElementById('new-note-title');
-      if(t) t.focus();
-    }, 50);
-    // Kaydet butonuna event ekle
-    const btn = document.getElementById('note-save-btn');
-    if(btn){
-      const filter = document.getElementById('mat-filter').value;
-      btn.onclick = () => addNote(filter);
-    }
-  }
-}
-
-function addNote(courseCode){
-  const titleEl = document.getElementById('new-note-title');
-  const bodyEl = document.getElementById('new-note-body');
-  if(!titleEl || !bodyEl) return;
-  const body = bodyEl.value.trim();
-  if(!body){ showToast('❌ Not içeriği boş olamaz.'); return; }
-  const notes = loadNotes(courseCode);
-  notes.unshift({
-    id: Date.now(),
-    title: titleEl.value.trim(),
-    body,
-    date: new Date().toLocaleDateString('tr-TR', {day:'numeric', month:'short', year:'numeric'})
-  });
-  saveNotes(courseCode, notes);
-  renderMaterials();
-  showToast('✅ Not eklendi!');
-}
-
-function deleteNoteConfirm(courseCode, id){
-  if(!confirm('Bu notu silmek istediğine emin misin?')) return;
-  saveNotes(courseCode, loadNotes(courseCode).filter(n => n.id !== id));
-  renderMaterials();
-  showToast('🗑️ Not silindi.');
-}
-
-// ── Not görüntüleme/düzenleme modalı ──
-let noteViewerCourse = null;
-let noteViewerID = null;
-
-function openNoteViewer(courseCode, id){
-  const notes = loadNotes(courseCode);
-  const n = notes.find(n => n.id === id);
-  if(!n) return;
-  noteViewerCourse = courseCode;
-  noteViewerID = id;
-  document.getElementById('nv-title-input').value = n.title || '';
-  document.getElementById('nv-body-input').value = n.body;
-  document.getElementById('nv-date').textContent = n.date;
-  document.getElementById('nv-modal').classList.add('open');
-  document.getElementById('nv-body-input').focus();
-}
-
-function saveNoteViewer(){
-  if(!noteViewerCourse || !noteViewerID) return;
-  const notes = loadNotes(noteViewerCourse);
-  const n = notes.find(n => n.id === noteViewerID);
-  if(!n) return;
-  n.title = document.getElementById('nv-title-input').value.trim();
-  n.body = document.getElementById('nv-body-input').value.trim();
-  if(!n.body){ showToast('❌ Not boş olamaz.'); return; }
-  saveNotes(noteViewerCourse, notes);
-  document.getElementById('nv-modal').classList.remove('open');
-  renderMaterials();
-  showToast('✅ Not kaydedildi!');
-}
-
-function closeNoteViewer(){
-  document.getElementById('nv-modal').classList.remove('open');
-}
 
 
 // ═══════════════════════════════════════
@@ -8537,7 +8346,6 @@ window.addEventListener('load',()=>{
         {el: document.getElementById('mat-modal'), close: closeMatModal},
         {el: document.getElementById('file-viewer-modal'), close: closeFileViewer},
         {el: document.getElementById('exam-popup'), close: closeExamPopup},
-        {el: document.getElementById('nv-modal'), close: closeNoteViewer},
         {el: document.getElementById('setup-overlay'), close: ()=> document.getElementById('setup-overlay').classList.remove('open')},
       ];
       for(const m of modals){
@@ -8584,21 +8392,6 @@ window.addEventListener('load',()=>{
     }
   });
 
-  // Not kartları (mat-messages ve notes alanları) — event delegation
-  document.body.addEventListener('click', e => {
-    // Not sil
-    const delBtn = e.target.closest('[data-note-del]');
-    if(delBtn){
-      deleteNoteConfirm(delBtn.dataset.noteCourse, parseInt(delBtn.dataset.noteDel));
-      return;
-    }
-    // Not görüntüle
-    const viewBtn = e.target.closest('[data-note-view]');
-    if(viewBtn){
-      openNoteViewer(viewBtn.dataset.noteCourse, parseInt(viewBtn.dataset.noteView));
-      return;
-    }
-  });
 });
 </script>
 
@@ -8634,30 +8427,6 @@ window.addEventListener('load',()=>{
     </div>
   </div>
 
-  <!-- NOT GÖRÜNTÜLEYİCİ MODAL -->
-  <div class="ai-modal-overlay" id="nv-modal" onclick="if(event.target===this)closeNoteViewer()">
-    <div class="ai-modal" style="width:640px;max-width:95vw;max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;font-size:18px">📝</div>
-          <div>
-            <div style="font-size:13px;font-weight:700">Notu Görüntüle / Düzenle</div>
-            <div id="nv-date" style="font-size:11px;color:var(--muted);margin-top:1px"></div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="add-btn" style="padding:7px 16px;font-size:12px" onclick="saveNoteViewer()">💾 Kaydet</button>
-          <button class="ai-modal-close" style="position:static" onclick="closeNoteViewer()">✕</button>
-        </div>
-      </div>
-      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px">
-        <input id="nv-title-input" type="text" placeholder="Başlık (isteğe bağlı)"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-weight:600;font-family:'Outfit',sans-serif;outline:none;box-sizing:border-box">
-        <textarea id="nv-body-input" placeholder="Not içeriği..."
-          style="width:100%;flex:1;min-height:380px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;line-height:1.8;resize:vertical;outline:none;box-sizing:border-box"></textarea>
-      </div>
-    </div>
-  </div>
 
 </body>
 </html>
