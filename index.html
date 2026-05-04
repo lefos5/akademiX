@@ -193,43 +193,32 @@
       position: absolute; top: 5px; right: 6px;
       font-size: 8px; padding: 1px 3px; min-width: 13px;
     }
-    .sidebar.collapsed .nav-item::after {
-      content: attr(data-label);
-      position: absolute; left: calc(100% + 10px); top: 50%;
-      transform: translateY(-50%);
-      background: var(--surface3); color: var(--text);
-      font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif;
-      padding: 6px 10px; border-radius: 8px;
-      border: 1px solid var(--border2);
-      white-space: nowrap; pointer-events: none;
-      opacity: 0; transition: opacity 0.15s;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 200;
-    }
-    .sidebar.collapsed .nav-item:hover::after { opacity: 1; }
+    .sidebar.collapsed .nav { overflow-x: hidden; }
     .sidebar.collapsed .user-card { justify-content: center; padding: 8px 0; }
     .sidebar.collapsed .user-info,
     .sidebar.collapsed .signout-btn { display: none; }
     .sidebar.collapsed .semester-badge { display: none; }
     .sidebar.collapsed .theme-toggle-btn {
       justify-content: center; padding: 10px 0; gap: 0;
-      margin: 0 8px 6px; width: calc(100% - 16px); position: relative;
+      margin: 0 8px 6px; width: calc(100% - 16px);
       transform: none !important;
     }
     .sidebar.collapsed .theme-toggle-btn #theme-label { display: none; }
-    .sidebar.collapsed .theme-toggle-btn::after {
-      content: attr(data-label);
-      position: absolute; left: calc(100% + 10px); top: 50%;
-      transform: translateY(-50%);
-      background: var(--surface3); color: var(--text);
-      font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif;
-      padding: 6px 10px; border-radius: 8px;
-      border: 1px solid var(--border2);
-      white-space: nowrap; pointer-events: none;
-      opacity: 0; transition: opacity 0.15s;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 200;
-    }
-    .sidebar.collapsed .theme-toggle-btn:hover::after { opacity: 1; }
+    .sidebar.collapsed .theme-svg-icon svg { width: 18px; height: 18px; }
   }
+
+  /* Rail tooltip — JS tarafından body'e ekleniyor, overflow sorununu bypass eder */
+  .rail-tooltip {
+    position: fixed; z-index: 9999; pointer-events: none;
+    background: var(--surface3); color: var(--text);
+    font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+    padding: 6px 10px; border-radius: 8px;
+    border: 1px solid var(--border2);
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    animation: tooltipFadeIn 0.12s ease;
+  }
+  @keyframes tooltipFadeIn { from { opacity:0; transform:translateX(-4px) translateY(-50%); } to { opacity:1; transform:translateX(0) translateY(-50%); } }
 
   .logo {
     padding: 28px 22px 22px;
@@ -8435,6 +8424,33 @@ function toggleDesktopSidebar(){
   const collapsed = sidebar.classList.toggle('collapsed');
   document.body.classList.toggle('sidebar-collapsed', collapsed);
   try { localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0'); } catch(e){}
+  // Tooltip'leri aktif/pasif et
+  _railTooltipsEnabled = collapsed;
+}
+
+// ── RAIL TOOLTIP SİSTEMİ ──
+// CSS ::after kullanmak nav'da yatay scroll yaratıyor çünkü opacity:0 olsa da
+// layout genişliğini etkiliyor. Bunun yerine body'e fixed pozisyonlu div ekliyoruz.
+let _railTooltipsEnabled = false;
+let _railTip = null;
+function initRailTooltips(){
+  const targets = document.querySelectorAll('.nav-item[data-label], .theme-toggle-btn[data-label]');
+  targets.forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      if(!_railTooltipsEnabled || window.innerWidth <= 768) return;
+      const rect = el.getBoundingClientRect();
+      _railTip = document.createElement('div');
+      _railTip.className = 'rail-tooltip';
+      _railTip.textContent = el.dataset.label;
+      _railTip.style.left = (rect.right + 10) + 'px';
+      _railTip.style.top = (rect.top + rect.height / 2) + 'px';
+      _railTip.style.transform = 'translateY(-50%)';
+      document.body.appendChild(_railTip);
+    });
+    el.addEventListener('mouseleave', () => {
+      if(_railTip){ _railTip.remove(); _railTip = null; }
+    });
+  });
 }
 
 // Sayfa yüklenince state'i geri yükle
@@ -8443,8 +8459,12 @@ function toggleDesktopSidebar(){
     if(localStorage.getItem('sidebar_collapsed') === '1' && window.innerWidth > 768){
       document.querySelector('.sidebar')?.classList.add('collapsed');
       document.body.classList.add('sidebar-collapsed');
+      _railTooltipsEnabled = true;
     }
   } catch(e){}
+  // Tooltip listener'larını her durumda bağla (enabled flag kontrol eder)
+  document.addEventListener('DOMContentLoaded', initRailTooltips);
+  if(document.readyState !== 'loading') initRailTooltips();
 })();
 
 // Sidebar'daki nav-item tıklanınca mobilde kapat
