@@ -9,7 +9,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- Supabase JS kütüphanesi kaldırıldı — artık tüm DB işlemleri backend üzerinden -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs"></script>
+<script type="module">
+  // pdf.js 4.x ESM yükleme — global window.pdfjsLib'e bağla (eski 3.x davranışı)
+  import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs')
+    .then(mod => {
+      window.pdfjsLib = mod;
+      window.dispatchEvent(new Event('pdfjs-ready'));
+    })
+    .catch(err => console.error('[pdfjs] Yükleme hatası:', err));
+</script>
 <!-- KaTeX — LaTeX matematik notasyonu render etmek için -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -5163,6 +5171,15 @@ async function selectMat(idx){
       if(ext === 'pdf'){
         // PDF: pdfjs ile URL'den direkt aç — tüm dosyayı belleğe almadan
         showToast('⏳ PDF analiz ediliyor...');
+        // pdf.js yüklenmesini bekle (ESM async import)
+        if (typeof pdfjsLib === 'undefined') {
+          await new Promise(resolve => {
+            if (typeof pdfjsLib !== 'undefined') return resolve();
+            window.addEventListener('pdfjs-ready', resolve, { once: true });
+            // Güvenlik: 5 saniye sonra timeout
+            setTimeout(resolve, 5000);
+          });
+        }
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
         const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
         const rawPages = []; // ham sayfa metni
