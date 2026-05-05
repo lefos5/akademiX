@@ -2263,6 +2263,28 @@ function base64ToArrayBuffer(base64){
   return bytes.buffer;
 }
 
+/**
+ * pdf.js getTextContent().items array'ini düzgün metin haline getirir.
+ * item.hasEOL flag'iyle satır yapısını korur — yoksa header/footer cleaner
+ * ve sentence splitting "tek uzun string" görür ve mantıklı bölme yapamaz.
+ */
+function pdfItemsToText(items){
+  const lines = [];
+  let currentLine = [];
+  for(const item of items){
+    if(item.str) currentLine.push(item.str);
+    if(item.hasEOL){
+      const line = currentLine.join('').trim();
+      if(line) lines.push(line);
+      currentLine = [];
+    }
+  }
+  if(currentLine.length){
+    const line = currentLine.join('').trim();
+    if(line) lines.push(line);
+  }
+  return lines.join('\n');
+}
 
 function escHtml(str){
   if(!str) return '';
@@ -3472,7 +3494,7 @@ async function studioSend(){
             for(let i = 1; i <= maxP; i++){
               const page = await pdf.getPage(i);
               const tc = await page.getTextContent();
-              pages.push(`[Sayfa ${i}] ${tc.items.map(s => s.str).join(' ')}`);
+              pages.push(`[Sayfa ${i}] ${pdfItemsToText(tc.items)}`);
             }
             content = pages.join('\n\n');
             if(content.length > 20000) content = content.substring(0, 20000) + '\n[...metin kısaltıldı]';
@@ -7692,7 +7714,7 @@ async function prepareFileForClaude(f){
       for(let i = 1; i <= maxPages; i++){
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        fullText += `[Sayfa ${i}]\n${textContent.items.map(item => item.str).join(' ')}\n\n`;
+        fullText += `[Sayfa ${i}]\n${pdfItemsToText(textContent.items)}\n\n`;
       }
       if(pdf.numPages > 150) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 150 sayfa analiz edildi]`;
       return { type: 'text', content: fullText.substring(0, 100000), fullContent: fullText, pageCount: pdf.numPages };
