@@ -5209,23 +5209,7 @@ async function selectMat(idx){
         for(let i = 1; i <= maxPages; i++){
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
-          // hasEOL flag'iyle item'ları satırlara böl — header/footer cleaner satır bazında çalışıyor
-          const lines = [];
-          let currentLine = [];
-          for(const item of textContent.items){
-            if(item.str) currentLine.push(item.str);
-            if(item.hasEOL){
-              const line = currentLine.join('').trim();
-              if(line) lines.push(line);
-              currentLine = [];
-            }
-          }
-          // Son satır (hasEOL ile bitmemiş olabilir)
-          if(currentLine.length){
-            const line = currentLine.join('').trim();
-            if(line) lines.push(line);
-          }
-          const pageText = lines.join('\n');
+          const pageText = pdfItemsToText(textContent.items);
           rawPages.push({ page: i, text: pageText });
         }
 
@@ -7634,21 +7618,7 @@ async function ragIndexMaterial(materialSbId, file){
     for(let i = 1; i <= pdf.numPages; i++){
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const lines = [];
-        let currentLine = [];
-        for(const item of textContent.items){
-          if(item.str) currentLine.push(item.str);
-          if(item.hasEOL){
-            const line = currentLine.join('').trim();
-            if(line) lines.push(line);
-            currentLine = [];
-          }
-        }
-        if(currentLine.length){
-          const line = currentLine.join('').trim();
-          if(line) lines.push(line);
-        }
-        const pageText = lines.join('\n');
+        const pageText = pdfItemsToText(textContent.items);
         pageTexts.push(pageText);
         pages.push({ page: i, text: pageText });
       }
