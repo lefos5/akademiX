@@ -7213,15 +7213,22 @@ function sanitizeMermaidCode(raw){
   if(!raw) return '';
   let code = String(raw).trim();
 
+  // HER ZAMAN: diagram tipi satırında başka şey varsa ayır
+  // Örn: "graph TD          A[Foo]" → "graph TD\n  A[Foo]"
+  // Bu squash kontrolünden bağımsız — her kodda çalışsın
+  code = code.replace(
+    /^(graph\s+(?:TD|TB|BT|LR|RL)|flowchart\s+(?:TD|TB|BT|LR|RL)|mindmap|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|gantt|pie|erDiagram|journey|gitGraph)([ \t]+)(\S)/im,
+    function(_, type, _ws, firstChar){
+      return type + '\n  ' + firstChar;
+    }
+  );
+
   // Eğer kod 1-2 satır ama içinde ok varsa, tek satıra sıkıştırılmış demektir
   // Bunu açalım: belirli token'lardan ÖNCE newline ekleyelim
   const lines = code.split('\n');
   const looksSquashed = lines.length <= 3 && (/-->/.test(code) || /^mindmap\s+\w/i.test(code));
 
   if(looksSquashed){
-    // İlk diagram tipini ayır (graph TD, flowchart LR, mindmap, vs.)
-    code = code.replace(/^(graph\s+(?:TD|TB|BT|LR|RL)|flowchart\s+(?:TD|TB|BT|LR|RL)|mindmap|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|gantt|pie|erDiagram|journey|gitGraph)\s+/i, '$1\n');
-
     // " --> " içeren tek satırları bul ve böl
     // Strateji: 4+ boşluk veya tab varsa newline'a çevir (AI bazen indent yerine boşluk kullanır)
     code = code.replace(/[ \t]{4,}/g, '\n  ');
