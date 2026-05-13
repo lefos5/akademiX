@@ -7274,21 +7274,34 @@ async function renderMermaidIn(element){
     let renderError = null;
     let svg = null;
 
+    // Mermaid render() DOM'a geçici element yazar (verilen id ile).
+    // Aynı id ikinci kez kullanılırsa Mermaid 'Syntax error' SVG üretir.
+    // Her çağrı için rastgele id üret, render sonrası artığı temizle.
+    const renderId = 'mm-r' + Math.random().toString(36).substring(2, 12);
+    const cleanupArtifact = (rid) => { const el = document.getElementById(rid); if(el) el.remove(); };
+
     // İlk deneme: temizlenmiş kodla
     try {
-      const result = await window.mermaid.render(id, code);
+      cleanupArtifact(renderId);
+      const result = await window.mermaid.render(renderId, code);
       svg = result.svg;
+      cleanupArtifact(renderId);
       if(result.bindFunctions) result.bindFunctions(targetEl);
     } catch(e){
       renderError = e;
+      cleanupArtifact(renderId);
       // İkinci deneme: orijinal kodla (sanitize bozmuş olabilir)
       if(rawCode !== code){
+        const renderId2 = renderId + 'b';
         try {
-          const result2 = await window.mermaid.render(id + '-r', rawCode);
+          cleanupArtifact(renderId2);
+          const result2 = await window.mermaid.render(renderId2, rawCode);
           svg = result2.svg;
           renderError = null;
+          cleanupArtifact(renderId2);
         } catch(e2){
           renderError = e2;
+          cleanupArtifact(renderId2);
         }
       }
     }
