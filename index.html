@@ -1025,9 +1025,10 @@
 
   /* ── Summary Page Thumbnails ── */
   .summary-page-section {
-    display: flex; gap: 16px; margin: 14px 0;
-    padding: 14px; background: var(--surface2);
-    border: 1px solid var(--border); border-radius: 12px;
+    display: flex; gap: 16px; margin: 20px 0;
+    padding: 18px 20px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px;
+    border-left: 3px solid var(--accent);
   }
   .summary-page-thumb {
     width: 80px; height: 110px; flex-shrink: 0;
@@ -1040,10 +1041,26 @@
   }
   .summary-page-content { flex: 1; min-width: 0; }
   .summary-page-label {
-    font-size: 10px; font-weight: 700; color: var(--accent2);
-    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+    font-size: 11px; font-weight: 700; color: var(--accent2);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
   }
-  .summary-page-text { font-size: 12px; line-height: 1.7; color: var(--text2); }
+  .summary-page-text {
+    font-size: 13px; line-height: 1.8; color: var(--text);
+  }
+  .summary-page-text br + br { display: block; } /* mat-msg-bubble'ın br+br:none'ını iptal et */
+  .summary-page-text strong { color: var(--text); font-weight: 600; }
+  .summary-page-text .md-ul, .summary-page-text .md-ol { margin: 6px 0; }
+  .summary-page-text .md-inline-code {
+    font-size: 12px; padding: 1px 6px;
+    background: var(--surface2); border-radius: 4px;
+    border: 1px solid var(--border); color: var(--accent2);
+  }
+  .summary-page-text .md-h4 {
+    font-size: 12px; font-weight: 700;
+    color: var(--text); margin: 10px 0 4px;
+  }
 
   /* Typing indicator */
   .mat-typing {
@@ -6885,6 +6902,7 @@ KURALLAR:
 - Bullet point ise bullet point olarak, başlık ise başlık olarak yaz
 - Teknik terimleri **orijinal dilde** (Türkçe karşılığı) formatında yaz
 - Formüller, sayısal değerler, birimler aynen korunsun
+- BAŞLIK KALINTILARI: Sayfanın başında ders kodu (örn. "INF204"), üniversite adı, hoca adı, slayt numarası veya "Algoritmalar ve Veri Yapıları II" gibi tekrar eden başlık satırları varsa bunları çıktıya ALMA — bunlar PDF header'ı, slayt içeriği değil. Sadece o sayfanın gerçek içeriğini çevir.
 - Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
 - DİYAGRAM ÇİZİYORSAN: SADECE \`\`\`mermaid ... \`\`\` bloğu kullan. ASLA \`\`\` (düz code) bloğunda ağaç/akış çizme. ASLA /, \\, |, _, - karakterleriyle ASCII art yapma. Eğer mermaid yapmayı bilmiyorsan, diyagram çizmek YERİNE düz metin/madde listesiyle anlat.
 - MERMAID FORMAT KURALLARI:
@@ -7133,9 +7151,11 @@ function matMd(text){
   });
   // Inline kod
   s = s.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
-  // Başlıklar
+  // Başlıklar (uzundan kısaya — regex öncelik için)
+  s = s.replace(/^#### (.+)/gm, '<h5 class="md-h4" style="font-size:12px;color:var(--muted);">$1</h5>');
   s = s.replace(/^### (.+)/gm, '<h4 class="md-h4">$1</h4>');
   s = s.replace(/^## (.+)/gm, '<h3 class="md-h3">$1</h3>');
+  s = s.replace(/^# (.+)/gm, '<h2 class="md-h3" style="font-size:16px;margin-top:8px;">$1</h2>');
   // Bold + italic
   s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
