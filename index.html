@@ -32,14 +32,14 @@
       theme: 'dark',
       securityLevel: 'loose',
       flowchart: {
-        curve: 'basis',
+        curve: 'linear',
         useMaxWidth: true,
-        htmlLabels: true,
-        nodeSpacing: 50,
-        rankSpacing: 60,
-        padding: 20
+        htmlLabels: false,
+        nodeSpacing: 30,
+        rankSpacing: 40,
+        padding: 12,
+        diagramPadding: 8
       },
-      mindmap: { padding: 16, maxNodeWidth: 200 },
       themeVariables: {
         primaryColor: '#1e293b',
         primaryTextColor: '#e2e8f0',
@@ -5052,32 +5052,32 @@ ${t}`,
   chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
   mindmap: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencileri için akademik içerik analiz eden bir uzmansın. Aşağıdaki materyali analiz edip konular arası ilişkileri gösteren bir kavram haritası üret.
 
-ÇIKTI: SADECE geçerli Mermaid mindmap kodu üret, başka HİÇBİR ŞEY yazma. \`\`\`mermaid ile başla \`\`\` ile bitir.
+ÇIKTI: SADECE geçerli Mermaid graph TD kodu üret, başka HİÇBİR ŞEY yazma. \`\`\`mermaid ile başla \`\`\` ile bitir.
 
-Mermaid mindmap syntax kuralları:
-- İlk satır: \`mindmap\`
-- İkinci satır: kök node, parantezli isim: \`  root((Ana Konu))\`
-- Alt seviyeler 4'er boşluk girinti
-- Node şekilleri: \`Konu\` (düz), \`(Konu)\` (oval), \`((Konu))\` (daire), \`[Konu]\` (kare)
-- Türkçe etiketler kullan
-- En az 8, en fazla 20 dal/yaprak olsun
-- Hiyerarşi 3-4 seviyeyi geçmesin
-- Etiketler kısa olsun (1-4 kelime)
+Mermaid graph TD kuralları:
+- İlk satır: \`graph TD\`
+- Her ifade AYRI SATIRDA, 2 boşluk indent
+- Ana konu → alt başlıklar → detaylar şeklinde hiyerarşi
+- Node formatları: \`A[Metin]\` (dikdörtgen), \`A((Metin))\` (daire, sadece kök için), \`A{Metin}\` (eşkenar dörtgen, önemli kavramlar)
+- Bağlantılar: \`A --> B\`
+- Türkçe etiketler kullan, kısa tut (1-5 kelime)
+- En fazla 18 node — daha fazlası diyagramı bozar
+- Hiyerarşi en fazla 3 seviye: kök → kategori → detay
+- Her satır ayrı bağlantı: \`A --> B\` sonra \`A --> C\` (virgülle zincirleme YAPMA)
 
 ÖRNEK:
 \`\`\`mermaid
-mindmap
-  root((Malzeme Bilimi))
-    Mekanik Özellikler
-      Çekme Dayanımı
-      Akma Sınırı
-      Sertlik
-    Yapısal Özellikler
-      Kristal Yapı
-      Tane Boyutu
-    Termal Özellikler
-      Erime Noktası
-      Isı İletkenliği
+graph TD
+  A((Malzeme Bilimi)) --> B[Mekanik Özellikler]
+  A --> C[Yapısal Özellikler]
+  A --> D[Termal Özellikler]
+  B --> B1[Çekme Dayanımı]
+  B --> B2[Akma Sınırı]
+  B --> B3[Sertlik]
+  C --> C1[Kristal Yapı]
+  C --> C2[Tane Boyutu]
+  D --> D1[Erime Noktası]
+  D --> D2[Isı İletkenliği]
 \`\`\`
 
 ÖNEMLİ: Sadece \`\`\`mermaid bloğu döndür. Yorum, açıklama, başka yazı YOK.
@@ -7130,7 +7130,7 @@ function matMd(text){
     // Benzersiz id (her render için farklı olmalı)
     const id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
     // Code'u textarea olarak gömüyoruz, sonra renderMermaidIn() onu işleyecek
-    return `<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="padding:16px;background:var(--surface2);border-radius:10px;margin:12px 0;overflow-x:auto;max-width:100%;"><div style="font-size:11px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">📊 Diyagram</div><div class="md-mermaid-target" style="text-align:center;min-height:100px;display:flex;align-items:center;justify-content:center;">⏳ Diyagram yükleniyor...</div></div></div>`;
+    return `<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="padding:12px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin:10px 0;overflow-x:auto;max-width:100%;"><div style="font-size:10px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">📊 Diyagram</div><div class="md-mermaid-target" style="text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center;">⏳ Diyagram yükleniyor...</div></div></div>`;
   });
 
   // Kod blokları (```)
@@ -7287,13 +7287,22 @@ async function renderMermaidIn(element){
 
     if(svg){
       targetEl.innerHTML = svg;
-      // SVG'nin genişlik/yüksekliğini stretch et — daha okunaklı
+      // SVG boyut kontrolü — kompakt ve okunaklı tut
       const svgEl = targetEl.querySelector('svg');
       if(svgEl){
         svgEl.style.maxWidth = '100%';
         svgEl.style.height = 'auto';
+        svgEl.style.fontSize = '13px';
         svgEl.removeAttribute('width');
-        svgEl.removeAttribute('height');
+        // Çok uzun diyagramlarda max-height sınırla, scroll ver
+        const svgH = svgEl.viewBox?.baseVal?.height || 0;
+        if(svgH > 600){
+          targetEl.style.maxHeight = '500px';
+          targetEl.style.overflowY = 'auto';
+          targetEl.style.overflowX = 'hidden';
+        } else {
+          svgEl.removeAttribute('height');
+        }
       }
       container.setAttribute('data-rendered', '1');
     } else {
