@@ -2475,6 +2475,7 @@ async function sbLoadMaterials(email){
     fileName: r.file_name,
     fileUrl: r.url,
     addedAt: r.created_at,
+    fileHash: r.file_hash || null,
     _sbId: r.id
   }));
 }
