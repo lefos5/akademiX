@@ -2718,9 +2718,13 @@ async function sbLoadStudioMessages(conversationId){
 async function sbCreateRagConversation(materialId, title){
   const { data, error } = await apiDb({
     table: 'rag_conversations', action: 'insert',
-    data: { title, material_ids: materialId ? [materialId] : [] }
+    data: { title, material_ids: materialId ? [materialId] : [], updated_at: new Date().toISOString() }
   });
-  if(error || !data) return null;
+  if(error || !data){
+    console.error('[RAG] Sohbet oluşturulamadı:', error);
+    showToast('❌ Sohbet oluşturulamadı: ' + (error || 'bilinmeyen hata'));
+    return null;
+  }
   return data;
 }
 
@@ -8113,7 +8117,7 @@ async function ragSend(){
   // Yeni sohbetse oluştur
   if(!ragConvId){
     const conv = await sbCreateRagConversation(m._sbId || m.id, '...');
-    if(!conv){ showToast('❌ Sohbet oluşturulamadı.'); return; }
+    if(!conv) return; // hata mesajı sbCreateRagConversation içinde gösteriliyor
     ragConvId = conv.id;
     ragConvList.unshift(conv);
     renderRagConvList(m);
