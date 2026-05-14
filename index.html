@@ -5347,13 +5347,11 @@ async function loadMatHistory(materialId){
           matModeReady[mode] = true;
           return;
         } else {
-          // Eski format — DB'deki kaydı sil, yeniden üret
-          if(materialId) await sbDeleteAiOutputsByType(materialId, mode);
+          // Eski format — kaydı arka planda sil, yeniden üret
+          if(materialId) sbDeleteAiOutputsByType(materialId, mode); // await yok — forEach sync callback
           panel.innerHTML = '';
-          // matRunVariant normal akışına düşmesi için return etme — aşağıdaki setMatMode tetikler
-          // direkt çağır:
           const mat = materials.find(x => (x._sbId || x.id) === materialId);
-          if(mat) { matRunVariant('summary','exam'); return; }
+          if(mat) { setTimeout(() => matRunVariant('summary','exam'), 50); return; }
         }
       }
 
