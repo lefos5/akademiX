@@ -5329,12 +5329,32 @@ async function loadMatHistory(materialId){
         panel.appendChild(dateBadge);
       }
 
-      // ÖZEL DURUM: Sınav Modu — kart UI'ı yeniden oluştur
+      // ÖZEL DURUM: Sınav Modu — JSON sorular varsa quiz UI, yoksa eski kayıt (eski format → sil, yeniden üret)
       const variant = latest.metadata?.variant;
       if(mode === 'summary' && variant === 'exam'){
-        renderExamFromMarkdown(latest.content, panel, materials.find(x => (x._sbId || x.id) === materialId));
-        matModeReady[mode] = true;
-        return;
+        let examQuestions = null;
+        try {
+          const cleaned = latest.content.replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+          const parsed = JSON.parse(cleaned);
+          if(parsed && Array.isArray(parsed.questions)) examQuestions = parsed.questions;
+        } catch(e){}
+
+        if(examQuestions && examQuestions.length > 0){
+          // Yeni format — quiz UI oluştur
+          const mat = materials.find(x => (x._sbId || x.id) === materialId);
+          const container = buildExamQuiz(examQuestions, mat);
+          panel.appendChild(container);
+          matModeReady[mode] = true;
+          return;
+        } else {
+          // Eski format — DB'deki kaydı sil, yeniden üret
+          if(materialId) await sbDeleteAiOutputsByType(materialId, mode);
+          panel.innerHTML = '';
+          // matRunVariant normal akışına düşmesi için return etme — aşağıdaki setMatMode tetikler
+          // direkt çağır:
+          const mat = materials.find(x => (x._sbId || x.id) === materialId);
+          if(mat) { matRunVariant('summary','exam'); return; }
+        }
       }
 
       // ÖZEL DURUM: Çalışma Notu — konu kartlarını yeniden oluştur
@@ -5836,6 +5856,11 @@ async function matRunExamMode(m, fullContent, CHUNK_SIZE){
   if(panel) panel.appendChild(container);
   matModeReady[mode] = true;
   showToast(questions.length + ' soru hazır!');
+
+  // JSON olarak kaydet — sayfa yenilendiğinde quiz UI yeniden kurulsun
+  const jsonStr = JSON.stringify({ questions });
+  if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, jsonStr, { variant: 'exam' });
+  if(m.fileHash) saveSharedCache(m.fileHash, mode, 'exam', jsonStr, {});
 }
 
 function buildExamQuiz(questions, m){
