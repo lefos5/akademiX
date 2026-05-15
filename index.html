@@ -6202,7 +6202,7 @@ async function matExamChunked(fullContent, chunkSize, sessionId, progressEl){
           let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 15000;
           if(waitMs > 90000) waitMs = 90000;
           attempt++;
-          progressEl.textContent = '⏸ Sunucu yoğun — ' + Math.round(waitMs/1000) + 'sn bekleniyor (deneme ' + attempt + '/' + MAX_RETRIES + ')';
+          progressEl.textContent = '⏸ Gemini API limiti — ' + Math.round(waitMs/1000) + 'sn sonra tekrar denenecek (' + attempt + '/' + MAX_RETRIES + ')';
           await new Promise(function(r){ setTimeout(r, waitMs); });
           continue;
         }
@@ -6533,7 +6533,7 @@ ${combinedText}`;
         let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 15000;
         if(waitMs > 90000) waitMs = 90000;
         attempt++;
-        if(progressEl) progressEl.textContent = '⏸ Sunucu yoğun — ' + Math.round(waitMs/1000) + 'sn bekleniyor (Konu ' + currentIdx + '/' + totalCount + ', deneme ' + attempt + '/' + MAX_RETRIES + ')';
+        if(progressEl) progressEl.textContent = '⏸ Gemini API limiti — ' + Math.round(waitMs/1000) + 'sn sonra tekrar denenecek (Konu ' + currentIdx + '/' + totalCount + ', deneme ' + attempt + '/' + MAX_RETRIES + ')';
         await new Promise(function(r){ setTimeout(r, waitMs); });
         continue;
       }
@@ -6968,7 +6968,7 @@ Kuralların:
         messages: [{role:'user', content: messageContent}]
       }, {
         onWait: (waitMs, attempt, maxRetries) => {
-          progressEl.textContent = `⏸ Sunucu yoğun — ${Math.round(waitMs/1000)}sn bekleniyor (deneme ${attempt}/${maxRetries}) — ${kindLabel}Sayfa ${firstPage}-${lastPage}`;
+          progressEl.textContent = `⏸ Gemini API limiti — ${Math.round(waitMs/1000)}sn sonra tekrar denenecek (deneme ${attempt}/${maxRetries}) — ${kindLabel}Sayfa ${firstPage}-${lastPage}`;
         }
       });
 
