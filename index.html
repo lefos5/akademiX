@@ -5869,7 +5869,8 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || 'Server error');
     const text = (data.content || []).map(c => c.text || '').join('');
-    renderExamFromMarkdown(text, panel, m);
+    const msgEl = matAddMsgToPanel(mode, 'ai', matMd(text));
+    if(msgEl) renderRichContent(msgEl);
     matModeReady[mode] = true;
     if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, text, { variant: 'exam_ref' });
     showToast('Sınav referans kartı hazır!');
