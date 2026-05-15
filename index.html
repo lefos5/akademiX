@@ -4940,6 +4940,36 @@ Materyal:
 ${t}`;
     },
 
+    exam_ref: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine sınava hazırlayan deneyimli bir hocasın. Materyal Almanca/İngilizce olabilir — içeriği anlayıp Türkçe sınav referans kartı hazırla.
+
+GÖREV: Materyalden SADECE sınava çıkacak kritik bilgileri damıt. Bu bir özet veya çalışma notu DEĞİL — sınav öncesi son revizyon listesidir.
+
+KURALLAR:
+- Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
+- Formüller, sayısal değerler aynen korunsun
+- Yüzeysel geçme — sınavda işe yarayacak somut bilgi ver
+
+ZORUNLU FORMAT:
+
+## 📐 Formüller ve Sayısal Değerler
+[Tüm formülleri, sabitleri ve sayısal eşikleri listele. Her formülün ne olduğunu ve ne zaman kullanıldığını yaz.]
+
+## 📖 Kavram Sözlüğü
+[Materyaldeki önemli teknik terimleri listele. Format:]
+**[Terim] (Türkçe karşılığı)**: [Tanım — 1-2 cümle]
+
+## ⚡ Kesin Bilmen Gerekenler
+[Sınavda mutlaka çıkacak kritik bilgileri madde madde listele. Her madde 1-2 cümle, somut bilgi.]
+
+## 🔄 Karşılaştırmalar
+[Birbirine karıştırılan kavramları tablo halinde sun.]
+
+## ⚠️ Sık Yapılan Hatalar
+[Dikkat edilmesi gereken noktalar ve sık karışan kavramlar.]
+
+Materyal:
+${t}`,
+
     paged: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden bir akademik tercümansın. Slayt Almanca/İngilizce — bunu Türkçeye çevir + açıkla.
 
 ÖNEMLİ: Bu bir ÖZET DEĞİL, bir ÇEVİRİ+ çalışmasıdır. Slaytı KISALTMA, sadeleştirme. Slaytın söylediği her şeyi Türkçe olarak ver, hatta bazı yerlerde kısa açıklamalarla zenginleştir.
@@ -5519,7 +5549,7 @@ function setMatMode(mode, btn){
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Sayfa Sayfa Türkçe — slaytı Türkçeleştir + açıkla, kısaltma yapma</button>
         <button class="mat-option-btn" onclick="matRunVariant('summary','study')">📚 Çalışma Notu — konu konu defter formatında</button>
-        <button class="mat-option-btn" onclick="matRunVariant('summary','exam')">⚡ Sınav Modu — formüller, sözlük, kritik bilgiler</button>
+        <button class="mat-option-btn" onclick="matRunVariant('summary','exam_ref')">⚡ Sınav Modu — formüller, sözlük, kritik bilgiler</button>
       </div>`);
   } else if(mode === 'quiz'){
     matAddMsgToPanel('quiz', 'ai', `<strong>Nasıl sorular oluşturayım?</strong>
@@ -5701,9 +5731,15 @@ async function matRunVariant(mode, variant){
     return;
   }
 
-  // ÖZEL DURUM: Sınav Modu — özel kart UI ve flashcard/quiz entegrasyonu
+  // ÖZEL DURUM: Sınav Modu (quiz) — JSON sorular
   if(mode === 'summary' && variant === 'exam'){
     await matRunExamMode(m, fullContent, CHUNK_SIZE);
+    return;
+  }
+
+  // ÖZEL DURUM: Sınav Referans Kartı — formüller, sözlük, kritik bilgiler
+  if(mode === 'summary' && variant === 'exam_ref'){
+    await matRunExamRefMode(m, fullContent, CHUNK_SIZE);
     return;
   }
 
@@ -5815,6 +5851,33 @@ function renderExamFromMarkdown(resultMd, panel, material){
 // ===== SINAV MODU =====
 // Damıtılmış sınav cevheri çıkarır: Formüller / Sözlük / Kritik / Karşılaştırma / Hatalar
 // 5 ayrı kart olarak render eder, sözlükten flashcard üretebilir, quiz'e bağlanır.
+async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
+  const mode = 'summary';
+  const panel = getPanel(mode);
+  const sessionId = localStorage.getItem('akademix_session');
+  if(!sessionId){ matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Giriş yapman gerekiyor.</span>'); return; }
+
+  matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;font-size:13px;color:var(--muted)">⚡ <strong>Sınav Referans Kartı</strong> hazırlanıyor...</div>');
+
+  try {
+    const prompt = MAT_PROMPTS.summary.exam_ref(fullContent || m.title);
+    const resp = await fetch(BACKEND_URL + '/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+      body: JSON.stringify({ mode: 'exam', messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
+    });
+    const data = await resp.json();
+    if(!resp.ok) throw new Error(data.error || 'Server error');
+    const text = (data.content || []).map(c => c.text || '').join('');
+    renderExamFromMarkdown(text, panel, m);
+    matModeReady[mode] = true;
+    if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, text, { variant: 'exam_ref' });
+    showToast('Sınav referans kartı hazır!');
+  } catch(e) {
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Hata: ' + e.message + '</span>');
+  }
+}
+
 async function matRunExamMode(m, fullContent, CHUNK_SIZE){
   const mode = 'summary';
   const panel = getPanel(mode);
