@@ -6603,17 +6603,6 @@ function renderStudyTopics(topics, panel, material){
   };
   actionBar.appendChild(expandAllBtn);
 
-  const quizBtn = document.createElement('button');
-  quizBtn.className = 'mat-option-btn';
-  quizBtn.style.cssText = 'flex:0 0 auto;font-size:13px;padding:8px 14px;';
-  quizBtn.innerHTML = '✏️ Bu Konularda Kendini Test Et';
-  quizBtn.onclick = function(){
-    const qBtn = document.querySelector('.mat-mode-btn[data-mode="quiz"]');
-    if(qBtn) setMatMode('quiz', qBtn);
-    setTimeout(function(){ matRunVariant('quiz', 'mixed'); }, 200);
-  };
-  actionBar.appendChild(quizBtn);
-
   // İndirme butonları — markdown'ı topic listesinden rebuild et
   const studyMdBuilder = function(){
     return topics.map(function(t){
