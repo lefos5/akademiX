@@ -5403,6 +5403,13 @@ async function loadMatHistory(materialId){
         return;
       }
 
+      // ÖZEL DURUM: Sınav Modu (referans kartı) — 5 renkli kart UI'ını yeniden oluştur
+      if(mode === 'summary' && variant === 'exam_ref'){
+        renderExamFromMarkdown(latest.content, panel, materials.find(x => (x._sbId || x.id) === materialId));
+        matModeReady[mode] = true;
+        return;
+      }
+
       // Diğer modlar için klasik render
       const html = mode === 'flashcard'
         ? matBuildFlashcards(latest.content)
@@ -5771,6 +5778,51 @@ async function matRunVariant(mode, variant){
   await matCallAI(prompt, { forcePrompt: true, mode, variant, skipContentAppend: true });
 }
 
+// Markdown'ı 5 bölüme ayır (Formüller / Sözlük / Kritik / Karşılaştırma / Hatalar)
+function parseExamSections(md){
+  const sections = { formulas: '', glossary: '', critical: '', comparisons: '', mistakes: '' };
+  const patterns = [
+    { key: 'formulas', regex: /##\s*📐[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i },
+    { key: 'glossary', regex: /##\s*📖[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i },
+    { key: 'critical', regex: /##\s*⚡[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i },
+    { key: 'comparisons', regex: /##\s*🔄[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i },
+    { key: 'mistakes', regex: /##\s*⚠️[^\n]*\n([\s\S]*?)(?=\n##\s|$)/i }
+  ];
+  patterns.forEach(function(p){
+    const match = md.match(p.regex);
+    if(match) sections[p.key] = match[1].trim();
+  });
+  return sections;
+}
+
+// Tek kart oluştur (collapsible, renkli sol-bordür)
+function buildExamCard(cfg, content){
+  const card = document.createElement('div');
+  card.className = 'exam-card';
+  card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-left:4px solid ' + cfg.color + ';border-radius:12px;overflow:hidden;';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:12px 16px;background:linear-gradient(90deg,' + cfg.color + '15,transparent);cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;';
+  header.innerHTML = '<div style="display:flex;align-items:center;gap:10px;font-weight:600;"><span style="font-size:18px;">' + cfg.icon + '</span><span>' + cfg.title + '</span></div><span class="exam-card-toggle" style="color:var(--muted);transition:transform 0.2s;">▼</span>';
+
+  const body = document.createElement('div');
+  body.className = 'exam-card-body';
+  body.style.cssText = 'padding:14px 16px;font-size:14px;line-height:1.6;';
+  body.innerHTML = matMd(content);
+
+  let collapsed = false;
+  header.addEventListener('click', function(){
+    collapsed = !collapsed;
+    body.style.display = collapsed ? 'none' : 'block';
+    const t = header.querySelector('.exam-card-toggle');
+    if(t) t.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+  });
+
+  card.appendChild(header);
+  card.appendChild(body);
+  return card;
+}
+
 // Kayıtlı sınav modu markdown'ından kart UI'ını yeniden oluştur (sayfa yenileme sonrası)
 function renderExamFromMarkdown(resultMd, panel, material){
   if(!panel) return;
@@ -5857,6 +5909,17 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
   const sessionId = localStorage.getItem('akademix_session');
   if(!sessionId){ matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Giriş yapman gerekiyor.</span>'); return; }
 
+  // Hash-bazlı paylaşımlı cache check
+  if(m.fileHash){
+    const cached = await checkSharedCache(m.fileHash, 'summary', 'exam_ref');
+    if(cached && cached.content){
+      renderExamFromMarkdown(cached.content, panel, m);
+      if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, cached.content, { variant: 'exam_ref', from_cache: true });
+      matModeReady[mode] = true;
+      return;
+    }
+  }
+
   matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;font-size:13px;color:var(--muted)">⚡ <strong>Sınav Referans Kartı</strong> hazırlanıyor...</div>');
 
   try {
@@ -5869,10 +5932,10 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || 'Server error');
     const text = (data.content || []).map(c => c.text || '').join('');
-    const msgEl = matAddMsgToPanel(mode, 'ai', matMd(text));
-    if(msgEl) renderRichContent(msgEl);
+    renderExamFromMarkdown(text, panel, m);
     matModeReady[mode] = true;
     if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, text, { variant: 'exam_ref' });
+    if(m.fileHash) saveSharedCache(m.fileHash, 'summary', 'exam_ref', text, {});
     showToast('Sınav referans kartı hazır!');
   } catch(e) {
     matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Hata: ' + e.message + '</span>');
