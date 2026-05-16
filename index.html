@@ -7527,10 +7527,15 @@ Kuralların:
     : [...matChatHistory, {role:'user',content:messageContent}];
 
   try{
+    // forcePrompt akışlarında (quiz/flashcard/mindmap) user prompt'unun kendi rol talimatı var
+    // generic system prompt'u göndermek AI'yı kafa karışıklığına sürüklüyor — sadece chat'te kullan
+    const body = opts.forcePrompt
+      ? { mode, messages: msgs, provider: 'gemini' }
+      : { mode, system: systemPrompt, messages: msgs, provider: 'gemini' };
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-session-id': sessionId},
-      body:JSON.stringify({mode, system:systemPrompt, messages:msgs, provider:'gemini'})
+      body:JSON.stringify(body)
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
