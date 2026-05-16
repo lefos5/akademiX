@@ -5860,26 +5860,6 @@ function renderExamFromMarkdown(resultMd, panel, material){
   const actionBar = document.createElement('div');
   actionBar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:8px;padding-bottom:16px;';
 
-  if(glossaryCount >= 3){
-    const flashBtn = document.createElement('button');
-    flashBtn.className = 'mat-option-btn';
-    flashBtn.style.cssText = 'flex:0 0 auto;font-size:13px;padding:8px 14px;';
-    flashBtn.innerHTML = '🃏 Sözlükten Flashcard Üret';
-    flashBtn.onclick = function(){ examGlossaryToFlashcards(sections.glossary, material); };
-    actionBar.appendChild(flashBtn);
-  }
-
-  const quizBtn = document.createElement('button');
-  quizBtn.className = 'mat-option-btn';
-  quizBtn.style.cssText = 'flex:0 0 auto;font-size:13px;padding:8px 14px;';
-  quizBtn.innerHTML = '✏️ Bu Konularda Kendini Test Et';
-  quizBtn.onclick = function(){
-    const qBtn = document.querySelector('.mat-mode-btn[data-mode="quiz"]');
-    if(qBtn) setMatMode('quiz', qBtn);
-    setTimeout(function(){ matRunVariant('quiz', 'mixed'); }, 200);
-  };
-  actionBar.appendChild(quizBtn);
-
   // İndirme butonları
   const dlBtns = buildDownloadButtons(
     ((material && material.title) || 'sinav-modu') + ' - Sınav Modu',
@@ -6288,54 +6268,6 @@ async function matExamChunked(fullContent, chunkSize, sessionId, progressEl){
     '\n\n## ⚡ Kesin Bilmen Gerekenler\n' + merged.critical.join('\n\n') +
     '\n\n## 🔄 Karşılaştırmalar\n' + merged.comparisons.join('\n\n') +
     '\n\n## ⚠️ Sık Yapılan Hatalar\n' + merged.mistakes.join('\n\n');
-}
-
-// Sözlük markdown'ından flashcard üret (AI'a sormadan)
-function examGlossaryToFlashcards(glossaryMd, material){
-  const cards = [];
-  const lines = glossaryMd.split('\n');
-  for(let li = 0; li < lines.length; li++){
-    const line = lines[li];
-    const m = line.match(/\*\*([^*]+)\*\*\s*[:：]\s*(.+)/);
-    if(m){
-      const front = m[1].trim();
-      const back = m[2].trim();
-      if(front && back && back.length > 5){
-        cards.push({ front: front, back: back });
-      }
-    }
-  }
-
-  if(cards.length === 0){
-    showToast('Sözlükten flashcard çıkarılamadı.');
-    return;
-  }
-
-  const fcBtn = document.querySelector('.mat-mode-btn[data-mode="flashcard"]');
-  if(fcBtn) setMatMode('flashcard', fcBtn);
-
-  setTimeout(function(){
-    const panel = getPanel('flashcard');
-    if(!panel) return;
-    panel.innerHTML = '';
-    matModeReady['flashcard'] = true;
-
-    if(typeof matFlashcards !== 'undefined'){
-      try { matFlashcards = cards; matFlashIdx = 0; } catch(e){}
-    }
-
-    matAddMsgToPanel('flashcard', 'ai', '<div style="padding:12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;font-size:13px;color:var(--muted)">🃏 Sınav Modu sözlüğünden <strong>' + cards.length + ' flashcard</strong> üretildi.</div>');
-
-    // matBuildFlashcards'in beklediği Q:/A: text formatına çevir → normal flip-kart UI'sı ile render et
-    const flashText = cards.map(function(c){ return 'Q: ' + c.front + '\nA: ' + c.back; }).join('\n');
-    matAddMsgToPanel('flashcard', 'ai', matBuildFlashcards(flashText));
-
-    // Materyal kaydındaki flashcard çıktısını da güncelle ki sayfa yenilenince yine flip-kart olarak gelsin
-    const matId = material?._sbId || material?.id;
-    if(matId) sbSaveAiOutput(matId, 'flashcard', flashText, { variant: 'from_exam_glossary' });
-
-    showToast(cards.length + ' flashcard hazır!');
-  }, 100);
 }
 
 // ===== ÇALIŞMA NOTU (iki aşamalı) =====
