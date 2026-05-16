@@ -6326,29 +6326,16 @@ function examGlossaryToFlashcards(glossaryMd, material){
 
     matAddMsgToPanel('flashcard', 'ai', '<div style="padding:12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;font-size:13px;color:var(--muted)">🃏 Sınav Modu sözlüğünden <strong>' + cards.length + ' flashcard</strong> üretildi.</div>');
 
-    if(typeof renderFlashcards === 'function'){
-      try { renderFlashcards(cards); } catch(e){ console.warn(e); }
-    } else if(typeof matRenderFlashcards === 'function'){
-      try { matRenderFlashcards(cards); } catch(e){ console.warn(e); }
-    } else {
-      const cardWrap = document.createElement('div');
-      cardWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
-      cards.forEach(function(c, i){
-        const cardEl = document.createElement('div');
-        cardEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;';
-        cardEl.innerHTML = '<div style="font-weight:600;margin-bottom:6px;">' + (i+1) + '. ' + c.front + '</div><div style="color:var(--muted);font-size:14px;">' + c.back + '</div>';
-        cardWrap.appendChild(cardEl);
-      });
-      panel.appendChild(cardWrap);
-    }
+    // matBuildFlashcards'in beklediği Q:/A: text formatına çevir → normal flip-kart UI'sı ile render et
+    const flashText = cards.map(function(c){ return 'Q: ' + c.front + '\nA: ' + c.back; }).join('\n');
+    matAddMsgToPanel('flashcard', 'ai', matBuildFlashcards(flashText));
 
-    if(material && (material._sbId || material.id)){
-      const fcMd = cards.map(function(c){ return '**' + c.front + '**: ' + c.back; }).join('\n\n');
-      sbSaveAiOutput(material._sbId || material.id, 'flashcard', fcMd, { source: 'exam_glossary', count: cards.length });
-    }
+    // Materyal kaydındaki flashcard çıktısını da güncelle ki sayfa yenilenince yine flip-kart olarak gelsin
+    const matId = material?._sbId || material?.id;
+    if(matId) sbSaveAiOutput(matId, 'flashcard', flashText, { variant: 'from_exam_glossary' });
 
     showToast(cards.length + ' flashcard hazır!');
-  }, 200);
+  }, 100);
 }
 
 // ===== ÇALIŞMA NOTU (iki aşamalı) =====
