@@ -7962,7 +7962,7 @@ Kuralların:
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-session-id': sessionId},
-      body:JSON.stringify({system:systemPrompt,messages:msgs,provider:'gemini'})
+      body:JSON.stringify({mode, system:systemPrompt, messages:msgs, provider:'gemini'})
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
