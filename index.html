@@ -5023,35 +5023,36 @@ ${t}`,
   chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
   mindmap: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencileri için akademik içerik analiz eden bir uzmansın. Aşağıdaki materyali analiz edip konular arası ilişkileri gösteren bir kavram haritası üret.
 
-ÇIKTI: SADECE geçerli Mermaid graph TD kodu üret, başka HİÇBİR ŞEY yazma. \`\`\`mermaid ile başla \`\`\` ile bitir.
+ÇIKTI: SADECE geçerli Mermaid \`graph TD\` kodu üret, başka HİÇBİR ŞEY yazma. \`\`\`mermaid ile başla \`\`\` ile bitir.
+
+⚠️ KRITIK: \`mindmap\` sentaksını ASLA kullanma — sadece \`graph TD\` kullan. Mermaid mindmap parse hatası veriyor.
 
 Mermaid graph TD kuralları:
-- İlk satır: \`graph TD\`
+- İlk satır: \`graph TD\` (mindmap DEĞİL)
 - Her ifade AYRI SATIRDA, 2 boşluk indent
 - Ana konu → alt başlıklar → detaylar şeklinde hiyerarşi
 - Node formatları: \`A[Metin]\` (dikdörtgen), \`A((Metin))\` (daire, sadece kök için), \`A{Metin}\` (eşkenar dörtgen, önemli kavramlar)
-- Bağlantılar: \`A --> B\`
+- Bağlantılar her zaman: \`A --> B\` (ok ile)
 - Türkçe etiketler kullan, kısa tut (1-5 kelime)
+- Node etiketlerinde noktalı virgül, çift tırnak veya köşeli parantez KULLANMA — bunlar parse hatası verir
 - En fazla 18 node — daha fazlası diyagramı bozar
 - Hiyerarşi en fazla 3 seviye: kök → kategori → detay
 - Her satır ayrı bağlantı: \`A --> B\` sonra \`A --> C\` (virgülle zincirleme YAPMA)
 
-ÖRNEK:
+ÖRNEK (BU FORMATTA ÜRET):
 \`\`\`mermaid
 graph TD
-  A((Malzeme Bilimi)) --> B[Mekanik Özellikler]
-  A --> C[Yapısal Özellikler]
-  A --> D[Termal Özellikler]
-  B --> B1[Çekme Dayanımı]
-  B --> B2[Akma Sınırı]
-  B --> B3[Sertlik]
-  C --> C1[Kristal Yapı]
-  C --> C2[Tane Boyutu]
-  D --> D1[Erime Noktası]
-  D --> D2[Isı İletkenliği]
+  A((Rastgele Algoritmalar)) --> B[Las Vegas]
+  A --> C[Monte Carlo]
+  B --> B1[Her zaman doğru]
+  B --> B2[Süre değişken]
+  B --> B3[Örn: Randomize QuickSort]
+  C --> C1[Süre sabit]
+  C --> C2[Hata olasılığı var]
+  C --> C3[Örn: Polinom Karşılaştırma]
 \`\`\`
 
-ÖNEMLİ: Sadece \`\`\`mermaid bloğu döndür. Yorum, açıklama, başka yazı YOK.
+ÖNEMLİ: Sadece \`\`\`mermaid bloğu döndür. Yorum, açıklama, başka yazı YOK. \`mindmap\` kelimesini ASLA yazma.
 
 Materyal:
 ${t}`,
@@ -7158,6 +7159,9 @@ function buildDownloadButtons(materialTitle, getMarkdown, sourceElGetter){
 }
 
 function matBuildMindmap(text){
+  // AI bazen `mindmap` sentaksı üretiyor (prompta rağmen) — graph TD'ye çevir
+  text = convertMindmapToGraphTD(text);
+
   // Mermaid bloğu var mı? (yeni format)
   const mermaidMatch = text.match(/```mermaid\s*\n([\s\S]*?)```/);
   if(mermaidMatch){
@@ -7186,6 +7190,82 @@ function matBuildMindmap(text){
 
   // Son çare: markdown olarak render et
   return matMd(text);
+}
+
+// Mermaid mindmap sentaksını graph TD'ye çevir
+// Indent-based mindmap → explicit edge-based graph
+function convertMindmapToGraphTD(text){
+  // ```mermaid bloğunda veya plain text'te mindmap var mı kontrol et
+  const blockMatch = text.match(/```mermaid\s*\n([\s\S]*?)```/);
+  const content = blockMatch ? blockMatch[1] : text;
+  if(!/^\s*mindmap\s*$/m.test(content)) return text;
+
+  const lines = content.split('\n');
+  // mindmap satırından sonraki içeriği al
+  let startIdx = lines.findIndex(l => /^\s*mindmap\s*$/.test(l));
+  if(startIdx < 0) return text;
+  const bodyLines = lines.slice(startIdx + 1).filter(l => l.trim());
+
+  if(!bodyLines.length) return text;
+
+  // Indent seviyelerini ölç ve hiyerarşi kur
+  const nodes = []; // { id, label, indent, parentId }
+  const stack = []; // { id, indent }
+  let counter = 0;
+  const nextId = () => 'N' + (counter++);
+
+  bodyLines.forEach(line => {
+    const indent = (line.match(/^(\s*)/)?.[1] || '').length;
+    let label = line.trim();
+    let shape = 'rect'; // [..]
+
+    // root((Foo)) → kök node (daire)
+    const rootMatch = label.match(/^root\s*\(\(\s*(.+?)\s*\)\)$/);
+    if(rootMatch){ label = rootMatch[1]; shape = 'circle'; }
+    // ((Foo)) → daire
+    else if(/^\(\(.+?\)\)$/.test(label)){ label = label.slice(2,-2).trim(); shape = 'circle'; }
+    // [Foo] → dikdörtgen (varsayılan)
+    else if(/^\[.+?\]$/.test(label)){ label = label.slice(1,-1).trim(); }
+    // {Foo} → eşkenar dörtgen
+    else if(/^\{.+?\}$/.test(label)){ label = label.slice(1,-1).trim(); shape = 'diamond'; }
+    // (Foo) → yuvarlak köşeli
+    else if(/^\(.+?\)$/.test(label)){ label = label.slice(1,-1).trim(); shape = 'round'; }
+
+    // Mermaid node etiketlerinde sorun çıkaran karakterleri temizle
+    label = label.replace(/[\[\]\{\}\(\)"]/g, '').replace(/\s+/g, ' ').trim();
+    if(!label) return;
+
+    const id = nextId();
+    // Ebeveyni bul (stack'te indent < bu node'un indent'i olan en son node)
+    while(stack.length && stack[stack.length-1].indent >= indent) stack.pop();
+    const parentId = stack.length ? stack[stack.length-1].id : null;
+
+    nodes.push({ id, label, indent, parentId, shape });
+    stack.push({ id, indent });
+  });
+
+  if(!nodes.length) return text;
+
+  // graph TD kodu üret
+  const fmt = (n) => {
+    if(n.shape === 'circle') return `${n.id}((${n.label}))`;
+    if(n.shape === 'diamond') return `${n.id}{${n.label}}`;
+    if(n.shape === 'round') return `${n.id}(${n.label})`;
+    return `${n.id}[${n.label}]`;
+  };
+
+  const lines2 = ['graph TD'];
+  nodes.forEach(n => {
+    if(!n.parentId){
+      // Kök node — tek başına yazılabilir veya ilk edge'de tanımlanır
+      lines2.push(`  ${fmt(n)}`);
+    } else {
+      lines2.push(`  ${n.parentId} --> ${fmt(n)}`);
+    }
+  });
+
+  const newCode = '```mermaid\n' + lines2.join('\n') + '\n```';
+  return blockMatch ? text.replace(blockMatch[0], newCode) : newCode;
 }
 
 function matBuildFlashcards(text){
