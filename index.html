@@ -4908,9 +4908,15 @@ const MAT_PROMPTS = {
 
 GÖREV: Materyali konularına göre grupla ve her konu için defter formatında not yaz. Sayfa-sayfa değil, KONU-KONU organize et.
 
+⚠️ UZUNLUK KURALI: Çıktı KISA ve ÖZLÜ olsun — öğrenci uzun metinden sıkılır.
+- Her konu için toplam 6-10 cümleyi geçme
+- Her bölüm (Tanım, Neden önemli vb.) 1-3 cümle yeter — gereksiz tekrar, dolgu cümle yazma
+- Sadece sınava odaklı somut bilgi ver, "şuna dikkat etmek gerekir, bu önemlidir" gibi boş ifadeler kullanma
+- Materyaldeki konu sayısı azsa az not yaz — yapay olarak konu üretme
+
 KURALLAR:
 - Materyaldeki ana konuları tespit et — slaytın bölümlerini, başlıklarını rehber al
-- Her konuyu derinlemesine açıkla, defterimizdeki ders notları gibi
+- Her konuyu özlü ve net açıkla — uzun ders anlatımı değil, sınava hazırlık notu
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
 - Formüller, sayısal değerler, birimler aynen korunsun
 - Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
@@ -4960,6 +4966,12 @@ ${t}`,
     exam_ref: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine sınava hazırlayan deneyimli bir hocasın. Materyal Almanca/İngilizce olabilir — içeriği anlayıp Türkçe sınav referans kartı hazırla.
 
 GÖREV: Materyalden SADECE sınava çıkacak kritik bilgileri damıt. Bu bir özet veya çalışma notu DEĞİL — sınav öncesi son revizyon listesidir.
+
+⚠️ UZUNLUK KURALI: Bu bir HATIRLATICI — uzun anlatım DEĞİL. Sınav öncesi 15-30 dk göz gezdirilecek bir kart.
+- Her bölüm sıkı tutulsun: gereksiz açıklama, dolgu cümle YOK
+- Kavram tanımları tek cümle olsun
+- Sadece materyalde geçen kritik şeyleri yaz — yapay madde uydurma
+- Materyalde yoksa bölümü "—" işaretiyle boş bırak, doldurmaya çalışma
 
 KURALLAR:
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
