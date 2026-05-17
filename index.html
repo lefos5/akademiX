@@ -5101,10 +5101,13 @@ Mermaid graph TD kuralları:
 - Node formatları: \`A[Metin]\` (dikdörtgen), \`A((Metin))\` (daire, sadece kök için), \`A{Metin}\` (eşkenar dörtgen, önemli kavramlar)
 - Bağlantılar her zaman: \`A --> B\` (ok ile)
 - Türkçe etiketler kullan, kısa tut (1-5 kelime)
-- Node etiketlerinde noktalı virgül, çift tırnak veya köşeli parantez KULLANMA — bunlar parse hatası verir
+- Node etiketlerinde YASAK karakterler: tek tırnak ('), çift tırnak ("), iç parantez (...), noktalı virgül (;), köşeli parantez içinde köşeli parantez. Bunlar parse hatası verir.
+- "A'yı" yerine "A yi" yaz, "(Küçükler, Eşitler)" gibi parantez içine alma — direkt "Küçükler ve Eşitler" yaz
+- Çoklu kaynak edge'i (A & B --> C) KULLANMA — her edge ayrı satır: \`A --> C\` sonra \`B --> C\`
 - En fazla 18 node — daha fazlası diyagramı bozar
 - Hiyerarşi en fazla 3 seviye: kök → kategori → detay
 - Her satır ayrı bağlantı: \`A --> B\` sonra \`A --> C\` (virgülle zincirleme YAPMA)
+- Satır sonuna ; (noktalı virgül) KOYMA
 
 ÖRNEK (BU FORMATTA ÜRET):
 \`\`\`mermaid
@@ -7333,6 +7336,8 @@ function buildDownloadButtons(materialTitle, getMarkdown, sourceElGetter){
 function matBuildMindmap(text){
   // AI bazen `mindmap` sentaksı üretiyor (prompta rağmen) — graph TD'ye çevir
   text = convertMindmapToGraphTD(text);
+  // graph TD çıktısında label'ları sanitize et (tek tırnak, parantez, ; vb. parse hatası verir)
+  text = sanitizeMermaidLabels(text);
 
   // Mermaid bloğu var mı? (yeni format)
   const mermaidMatch = text.match(/```mermaid\s*\n([\s\S]*?)```/);
@@ -7362,6 +7367,71 @@ function matBuildMindmap(text){
 
   // Son çare: markdown olarak render et
   return matMd(text);
+}
+
+// Mermaid graph TD label'larındaki parse-hatası veren karakterleri temizler:
+// - Tek tırnak (A'yı → Ayı)
+// - Çift tırnak ("foo" → foo)
+// - Nested parantez ([... (foo)] → [... foo])
+// - Satır sonu ; karakterleri
+// - & ile multi-source edge: F & C & G --> H → F --> H, C --> H, G --> H
+function sanitizeMermaidLabels(text){
+  const blockMatch = text.match(/```mermaid\s*\n([\s\S]*?)```/);
+  if(!blockMatch) return text;
+  let body = blockMatch[1];
+
+  // Sadece graph/flowchart blokları için (mindmap ayrı handle ediliyor)
+  if(!/^\s*(graph|flowchart)\b/im.test(body)) return text;
+
+  // Bir node'un shape ve label'ını yakala, label içindeki tehlikeli karakterleri temizle.
+  // Node yapıları: `ID[label]`, `ID{label}`, `ID((label))`, `ID(label)`
+  // Sırayla en uzun olandan başlanmalı (((,)) önce, sonra [], {}, sonra ())
+  function cleanLabel(s){
+    // Tek/çift tırnak sil
+    s = s.replace(/['"`]/g, '');
+    // Tüm bracket'leri boşluğa çevir
+    s = s.replace(/[\[\]\{\}\(\)]/g, ' ');
+    // < > parse hatası verir
+    s = s.replace(/[<>]/g, ' ');
+    // Birden fazla boşluğu tekille
+    s = s.replace(/\s+/g, ' ').trim();
+    return s;
+  }
+
+  const cleanLine = (line) => {
+    // Satır sonu ; karakterini sil
+    line = line.replace(/;\s*$/, '');
+
+    // ID((label)) — daire (kök node)
+    line = line.replace(/(\w+)\(\(([^()]*(?:\([^()]*\)[^()]*)*?)\)\)/g, (m, id, lbl) => `${id}((${cleanLabel(lbl)}))`);
+    // ID[label]
+    line = line.replace(/(\w+)\[([^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*?)\]/g, (m, id, lbl) => `${id}[${cleanLabel(lbl)}]`);
+    // ID{label}
+    line = line.replace(/(\w+)\{([^{}]*(?:\{[^{}]*\}[^{}]*)*?)\}/g, (m, id, lbl) => `${id}{${cleanLabel(lbl)}}`);
+    // ID(label) — son, çünkü ID(( ile çakışır
+    line = line.replace(/(\w+)\(([^()]*(?:\([^()]*\)[^()]*)*?)\)/g, (m, id, lbl) => `${id}(${cleanLabel(lbl)})`);
+    return line;
+  };
+
+  const cleanedLines = body.split('\n').map(cleanLine);
+
+  // Multi-source edge'leri ayrıştır: "A & B & C --> D" → "A --> D\n  B --> D\n  C --> D"
+  const expanded = [];
+  cleanedLines.forEach(line => {
+    const m = line.match(/^(\s*)(.+?)\s*(-->|---|-\.->|==>)\s*(.+)$/);
+    if(m && m[2].includes('&')){
+      const indent = m[1];
+      const sources = m[2].split('&').map(s => s.trim()).filter(Boolean);
+      const arrow = m[3];
+      const target = m[4];
+      sources.forEach(src => expanded.push(`${indent}${src} ${arrow} ${target}`));
+    } else {
+      expanded.push(line);
+    }
+  });
+
+  const newBody = expanded.join('\n');
+  return text.replace(blockMatch[0], '```mermaid\n' + newBody + '\n```');
 }
 
 // Mermaid mindmap sentaksını graph TD'ye çevir
