@@ -813,6 +813,36 @@
   .mat-mode-btn:hover { color: var(--text2); }
   .mat-mode-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
 
+  /* Özet variant pills — Sayfa Sayfa / Çalışma Notu / Sınav Modu arası geçiş */
+  .mat-summary-pills {
+    display: flex; gap: 6px; flex-shrink: 0;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    overflow-x: auto;
+  }
+  .mat-summary-pill {
+    padding: 6px 14px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--muted);
+    border-radius: 999px; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .mat-summary-pill:hover { color: var(--text); border-color: var(--accent2); }
+  .mat-summary-pill.active {
+    background: rgba(245,158,11,0.12);
+    color: var(--accent2);
+    border-color: var(--accent2);
+  }
+  .mat-summary-pill .pill-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .mat-summary-pill.has-content .pill-dot { opacity: 1; }
+
   /* Chat messages */
   .mat-messages {
     flex: 1; overflow-y: auto; padding: 20px 24px;
@@ -2066,6 +2096,18 @@
             <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Sınav</button>
             <button class="mat-mode-btn" data-mode="flashcard" onclick="setMatMode('flashcard',this)">🃏 Flashcard</button>
             <button class="mat-mode-btn" data-mode="rag" onclick="setMatMode('rag',this)">🔍 Kaynaktan Sor</button>
+          </div>
+          <!-- Özet variant pill bar — sadece Özet aktifken görünür -->
+          <div class="mat-summary-pills" id="mat-summary-pills" style="display:flex">
+            <button class="mat-summary-pill active" data-variant="paged" onclick="setSummaryVariant('paged')">
+              <span>📄 Sayfa Sayfa</span><span class="pill-dot"></span>
+            </button>
+            <button class="mat-summary-pill" data-variant="study" onclick="setSummaryVariant('study')">
+              <span>📚 Çalışma Notu</span><span class="pill-dot"></span>
+            </button>
+            <button class="mat-summary-pill" data-variant="exam_ref" onclick="setSummaryVariant('exam_ref')">
+              <span>⚡ Sınav Modu</span><span class="pill-dot"></span>
+            </button>
           </div>
           <!-- Her mod için ayrı container — display:none ile gizlenir -->
           <div class="mat-messages" id="mat-panel-summary" style="display:flex;flex-direction:column"></div>
@@ -5123,6 +5165,12 @@ async function selectMat(idx){
   ['summary','quiz','flashcard','chat'].forEach(m => {
     const p = getPanel(m); if(p) p.innerHTML = '';
   });
+  // Özet pill state — varsayılana dön (paged), dot'ları temizle, sonra loadMatHistory bunları doldurur
+  matSummaryVariant = 'paged';
+  document.querySelectorAll('.mat-summary-pill').forEach(p => {
+    p.classList.remove('has-content');
+    p.classList.toggle('active', p.dataset.variant === 'paged');
+  });
   // RAG panelinin statik HTML yapısını silme — sadece içeriğini temizle
   const ragMsgs = document.getElementById('rag-messages');
   if(ragMsgs) ragMsgs.innerHTML = '';
@@ -5316,32 +5364,23 @@ async function loadMatHistory(materialId){
       if(!list.length) return;
       const latest = list[0];
 
+      // ÖZET MODU: Loader render yapmaz — sadece son kullanılan variant'ı set eder,
+      // setMatMode('summary') çağrılınca loadSummaryVariant otomatik render yapacak
+      if(mode === 'summary'){
+        const lastVariant = latest.metadata?.variant;
+        if(['paged','study','exam_ref'].includes(lastVariant)){
+          matSummaryVariant = lastVariant;
+          // Pill UI'sını güncelle
+          document.querySelectorAll('.mat-summary-pill').forEach(p => {
+            p.classList.toggle('active', p.dataset.variant === lastVariant);
+          });
+        }
+        return;
+      }
+
       const panel = getPanel(mode);
       if(!panel) return;
       panel.innerHTML = '';
-
-      // Tarih rozeti
-      if(mode === 'summary'){
-        const dateBadge = document.createElement('div');
-        dateBadge.style.cssText = 'font-size:11px;color:var(--muted);padding:4px 0 8px;text-align:right;';
-        dateBadge.textContent = '📅 ' + new Date(latest.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-        panel.appendChild(dateBadge);
-      }
-
-      // ÖZEL DURUM: Çalışma Notu — konu kartlarını yeniden oluştur
-      const variant = latest.metadata?.variant;
-      if(mode === 'summary' && variant === 'study'){
-        renderStudyFromMarkdown(latest.content, panel, materials.find(x => (x._sbId || x.id) === materialId));
-        matModeReady[mode] = true;
-        return;
-      }
-
-      // ÖZEL DURUM: Sınav Modu (referans kartı) — 5 renkli kart UI'ını yeniden oluştur
-      if(mode === 'summary' && variant === 'exam_ref'){
-        renderExamFromMarkdown(latest.content, panel, materials.find(x => (x._sbId || x.id) === materialId));
-        matModeReady[mode] = true;
-        return;
-      }
 
       // Diğer modlar için klasik render
       const html = mode === 'flashcard'
@@ -5438,6 +5477,10 @@ function setMatMode(mode, btn){
   document.querySelectorAll('.mat-mode-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 
+  // Özet variant pill bar'ı sadece Özet sekmesindeyken göster
+  const pillBar = document.getElementById('mat-summary-pills');
+  if(pillBar) pillBar.style.display = mode === 'summary' ? 'flex' : 'none';
+
   const inputBar = document.getElementById('mat-input-bar');
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
 
@@ -5484,13 +5527,8 @@ function setMatMode(mode, btn){
   matModeReady[mode] = true;
 
   if(mode === 'summary'){
-    // Kaydedilen özetleri en üstte göster
-    matAddMsgToPanel('summary', 'ai', `<strong>Hangi tür çıktı istersin?</strong>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-        <button class="mat-option-btn" onclick="matRunVariant('summary','paged')">📄 Sayfa Sayfa Türkçe — slaytı Türkçeleştir + açıkla, kısaltma yapma</button>
-        <button class="mat-option-btn" onclick="matRunVariant('summary','study')">📚 Çalışma Notu — konu konu defter formatında</button>
-        <button class="mat-option-btn" onclick="matRunVariant('summary','exam_ref')">⚡ Sınav Modu — formüller, sözlük, kritik bilgiler</button>
-      </div>`);
+    // Pill bar zaten görünür — aktif pill'in variant'ını yükle (cache/kayıt varsa getir, yoksa boş başla)
+    loadSummaryVariant(matSummaryVariant);
   } else if(mode === 'quiz'){
     matAddMsgToPanel('quiz', 'ai', `<strong>Nasıl sorular oluşturayım?</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
@@ -5527,7 +5565,8 @@ function matAddMsgToPanel(panelMode, role, html){
   return div;
 }
 
-// Yeni oluştur — paneli sıfırla, Supabase'den sil ve seçenek kartlarını göster
+// Yeniden oluştur — paneli sıfırla, Supabase'den sil ve seçenek kartlarını göster
+// Summary için sadece aktif variant'ı siler (pill bar mantığı)
 async function matResetMode(mode){
   const panel = getPanel(mode);
   if(panel) panel.innerHTML = '';
@@ -5536,11 +5575,108 @@ async function matResetMode(mode){
   // Supabase'den eski AI çıktısını sil
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   const matId = m?._sbId || m?.id;
-  if(matId) await sbDeleteAiOutputsByType(matId, mode);
+  if(matId){
+    if(mode === 'summary'){
+      // Sadece aktif variant'ın kaydını sil — diğer variant'lar dokunulmaz
+      const outputs = await sbLoadAiOutputs(matId, 'summary');
+      const target = outputs.find(o => (o.metadata?.variant || null) === matSummaryVariant);
+      if(target?.id) await sbDeleteAiOutput(target.id);
+    } else {
+      await sbDeleteAiOutputsByType(matId, mode);
+    }
+  }
 
+  // Summary için pill dot'ları güncelle, sonra aktif variant'ı reload et ("Üret" butonuna düşecek)
+  if(mode === 'summary'){
+    await updateSummaryPillDots();
+    await loadSummaryVariant(matSummaryVariant);
+    return;
+  }
 
   const btn = document.querySelector(`.mat-mode-btn[data-mode="${mode}"]`);
   if(btn) setMatMode(mode, btn);
+}
+
+// ── Özet Variant Pill Bar Kontrolü ──
+// Hangi variant aktif (pill'i seçili): 'paged' | 'study' | 'exam_ref'
+let matSummaryVariant = 'paged';
+
+// Pill'e tıklanınca veya programatik olarak variant değişince çağrılır
+async function setSummaryVariant(variant){
+  if(!['paged','study','exam_ref'].includes(variant)) return;
+  matSummaryVariant = variant;
+
+  // Pill UI'sını güncelle (active class)
+  document.querySelectorAll('.mat-summary-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.variant === variant);
+  });
+
+  // Panel'i temizle ve seçili variant'ı yükle
+  const panel = getPanel('summary');
+  if(panel) panel.innerHTML = '';
+  await loadSummaryVariant(variant);
+}
+
+// Bir variant için: DB'de kayıt varsa render et, yoksa "Üret" butonu göster
+async function loadSummaryVariant(variant){
+  const panel = getPanel('summary');
+  if(!panel) return;
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(!m) return;
+
+  // DB'de bu variant'ın kaydı var mı? (loader bunları byType.summary'e koyuyor, biz variant'a göre filtreliyoruz)
+  const matId = m._sbId || m.id;
+  let saved = null;
+  if(matId){
+    const outputs = await sbLoadAiOutputs(matId, 'summary');
+    saved = outputs.find(o => (o.metadata?.variant || null) === variant);
+  }
+
+  if(saved && saved.content){
+    // Kayıt var → variant'a göre render et
+    if(variant === 'study'){
+      renderStudyFromMarkdown(saved.content, panel, m);
+    } else if(variant === 'exam_ref'){
+      renderExamFromMarkdown(saved.content, panel, m);
+    } else {
+      // paged: bubble + thumbnail
+      matAddMsgToPanel('summary', 'ai', matMd(saved.content));
+      setTimeout(() => {
+        const bubble = panel.querySelector('.mat-msg-bubble');
+        if(bubble) attachPageThumbnails(bubble);
+      }, 100);
+    }
+    matModeReady.summary = true;
+    updateSummaryPillDots();
+    return;
+  }
+
+  // Kayıt yok → "Üret" butonu göster
+  const variantInfo = {
+    paged:    { icon:'📄', name:'Sayfa Sayfa Türkçe',  desc:'Slaytı Türkçeleştir + açıkla, kısaltma yapma' },
+    study:    { icon:'📚', name:'Çalışma Notu',         desc:'Konu konu defter formatında detaylı not' },
+    exam_ref: { icon:'⚡', name:'Sınav Modu',           desc:'Formüller, kavram sözlüğü, kritik bilgiler' }
+  }[variant];
+  matAddMsgToPanel('summary', 'ai', `<strong>${variantInfo.icon} ${variantInfo.name}</strong>
+    <div style="margin-top:6px;font-size:13px;color:var(--muted);">${variantInfo.desc}</div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="mat-option-btn" onclick="matRunVariant('summary','${variant}')">▶ Oluştur</button>
+    </div>`);
+  matModeReady.summary = true;
+  updateSummaryPillDots();
+}
+
+// Her pill'in yanındaki yeşil noktayı, o variant'ın DB'de kaydı varsa göster
+async function updateSummaryPillDots(){
+  const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+  if(!m) return;
+  const matId = m._sbId || m.id;
+  if(!matId) return;
+  const outputs = await sbLoadAiOutputs(matId, 'summary');
+  const haveVariants = new Set(outputs.map(o => o.metadata?.variant || null));
+  document.querySelectorAll('.mat-summary-pill').forEach(p => {
+    p.classList.toggle('has-content', haveVariants.has(p.dataset.variant));
+  });
 }
 
 // ── PDF Sayfa Thumbnail Render ──
@@ -5843,6 +5979,7 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
     matModeReady[mode] = true;
     if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, text, { variant: 'exam_ref' });
     if(m.fileHash) saveSharedCache(m.fileHash, 'summary', 'exam_ref', text, {});
+    if(typeof updateSummaryPillDots === 'function') updateSummaryPillDots();
     showToast('Sınav referans kartı hazır!');
   } catch(e) {
     matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Hata: ' + e.message + '</span>');
@@ -5928,6 +6065,7 @@ async function matRunStudyMode(m, pages){
   if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, combinedMd, { variant: 'study' });
   if(m.fileHash) saveSharedCache(m.fileHash, mode, 'study', combinedMd, { topicCount: writtenTopics.length });
   matModeReady[mode] = true;
+  if(typeof updateSummaryPillDots === 'function') updateSummaryPillDots();
   showToast(writtenTopics.length + ' konu hazır!');
 }
 
@@ -6597,6 +6735,7 @@ Kuralların:
   if(m.fileHash) saveSharedCache(m.fileHash, mode, 'paged', finalContent, { pageCount: pages.length });
 
   matModeReady[mode] = true;
+  if(typeof updateSummaryPillDots === 'function') updateSummaryPillDots();
   showToast(`✅ ${pages.length} sayfa özetlendi!`);
 } // matRunPagedSummary sonu
 
