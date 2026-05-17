@@ -2562,6 +2562,15 @@ async function computeFileHash(file){
 // (file_hash, mode, variant) anahtarına bakar, varsa içeriği döner, yoksa null
 async function checkSharedCache(fileHash, mode, variant){
   if(!fileHash) return null;
+
+  // "Yeniden Oluştur" sonrası summary variant'ı için tek seferlik bypass
+  // (Sadece summary mode'unda aktif, başka mod'ları etkilemez)
+  if(mode === 'summary' && variant && matSummaryBypass[variant]){
+    delete matSummaryBypass[variant];
+    matSummaryOverwrite[variant] = true;
+    return null;
+  }
+
   try {
     const sessionId = localStorage.getItem('akademix_session');
     const resp = await fetch(BACKEND_URL + '/api/db', {
@@ -2583,10 +2592,26 @@ async function checkSharedCache(fileHash, mode, variant){
 }
 
 // Cache'e yaz — başarılı bir AI üretiminden sonra çağrılır (ilk üreten kazanır)
+// Summary variant'ı için "Yeniden Oluştur" tetiklenmişse eski kaydı silip yenisini yazar
 async function saveSharedCache(fileHash, mode, variant, content, metadata){
   if(!fileHash || !content) return;
   try {
     const sessionId = localStorage.getItem('akademix_session');
+
+    // Summary variant'ı için overwrite işaretliyse eski kaydı sil + flag tüket
+    if(mode === 'summary' && variant && matSummaryOverwrite[variant]){
+      delete matSummaryOverwrite[variant];
+      await fetch(BACKEND_URL + '/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+        body: JSON.stringify({
+          table: 'cached_ai_outputs',
+          action: 'delete',
+          filters: { file_hash: fileHash, mode: mode, variant: variant }
+        })
+      });
+    }
+
     const resp = await fetch(BACKEND_URL + '/api/db', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
@@ -5581,6 +5606,8 @@ async function matResetMode(mode){
       const outputs = await sbLoadAiOutputs(matId, 'summary');
       const target = outputs.find(o => (o.metadata?.variant || null) === matSummaryVariant);
       if(target?.id) await sbDeleteAiOutput(target.id);
+      // Bir sonraki üretim için paylaşımlı cache'i de bypass et
+      matSummaryBypass[matSummaryVariant] = true;
     } else {
       await sbDeleteAiOutputsByType(matId, mode);
     }
@@ -5600,6 +5627,12 @@ async function matResetMode(mode){
 // ── Özet Variant Pill Bar Kontrolü ──
 // Hangi variant aktif (pill'i seçili): 'paged' | 'study' | 'exam_ref'
 let matSummaryVariant = 'paged';
+
+// "Yeniden Oluştur" basılınca o variant için tek seferlik cache bypass
+// Key: variant (ör. 'paged'). True ise bir sonraki checkSharedCache null döner.
+const matSummaryBypass = {};
+// Bypass tetiklendiğinde, üretim sonrası saveSharedCache eski kaydı silip yenisini yazsın
+const matSummaryOverwrite = {};
 
 // Pill'e tıklanınca veya programatik olarak variant değişince çağrılır
 async function setSummaryVariant(variant){
