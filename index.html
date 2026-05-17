@@ -4974,16 +4974,24 @@ ${t}`,
 
 5 çoktan seçmeli + 3 doğru/yanlış + 3 açık uçlu soru oluştur.
 
+ÖNEMLİ FORMAT KURALLARI:
+- HER ALAN AYRI SATIRDA olmalı — şıkları, CEVAP'ı, AÇIKLAMA'yı tek satıra sıkıştırma
+- Her şık (A, B, C, D) AYRI SATIRDA olacak
+- Sorular arası ayraç olarak --- kullan
+
 Çoktan seçmeli format:
 SORU: [soru]
-A) [seçenek]  B) [seçenek]  C) [seçenek]  D) [seçenek]
+A) [seçenek]
+B) [seçenek]
+C) [seçenek]
+D) [seçenek]
 CEVAP: [harf]
 AÇIKLAMA: [açıklama]
 ---
 
 Doğru/Yanlış format:
 SORU: [ifade]
-CEVAP: Doğru / Yanlış
+CEVAP: Doğru
 AÇIKLAMA: [açıklama]
 ---
 
@@ -7199,6 +7207,17 @@ function matBuildFlashcards(text){
 }
 
 function matBuildQuiz(text){
+  // AI bazen kuralları ihlal edip şıkları/etiketleri aynı satıra sıkıştırıyor — normalize et
+  // Örnek: "A) foo B) bar C) baz D) qux" → her şık ayrı satıra
+  // Örnek: "CEVAP: C AÇIKLAMA: ..." → CEVAP ve AÇIKLAMA ayrı satıra
+  text = text
+    // Şıklar arasına newline koy: " B)", " C)", " D)" (aynı satır içinde)
+    .replace(/\s+(?=[B-D]\)\s)/g, '\n')
+    // CEVAP:'tan sonra AÇIKLAMA: gelirse araya newline koy
+    .replace(/\s+(?=AÇIKLAMA:\s)/gi, '\n')
+    // MODEL_CEVAP: aynı satırda gelirse ayır
+    .replace(/\s+(?=MODEL_CEVAP:\s)/gi, '\n');
+
   const blocks = text.split(/\n---\n|\n-{3,}\n/).filter(b => b.trim());
   const questions = [];
 
