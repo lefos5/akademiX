@@ -2746,9 +2746,13 @@ async function sbLoadStudioMessages(conversationId){
 // ═══════════════════════════════════════
 
 async function sbCreateRagConversation(materialId, title){
+  if(!materialId){
+    showToast('❌ Sohbet için bir materyal gerekiyor');
+    return null;
+  }
   const { data, error } = await apiDb({
     table: 'rag_conversations', action: 'insert',
-    data: { title, material_ids: materialId ? [materialId] : [] }
+    data: { title, material_id: materialId }
   });
   if(error || !data){
     console.error('[RAG] Sohbet oluşturulamadı:', error);
@@ -2759,11 +2763,10 @@ async function sbCreateRagConversation(materialId, title){
 }
 
 async function sbLoadRagConversations(materialId){
-  // Not: Backend'de material_id bazlı filter yok; tümünü getir, frontend'te filtreliyoruz
-  const { data, error } = await apiDb({ table: 'rag_conversations', action: 'select' });
+  const filters = materialId ? { material_id: materialId } : {};
+  const { data, error } = await apiDb({ table: 'rag_conversations', action: 'select', filters });
   if(error || !data) return [];
-  if(!materialId) return data;
-  return data.filter(r => Array.isArray(r.material_ids) && r.material_ids.includes(materialId));
+  return data;
 }
 
 async function sbUpdateRagConvTitle(id, title){
