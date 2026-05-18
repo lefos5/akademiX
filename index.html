@@ -1415,37 +1415,6 @@
   .mat-send-btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
   .mat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* Flashcards */
-  .fc-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 10px; padding: 4px 0;
-  }
-  .fc-card {
-    min-height: 100px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px;
-    cursor: pointer; transition: all 0.2s;
-    text-align: center; display: flex;
-    flex-direction: column; align-items: center; justify-content: center;
-    gap: 8px; position: relative; overflow: hidden;
-  }
-  .fc-card::before {
-    content: 'TAP';
-    position: absolute; top: 6px; right: 8px;
-    font-size: 9px; color: var(--muted2); font-weight: 700;
-    letter-spacing: 0.5px; transition: opacity 0.2s;
-  }
-  .fc-card.flipped::before { content: '✓'; color: var(--green); }
-  .fc-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,0.1); }
-  .fc-q { font-size: 12px; font-weight: 600; color: var(--text2); line-height: 1.4; }
-  .fc-a { font-size: 12px; color: var(--accent2); line-height: 1.4; display: none; }
-  .fc-divider { width: 24px; height: 1px; background: var(--border); display: none; }
-  .fc-card.flipped .fc-a { display: block; }
-  .fc-card.flipped .fc-divider { display: block; }
-  .fc-card.flipped .fc-q { font-size: 10px; color: var(--muted); }
-
   /* MATERIALS */
   .mat-header-row { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
   .mat-course-select { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); font-size:13px; outline:none; cursor:pointer; }
@@ -2087,14 +2056,13 @@
         <div class="mat-welcome" id="mat-welcome">
           <div class="mat-welcome-icon">✨</div>
           <div class="mat-welcome-title">Bir materyal seçin</div>
-          <div class="mat-welcome-sub">Soldan bir materyal seçerek özet oluştur, sınav soruları üret, flashcard yap veya AI ile sohbet et.</div>
+          <div class="mat-welcome-sub">Soldan bir materyal seçerek özet oluştur, sınav soruları üret veya AI ile sohbet et.</div>
         </div>
         <div class="mat-workspace" id="mat-workspace" style="display:none">
           <div class="mat-workspace-header" id="mat-workspace-header"></div>
           <div class="mat-ai-bar">
             <button class="mat-mode-btn active" data-mode="summary" onclick="setMatMode('summary',this)">📝 Özet</button>
             <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Sınav</button>
-            <button class="mat-mode-btn" data-mode="flashcard" onclick="setMatMode('flashcard',this)">🃏 Flashcard</button>
             <button class="mat-mode-btn" data-mode="rag" onclick="setMatMode('rag',this)">🔍 Kaynaktan Sor</button>
           </div>
           <!-- Özet variant pill bar — sadece Özet aktifken görünür -->
@@ -2112,7 +2080,6 @@
           <!-- Her mod için ayrı container — display:none ile gizlenir -->
           <div class="mat-messages" id="mat-panel-summary" style="display:flex;flex-direction:column"></div>
           <div class="mat-messages" id="mat-panel-quiz" style="display:none;flex-direction:column"></div>
-          <div class="mat-messages" id="mat-panel-flashcard" style="display:none;flex-direction:column"></div>
           <div id="mat-panel-rag" style="display:none;flex:1;overflow:hidden;flex-direction:row">
             <!-- RAG sol sidebar -->
             <div class="rag-sidebar">
@@ -2649,7 +2616,7 @@ async function sbDeleteMaterial(sbId){
 }
 
 // ═══════════════════════════════════════
-// AI OUTPUTS — summary, exam, flashcard
+// AI OUTPUTS — summary, exam
 // ═══════════════════════════════════════
 
 async function sbSaveAiOutput(materialId, type, content, metadata={}){
@@ -5063,22 +5030,6 @@ Materyal:
 ${t}`,
   },
 
-  flashcard: (t) => `Sen TAÜ mühendislik öğrencisi için flashcard hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe flashcard yaz.
-
-KURALLAR:
-- En az 20 kart oluştur
-- Kart türleri karışık olsun: tanım soruları, formül kartları, karşılaştırma kartları, "ne zaman kullanılır" kartları
-- Teknik terimleri: ön yüzde Almanca/Türkçe birlikte yaz
-- Formül kartlarında: ön yüz formül adı → arka yüz formül + ne anlama geldiği
-- Cevaplar kısa ama eksiksiz olsun — tek kelimelik cevaplar YASAK, en az 1-2 cümle
-- Sınava çok çıkan konulara ağırlık ver
-
-Her kart için AYNEN bu formatı kullan:
-Q: [soru veya kavram — net ve spesifik]
-A: [cevap — kısa ama eksiksiz, en az 1-2 cümle]
-
-Materyal:
-${t}`,
   chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
   mindmap: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencileri için akademik içerik analiz eden bir uzmansın. Aşağıdaki materyali analiz edip konular arası ilişkileri gösteren bir kavram haritası üret.
 
@@ -5182,7 +5133,7 @@ async function selectMat(idx){
   // Yeni materyal seçilince tüm mod durumlarını sıfırla
   // Yeni materyal — tüm panelleri sıfırla
   Object.keys(matModeReady).forEach(k => matModeReady[k] = false);
-  ['summary','quiz','flashcard','chat'].forEach(m => {
+  ['summary','quiz','chat'].forEach(m => {
     const p = getPanel(m); if(p) p.innerHTML = '';
   });
   // Özet pill state — varsayılana dön (paged), dot'ları temizle, sonra loadMatHistory bunları doldurur
@@ -5373,13 +5324,13 @@ async function loadMatHistory(materialId){
     ]);
 
     // Tip bazında grupla
-    const byType = { summary:[], quiz:[], flashcard:[] };
+    const byType = { summary:[], quiz:[] };
     outputs.forEach(o => {
       if(byType[o.type]) byType[o.type].push(o);
     });
 
     // AI çıktılarını panellere yaz
-    ['summary','quiz','flashcard'].forEach(mode => {
+    ['summary','quiz'].forEach(mode => {
       const list = byType[mode];
       if(!list.length) return;
       const latest = list[0];
@@ -5403,9 +5354,7 @@ async function loadMatHistory(materialId){
       panel.innerHTML = '';
 
       // Diğer modlar için klasik render
-      const html = mode === 'flashcard'
-        ? matBuildFlashcards(latest.content)
-        : mode === 'quiz'
+      const html = mode === 'quiz'
         ? matBuildQuiz(latest.content)
         : matMd(latest.content);
 
@@ -5480,7 +5429,7 @@ function getPanel(mode){
 }
 
 function showPanel(mode){
-  ['summary','quiz','flashcard','chat'].forEach(m => {
+  ['summary','quiz','chat'].forEach(m => {
     const p = getPanel(m);
     if(p) p.style.display = m === mode ? 'flex' : 'none';
   });
@@ -5490,7 +5439,7 @@ function showPanel(mode){
 }
 
 // Her mod için "ilk kez mi açılıyor" takibi
-const matModeReady = { summary: false, quiz: false, flashcard: false, rag: false, chat: false };
+const matModeReady = { summary: false, quiz: false, rag: false, chat: false };
 
 function setMatMode(mode, btn){
   currentMatMode = mode;
@@ -5553,11 +5502,6 @@ function setMatMode(mode, btn){
     matAddMsgToPanel('quiz', 'ai', `<strong>Nasıl sorular oluşturayım?</strong>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('quiz','mixed')">🎯 Karışık Sınav — çoktan seçmeli + açık uçlu</button>
-      </div>`);
-  } else if(mode === 'flashcard'){
-    matAddMsgToPanel('flashcard', 'ai', `<strong>Flashcard oluştur:</strong>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-        <button class="mat-option-btn" onclick="matRunVariant('flashcard',null)">🃏 Oluştur — AI en kritik noktaları seçer</button>
       </div>`);
   } else if(mode === 'mindmap'){
     matAddMsgToPanel('mindmap', 'ai', `<strong>🔗 Kavram Haritası</strong>
@@ -5811,13 +5755,12 @@ async function matRunVariant(mode, variant){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
 
-  // Hash-bazlı paylaşımlı cache check — quiz/flashcard/mindmap için
+  // Hash-bazlı paylaşımlı cache check — quiz/mindmap için
   // (summary için her runner kendi içinde check yapıyor)
-  if(m.fileHash && (mode === 'quiz' || mode === 'flashcard' || mode === 'mindmap')){
+  if(m.fileHash && (mode === 'quiz' || mode === 'mindmap')){
     const cached = await checkSharedCache(m.fileHash, mode, variant || null);
     if(cached && cached.content){
-      const html = mode === 'flashcard' ? matBuildFlashcards(cached.content)
-        : mode === 'quiz' ? matBuildQuiz(cached.content)
+      const html = mode === 'quiz' ? matBuildQuiz(cached.content)
         : mode === 'mindmap' ? matBuildMindmap(cached.content)
         : matMd(cached.content);
       matAddMsgToPanel(mode, 'ai', html);
@@ -5869,7 +5812,7 @@ async function matRunVariant(mode, variant){
     }
   }
 
-  if(needsChunking && (mode === 'summary' || mode === 'quiz' || mode === 'flashcard')){
+  if(needsChunking && (mode === 'summary' || mode === 'quiz')){
     await matRunVariantChunked(mode, variant, m, fullContent, CHUNK_SIZE);
     return;
   }
@@ -5879,7 +5822,7 @@ async function matRunVariant(mode, variant){
   if(mode === 'summary') promptFn = MAT_PROMPTS.summary[variant];
   else if(mode === 'quiz') promptFn = MAT_PROMPTS.quiz[variant];
   else if(mode === 'mindmap') promptFn = MAT_PROMPTS.mindmap;
-  else promptFn = MAT_PROMPTS.flashcard;
+  else { showToast('Bilinmeyen mod: ' + mode); return; }
 
   const content = matFileData?.content || matFileData?.fullContent || m.title;
   const prompt = promptFn(content);
@@ -5990,7 +5933,7 @@ function renderExamFromMarkdown(resultMd, panel, material){
 
 // ===== SINAV MODU =====
 // Damıtılmış sınav cevheri çıkarır: Formüller / Sözlük / Kritik / Karşılaştırma / Hatalar
-// 5 ayrı kart olarak render eder, sözlükten flashcard üretebilir, quiz'e bağlanır.
+// 5 ayrı kart olarak render eder.
 async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
   const mode = 'summary';
   const panel = getPanel(mode);
@@ -6035,7 +5978,7 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
 // ===== ÇALIŞMA NOTU (iki aşamalı) =====
 // Aşama 1: Konuları tespit et (sayfa başlığı + ilk 200 karakter ile)
 // Aşama 2: Her konu için ilgili sayfaları toplayıp ayrı ayrı yaz
-// Sonuç: Konu konu collapsible kartlar + flashcard/quiz entegrasyonu
+// Sonuç: Konu konu collapsible kartlar
 async function matRunStudyMode(m, pages){
   const mode = 'summary';
   const panel = getPanel(mode);
@@ -6826,7 +6769,7 @@ Kuralların:
 - Sınava hazırlık için kritik bilgileri vurgula.
 - Konu görsel anlatıma uygunsa (tree, graph, algoritma, devre, akış şeması) SVG diyagram çiz.`;
 
-  const tokenLimits = { summary: 8000, quiz: 6000, flashcard: 6000 };
+  const tokenLimits = { summary: 8000, quiz: 6000 };
   const maxTokens = tokenLimits[mode] || 6000;
 
   let allResults = [];
@@ -6879,21 +6822,6 @@ ${chunks[i]}`;
       let promptFn = MAT_PROMPTS.quiz[variant];
       chunkPrompt = promptFn(`(Bölüm ${i+1}/${chunks.length})
 ${chunks[i]}`).replace('10 ', `${qCount} `);
-    } else if(mode === 'flashcard'){
-      chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe flashcard'lar oluştur. Bu bölüm ${i+1}/${chunks.length}. bölümdür.
-
-KURALLAR:
-- En az 5 kart oluştur
-- Teknik terimleri: ön yüzde Almanca/Türkçe birlikte yaz
-- Formül kartlarında: ön yüz formül adı → arka yüz formül + açıklama
-- Cevaplar en az 1-2 cümle olsun
-
-Her kart için AYNEN bu formatı kullan:
-Q: [soru veya kavram]
-A: [cevap — en az 1-2 cümle]
-
-Materyal:
-${chunks[i]}`;
     }
 
     try{
@@ -6901,7 +6829,7 @@ ${chunks[i]}`;
         method:'POST',
         headers:{'Content-Type':'application/json','x-session-id': sessionId},
         body:JSON.stringify({
-          mode: 'flashcard',
+          mode: mode,
           max_tokens: maxTokens,
           system: systemPrompt,
           messages:[{role:'user',content:[{type:'text',text:chunkPrompt}]}]
@@ -6918,7 +6846,7 @@ ${chunks[i]}`;
 
   // Sonuçları birleştir ve göster
   const combined = allResults.join('\n\n---\n\n');
-  const html = (mode==='flashcard') ? matBuildFlashcards(combined) : (mode==='quiz') ? matBuildQuiz(combined) : (mode==='mindmap') ? matBuildMindmap(combined) : matMd(combined);
+  const html = (mode==='quiz') ? matBuildQuiz(combined) : (mode==='mindmap') ? matBuildMindmap(combined) : matMd(combined);
   const msgEl = matAddMsgToPanel(mode, 'ai', html);
 
   // Yeniden Oluştur butonu
@@ -7488,24 +7416,6 @@ function convertMindmapToGraphTD(text){
   return blockMatch ? text.replace(blockMatch[0], newCode) : newCode;
 }
 
-function matBuildFlashcards(text){
-  const pairs = [];
-  const lines = text.split('\n');
-  let q='',a='';
-  for(const l of lines){
-    const lc = l.trim();
-    if(/^(Q:|Soru:)/i.test(lc)){ q=lc.replace(/^(Q:|Soru:)\s*/i,''); a=''; }
-    else if(/^(A:|Cevap:)/i.test(lc)){ a=lc.replace(/^(A:|Cevap:)\s*/i,''); if(q&&a){pairs.push({q,a});q='';a='';} }
-  }
-  if(!pairs.length) return '<div>'+matMd(text)+'</div>';
-  return `<div class="fc-grid">${pairs.map(p=>`
-    <div class="fc-card" onclick="this.classList.toggle('flipped')">
-      <div class="fc-q">${escHtml(p.q)}</div>
-      <div class="fc-divider"></div>
-      <div class="fc-a">${escHtml(p.a)}</div>
-    </div>`).join('')}</div>`;
-}
-
 function matBuildQuiz(text){
   // AI bazen kuralları ihlal edip şıkları/etiketleri aynı satıra sıkıştırıyor — normalize et
   // Örnek: "A) foo B) bar C) baz D) qux" → her şık ayrı satıra
@@ -7793,7 +7703,7 @@ async function matCallAI(userText, opts={}){
   const mode = opts.mode || currentMatMode;
 
   // Mode'a göre max_tokens ayarla
-  const tokenLimits = { summary: 8000, quiz: 8000, flashcard: 6000, chat: 4000, rag: 4000 };
+  const tokenLimits = { summary: 8000, quiz: 8000, chat: 4000, rag: 4000 };
   const maxTokens = tokenLimits[mode] || 4000;
 
   // System prompt — AI'ın kalitesini artır
@@ -7846,7 +7756,7 @@ Kuralların:
     : [...matChatHistory, {role:'user',content:messageContent}];
 
   try{
-    // forcePrompt akışlarında (quiz/flashcard/mindmap) user prompt'unun kendi rol talimatı var
+    // forcePrompt akışlarında (quiz/mindmap) user prompt'unun kendi rol talimatı var
     // generic system prompt'u göndermek AI'yı kafa karışıklığına sürüklüyor — sadece chat'te kullan
     const body = opts.forcePrompt
       ? { mode, messages: msgs, provider: 'gemini' }
@@ -7871,7 +7781,7 @@ Kuralların:
     }
 
     matHideTyping();
-    const html = (mode==='flashcard') ? matBuildFlashcards(result) : (mode==='quiz') ? matBuildQuiz(result) : (mode==='mindmap') ? matBuildMindmap(result) : matMd(result);
+    const html = (mode==='quiz') ? matBuildQuiz(result) : (mode==='mindmap') ? matBuildMindmap(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
 
     // Yeniden Oluştur butonu — tüm AI modlarında (forcePrompt olanlar)
@@ -7890,8 +7800,8 @@ Kuralların:
       // Supabase'e kaydet
       if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, result, { variant: opts.variant || null });
 
-      // Paylaşımlı cache'e yaz — quiz/flashcard/mindmap için (summary kendi runner'larında zaten yazıyor)
-      if(m.fileHash && (mode === 'quiz' || mode === 'flashcard' || mode === 'mindmap')){
+      // Paylaşımlı cache'e yaz — quiz/mindmap için (summary kendi runner'larında zaten yazıyor)
+      if(m.fileHash && (mode === 'quiz' || mode === 'mindmap')){
         saveSharedCache(m.fileHash, mode, opts.variant || null, result, {});
       }
 
