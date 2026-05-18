@@ -4908,11 +4908,12 @@ const MAT_PROMPTS = {
 
 GÖREV: Materyali konularına göre grupla ve her konu için defter formatında not yaz. Sayfa-sayfa değil, KONU-KONU organize et.
 
-⚠️ UZUNLUK KURALI: Çıktı KISA ve ÖZLÜ olsun — öğrenci uzun metinden sıkılır.
-- Her konu için toplam 6-10 cümleyi geçme
-- Her bölüm (Tanım, Neden önemli vb.) 1-3 cümle yeter — gereksiz tekrar, dolgu cümle yazma
-- Sadece sınava odaklı somut bilgi ver, "şuna dikkat etmek gerekir, bu önemlidir" gibi boş ifadeler kullanma
-- Materyaldeki konu sayısı azsa az not yaz — yapay olarak konu üretme
+⚠️ UZUNLUK & TEKRAR KURALI: Çıktı KISA ve TEKRARSIZ olsun — öğrenci uzun ve dolgu metinden sıkılır.
+- Slayttaki her ana konu için TEK paragraf (3-6 cümle) yaz, alt-başlık AÇMA
+- Aynı şeyi farklı kelimelerle tekrar yazma — "tanımı" ve "ne işe yarar" gibi alt-başlıkları açıp aynı bilgiyi 4 kez döndürme
+- Sadece slayttaki ana konulara odaklan — slaytın değinmediği kavram için yapay konu üretme
+- Gereksiz dolgu cümle yasak ("şuna dikkat etmek gerekir, bu önemlidir" gibi)
+- Konu sayısı slayttaki konularla aynı olsun, daha çok değil
 
 KURALLAR:
 - Materyaldeki ana konuları tespit et — slaytın bölümlerini, başlıklarını rehber al
@@ -4951,14 +4952,14 @@ graph TD
 - Slaytta atlanmış / üstü kapalı geçilmiş yerleri tamamla — öğrencinin sınavda anlaması için bağlam ekle
 - Konular arası ilişkileri vurgula
 
-Format her konu için:
+Format her konu için (SADECE bu yapı, alt-başlık YASAK):
 
 ## 📚 [Konu başlığı]
-**Tanım:** [Net tanım, 2-3 cümle]
-**Neden önemli:** [Bu kavram nerede karşımıza çıkar, ne işe yarar]
-**Nasıl çalışır:** [Detaylı açıklama, formüllerle]
-**Örnek:** [Somut bir mühendislik örneği]
-**İlgili sayfalar:** [Slaytın hangi sayfalarında]
+[Konunun açıklaması — tanım + nasıl çalıştığı + (varsa) önemi tek bir paragrafta. 3-6 cümle. Eğer formül varsa içine yerleştir, ayrı bölüm açma. Eğer örnek gerekiyorsa cümlenin sonuna ekle.]
+
+**Sayfa:** [Slaytın hangi sayfa(lar)ında]
+
+⛔ "Tanım:", "Neden önemli:", "Nasıl çalışır:", "Örnek:" gibi alt-başlıklar AÇMA — aynı konuyu birden fazla başlık altında tekrarlama. Tek paragraf, içinde her şey var.
 
 Materyal:
 ${t}`,
@@ -6201,59 +6202,24 @@ async function studyWriteTopic(topic, pages, sessionId, progressEl, currentIdx, 
 
   const prompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademisyensin. Aşağıda "${topic.title}" konusunun materyaldeki sayfaları verilmiştir.
 
-GÖREV: Bu konu için defter formatında, derinlemesine bir çalışma notu yaz. Bu sayfalardaki bilgileri birleştir, slaytın atladığı yerleri tamamla.
+GÖREV: Bu konu için ÖZ ve TEK PARAGRAFLIK bir not yaz — konuyu hatırlatan, sınava odaklı bir hatırlatma.
+
+⚠️ UZUNLUK & TEKRAR KURALI:
+- TEK paragraf, 3-6 cümle. ALT-BAŞLIK YASAK.
+- "Tanımı şudur, Neden önemlidir, Nasıl çalışır, Örneği şudur" gibi başlıkları AÇMA — aynı kavramı 4 kez farklı kelimelerle tekrarlıyorsun.
+- Doğrudan anlat: tanım + nasıl çalıştığı + (kritikse) örnek hepsi bir akışta.
+- Dolgu cümle yok ("şuna dikkat etmek gerekir, bu önemlidir").
+- Slaytta yer almayan kavramı uydurma, yapay genişletme.
 
 KURALLAR:
 - Türkçe yaz, teknik terimleri orijinal dilde tut, parantez içinde Türkçe ekle: **Streckgrenze** (akma sınırı)
-- Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
-- DİYAGRAM ÇİZİYORSAN: SADECE \`\`\`mermaid ... \`\`\` bloğu kullan. ASLA \`\`\` (düz code) bloğunda ağaç/akış çizme. ASLA /, \\, |, _, - karakterleriyle ASCII art yapma. Eğer mermaid yapmayı bilmiyorsan, diyagram çizmek YERİNE düz metin/madde listesiyle anlat.
-- MERMAID FORMAT KURALLARI:
-  • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
-  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), mindmap (kavram), stateDiagram-v2 (durum)
-  • Her bağlantı yeni satıra, 2 boşluk indent
-  • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
-  • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
-  • Aynı diyagrama 2 farklı durumu (öncesi/sonrası) sıkıştırma — her biri AYRI \`\`\`mermaid bloğu olsun, başlık yaz aralarına
-  • subgraph kullanmaktan kaçın, gerekmedikçe kullanma — ana ağaca müdahale ediyor
-- ÖRNEK DOĞRU FORMAT (AVL ağacı, sol rotasyon adımları):
-
-ÖNCE:
-\`\`\`mermaid
-graph TD
-  A[10] --> B[5]
-  A --> C[15]
-  C --> D[12]
-  C --> E[20]
-\`\`\`
-
-SONRA (ROTASYON):
-\`\`\`mermaid
-graph TD
-  A[15] --> B[10]
-  A --> C[20]
-  B --> D[5]
-  B --> E[12]
-\`\`\`
-- Slaytta üstü kapalı geçilmiş yerleri tamamla — bağlam ekle
-- Sadece bu konuyu yaz, başka konulara dalma
+- Formüller, sayısal değerler, birimler aynen korunsun. Formül varsa cümle içine yerleştir.
+- Diyagramı SADECE gerçekten yardımcı olduğunda çiz (ağaç yapısı, akış, kavram ilişkileri). Düz liste/tanım için ÇİZME.
+- Diyagram çiziyorsan: \`\`\`mermaid bloğu, graph TD formatında, tek tırnak/parantez içi parantez/; yasak.
 - Konu başlığını TEKRAR YAZMA (zaten dışarıda var)
+- Sadece bu konuyu yaz, başka konulara dalma
 
-ZORUNLU FORMAT:
-
-**Tanım:** [Konunun net tanımı, 2-3 cümle]
-
-**Neden önemli:** [Bu kavram nerede karşımıza çıkar, ne işe yarar — 2-3 cümle]
-
-**Nasıl çalışır / mekanizma:** [Detaylı açıklama, formüllerle. En önemli bölüm.]
-
-**Anahtar formüller:** [Varsa formüller listesi, her birinin altında ne için kullanıldığı]
-
-**Örnek:** [Somut bir mühendislik örneği]
-
-**Kavramlar ve terimler:** [Bu konudaki teknik terimler — **Almanca/İngilizce** (Türkçe): tanım]
-
-**Sınava hazırlık ipucu:** [Bu konudan sınavda ne tür sorular gelebilir]
+ZORUNLU ÇIKTI: 3-6 cümlelik tek bir Türkçe paragraf. Sonunda eğer kritik terimler varsa parantez içinde özetle (ör. "Anahtar terimler: Streckgrenze (akma sınırı), Bruchspannung (kopma gerilimi).") ama bu da opsiyonel.
 
 Sayfalar:
 ${combinedText}`;
