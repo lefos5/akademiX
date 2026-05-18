@@ -5688,12 +5688,29 @@ async function loadSummaryVariant(variant){
     } else if(variant === 'exam_ref'){
       renderExamFromMarkdown(saved.content, panel, m);
     } else {
-      // paged: bubble + thumbnail
-      matAddMsgToPanel('summary', 'ai', matMd(saved.content));
+      // paged: bubble + thumbnail + action bar
+      const msgEl = matAddMsgToPanel('summary', 'ai', matMd(saved.content));
       setTimeout(() => {
         const bubble = panel.querySelector('.mat-msg-bubble');
         if(bubble) attachPageThumbnails(bubble);
       }, 100);
+
+      // Aksiyon barı: indirme butonları + Yeniden Oluştur
+      const resetBar = document.createElement('div');
+      resetBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;margin-top:8px;padding-bottom:16px;align-items:center;';
+      const dlBtns = buildDownloadButtons(
+        (m.title || 'sayfa-sayfa') + ' - Sayfa Sayfa Türkçe',
+        function(){ return saved.content; },
+        function(){ return msgEl ? msgEl.querySelector('.mat-msg-bubble') : null; }
+      );
+      resetBar.appendChild(dlBtns);
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'mat-ws-action';
+      resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
+      resetBtn.textContent = '↺ Yeniden Oluştur';
+      resetBtn.onclick = () => matResetMode('summary');
+      resetBar.appendChild(resetBtn);
+      panel.appendChild(resetBar);
     }
     matModeReady.summary = true;
     updateSummaryPillDots();
