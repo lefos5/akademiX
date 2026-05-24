@@ -4963,7 +4963,7 @@ KURALLAR:
 - DİYAGRAM ÇİZİYORSAN: SADECE \`\`\`mermaid ... \`\`\` bloğu kullan. ASLA \`\`\` (düz code) bloğunda ağaç/akış çizme. ASLA /, \\, |, _, - karakterleriyle ASCII art yapma. Eğer mermaid yapmayı bilmiyorsan, diyagram çizmek YERİNE düz metin/madde listesiyle anlat.
 - MERMAID FORMAT KURALLARI:
   • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
-  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), mindmap (kavram), stateDiagram-v2 (durum)
+  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), stateDiagram-v2 (durum). mindmap KULLANMA — parse hatası verir.
   • Her bağlantı yeni satıra, 2 boşluk indent
   • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
   • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
@@ -5034,44 +5034,6 @@ ${t}`,
   },
 
   chat: (t) => `Sen bu materyalin uzman öğretmenisin. Öğrencinin sorularını Türkçe olarak materyale dayanarak cevapla. Markdown formatını zengin kullan: **kalın**, *italik*, ## başlıklar, - listeler, \`kod\` vb. Gerektiğinde konuyu açıklamak için SVG diagram çiz. Önceki mesajları bağlam olarak değerlendir.\n\nMateryal: ${t}`,
-  mindmap: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencileri için akademik içerik analiz eden bir uzmansın. Aşağıdaki materyali analiz edip konular arası ilişkileri gösteren bir kavram haritası üret.
-
-ÇIKTI: SADECE geçerli Mermaid \`graph TD\` kodu üret, başka HİÇBİR ŞEY yazma. \`\`\`mermaid ile başla \`\`\` ile bitir.
-
-⚠️ KRITIK: \`mindmap\` sentaksını ASLA kullanma — sadece \`graph TD\` kullan. Mermaid mindmap parse hatası veriyor.
-
-Mermaid graph TD kuralları:
-- İlk satır: \`graph TD\` (mindmap DEĞİL)
-- Her ifade AYRI SATIRDA, 2 boşluk indent
-- Ana konu → alt başlıklar → detaylar şeklinde hiyerarşi
-- Node formatları: \`A[Metin]\` (dikdörtgen), \`A((Metin))\` (daire, sadece kök için), \`A{Metin}\` (eşkenar dörtgen, önemli kavramlar)
-- Bağlantılar her zaman: \`A --> B\` (ok ile)
-- Türkçe etiketler kullan, kısa tut (1-5 kelime)
-- Node etiketlerinde YASAK karakterler: tek tırnak ('), çift tırnak ("), iç parantez (...), noktalı virgül (;), köşeli parantez içinde köşeli parantez. Bunlar parse hatası verir.
-- "A'yı" yerine "A yi" yaz, "(Küçükler, Eşitler)" gibi parantez içine alma — direkt "Küçükler ve Eşitler" yaz
-- Çoklu kaynak edge'i (A & B --> C) KULLANMA — her edge ayrı satır: \`A --> C\` sonra \`B --> C\`
-- En fazla 18 node — daha fazlası diyagramı bozar
-- Hiyerarşi en fazla 3 seviye: kök → kategori → detay
-- Her satır ayrı bağlantı: \`A --> B\` sonra \`A --> C\` (virgülle zincirleme YAPMA)
-- Satır sonuna ; (noktalı virgül) KOYMA
-
-ÖRNEK (BU FORMATTA ÜRET):
-\`\`\`mermaid
-graph TD
-  A((Rastgele Algoritmalar)) --> B[Las Vegas]
-  A --> C[Monte Carlo]
-  B --> B1[Her zaman doğru]
-  B --> B2[Süre değişken]
-  B --> B3[Örn: Randomize QuickSort]
-  C --> C1[Süre sabit]
-  C --> C2[Hata olasılığı var]
-  C --> C3[Örn: Polinom Karşılaştırma]
-\`\`\`
-
-ÖNEMLİ: Sadece \`\`\`mermaid bloğu döndür. Yorum, açıklama, başka yazı YOK. \`mindmap\` kelimesini ASLA yazma.
-
-Materyal:
-${t}`,
 };
 
 function renderMaterials(){
@@ -5506,12 +5468,6 @@ function setMatMode(mode, btn){
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <button class="mat-option-btn" onclick="matRunVariant('quiz','mixed')">🎯 Karışık Sınav — çoktan seçmeli + açık uçlu</button>
       </div>`);
-  } else if(mode === 'mindmap'){
-    matAddMsgToPanel('mindmap', 'ai', `<strong>🔗 Kavram Haritası</strong>
-      <div style="color:var(--muted);font-size:12px;margin:8px 0 12px;">Materyal analiz edilip konular arası ilişkiler görsel harita olarak çizilecek.</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <button class="mat-option-btn" onclick="matRunVariant('mindmap',null)">🔗 Kavram Haritası Oluştur</button>
-      </div>`);
   }
 }
 
@@ -5758,14 +5714,12 @@ async function matRunVariant(mode, variant){
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
   if(!m){ showToast('❌ Önce bir materyal seçin.'); return; }
 
-  // Hash-bazlı paylaşımlı cache check — quiz/mindmap için
+  // Hash-bazlı paylaşımlı cache check — quiz için
   // (summary için her runner kendi içinde check yapıyor)
-  if(m.fileHash && (mode === 'quiz' || mode === 'mindmap')){
+  if(m.fileHash && mode === 'quiz'){
     const cached = await checkSharedCache(m.fileHash, mode, variant || null);
     if(cached && cached.content){
-      const html = mode === 'quiz' ? matBuildQuiz(cached.content)
-        : mode === 'mindmap' ? matBuildMindmap(cached.content)
-        : matMd(cached.content);
+      const html = matBuildQuiz(cached.content);
       matAddMsgToPanel(mode, 'ai', html);
 
       // Yeniden Oluştur butonu
@@ -5824,7 +5778,6 @@ async function matRunVariant(mode, variant){
   let promptFn;
   if(mode === 'summary') promptFn = MAT_PROMPTS.summary[variant];
   else if(mode === 'quiz') promptFn = MAT_PROMPTS.quiz[variant];
-  else if(mode === 'mindmap') promptFn = MAT_PROMPTS.mindmap;
   else { showToast('Bilinmeyen mod: ' + mode); return; }
 
   const content = matFileData?.content || matFileData?.fullContent || m.title;
@@ -6723,7 +6676,7 @@ KURALLAR:
 - DİYAGRAM ÇİZİYORSAN: SADECE \`\`\`mermaid ... \`\`\` bloğu kullan. ASLA \`\`\` (düz code) bloğunda ağaç/akış çizme. ASLA /, \\, |, _, - karakterleriyle ASCII art yapma. Eğer mermaid yapmayı bilmiyorsan, diyagram çizmek YERİNE düz metin/madde listesiyle anlat.
 - MERMAID FORMAT KURALLARI:
   • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
-  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), mindmap (kavram), stateDiagram-v2 (durum)
+  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), stateDiagram-v2 (durum). mindmap KULLANMA — parse hatası verir.
   • Her bağlantı yeni satıra, 2 boşluk indent
   • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
   • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
@@ -6849,7 +6802,7 @@ ${chunks[i]}`).replace('10 ', `${qCount} `);
 
   // Sonuçları birleştir ve göster
   const combined = allResults.join('\n\n---\n\n');
-  const html = (mode==='quiz') ? matBuildQuiz(combined) : (mode==='mindmap') ? matBuildMindmap(combined) : matMd(combined);
+  const html = (mode==='quiz') ? matBuildQuiz(combined) : matMd(combined);
   const msgEl = matAddMsgToPanel(mode, 'ai', html);
 
   // Yeniden Oluştur butonu
@@ -7248,42 +7201,6 @@ function buildDownloadButtons(materialTitle, getMarkdown, sourceElGetter){
   wrap.appendChild(pdfBtn);
 
   return wrap;
-}
-
-function matBuildMindmap(text){
-  // AI bazen `mindmap` sentaksı üretiyor (prompta rağmen) — graph TD'ye çevir
-  text = convertMindmapToGraphTD(text);
-  // graph TD çıktısında label'ları sanitize et (tek tırnak, parantez, ; vb. parse hatası verir)
-  text = sanitizeMermaidLabels(text);
-
-  // Mermaid bloğu var mı? (yeni format)
-  const mermaidMatch = text.match(/```mermaid\s*\n([\s\S]*?)```/);
-  if(mermaidMatch){
-    // matMd() zaten mermaid bloklarını işliyor, doğrudan onu çağır
-    return matMd(text);
-  }
-
-  // Eski format: SVG içeriyorsa direkt render et (geriye uyum)
-  const svgMatch = text.match(/<svg[\s\S]*<\/svg>/i);
-  if(svgMatch){
-    let svg = svgMatch[0];
-    svg = svg.replace(/\bon\w+\s*=/gi, 'data-blocked=');
-    svg = svg.replace(/<script[\s\S]*?<\/script>/gi, '');
-    return `<div class="md-svg-container" style="background:var(--surface2);border-radius:12px;padding:16px;overflow:auto;">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">🔗 Kavram Haritası</div>
-      ${svg}
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">Tam ekran için sağ tık → Resmi yeni sekmede aç</div>
-    </div>`;
-  }
-
-  // Hiçbiri yoksa: tüm metni mermaid bloğu olarak sarmaya çalış (AI bazen sadece kod döndürür)
-  const trimmed = text.trim();
-  if(/^(mindmap|graph|flowchart|stateDiagram|classDiagram|sequenceDiagram)/i.test(trimmed)){
-    return matMd('```mermaid\n' + trimmed + '\n```');
-  }
-
-  // Son çare: markdown olarak render et
-  return matMd(text);
 }
 
 // Mermaid graph TD label'larındaki parse-hatası veren karakterleri temizler:
@@ -7767,7 +7684,7 @@ Kuralların:
     : [...matChatHistory, {role:'user',content:messageContent}];
 
   try{
-    // forcePrompt akışlarında (quiz/mindmap) user prompt'unun kendi rol talimatı var
+    // forcePrompt akışlarında (quiz) user prompt'unun kendi rol talimatı var
     // generic system prompt'u göndermek AI'yı kafa karışıklığına sürüklüyor — sadece chat'te kullan
     const body = opts.forcePrompt
       ? { mode, messages: msgs, provider: 'gemini' }
@@ -7792,7 +7709,7 @@ Kuralların:
     }
 
     matHideTyping();
-    const html = (mode==='quiz') ? matBuildQuiz(result) : (mode==='mindmap') ? matBuildMindmap(result) : matMd(result);
+    const html = (mode==='quiz') ? matBuildQuiz(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
 
     // Yeniden Oluştur butonu — tüm AI modlarında (forcePrompt olanlar)
@@ -7811,8 +7728,8 @@ Kuralların:
       // Supabase'e kaydet
       if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, result, { variant: opts.variant || null });
 
-      // Paylaşımlı cache'e yaz — quiz/mindmap için (summary kendi runner'larında zaten yazıyor)
-      if(m.fileHash && (mode === 'quiz' || mode === 'mindmap')){
+      // Paylaşımlı cache'e yaz — quiz için (summary kendi runner'larında zaten yazıyor)
+      if(m.fileHash && mode === 'quiz'){
         saveSharedCache(m.fileHash, mode, opts.variant || null, result, {});
       }
 
