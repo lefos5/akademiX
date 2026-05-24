@@ -4955,51 +4955,28 @@ ZORUNLU FORMAT:
 Materyal:
 ${t}`,
 
-    paged: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden bir akademik tercümansın. Slayt Almanca/İngilizce — bunu Türkçeye çevir + açıkla.
+    paged: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden bir akademik tercümansın. Slayt Almanca/İngilizce — bunu TEMİZ TÜRKÇEye çevir.
 
-ÖNEMLİ: Bu bir ÖZET DEĞİL, bir ÇEVİRİ+ çalışmasıdır. Slaytı KISALTMA, sadeleştirme. Slaytın söylediği her şeyi Türkçe olarak ver, hatta bazı yerlerde kısa açıklamalarla zenginleştir.
+ÖNEMLİ: Bu bir ÖZET DEĞİL, bir ÇEVİRİ çalışmasıdır. Slaytı kısaltma, yapısını koru.
+
+⚠️ DİL KURALI — EN ÖNEMLİSİ:
+- Çıktı baştan sona TÜRKÇE olsun. Almanca/İngilizce CÜMLELER yazma.
+- Sadece TEKNİK TERİMLER çift dilli verilir, TEK FORMATTA: **OrijinalDil** (Türkçe karşılığı)
+- AÇIKLAMALAR TEK DİLDE TÜRKÇE — Almanca cümleyi yazıp parantez içinde tekrar çevirme.
+- ÖRNEK DOĞRU: "**Streckgrenze** (akma sınırı), bir malzemenin kalıcı şekil değiştirmeye başladığı gerilim seviyesidir."
 
 KURALLAR:
 - HER SAYFA için ayrı bölüm yaz — HİÇBİR SAYFAYI ATLAMA
 - Slaytın yapısını koru: bullet ise bullet, başlık ise başlık, formül ise formül
 - Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı — birleştirme, kısaltma yapma
-- Teknik terimleri orijinal dilde tut, parantez içinde Türkçesini ekle: Streckgrenze (akma sınırı)
-- Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
-- DİYAGRAM ÇİZİYORSAN: SADECE \`\`\`mermaid ... \`\`\` bloğu kullan. ASLA \`\`\` (düz code) bloğunda ağaç/akış çizme. ASLA /, \\, |, _, - karakterleriyle ASCII art yapma. Eğer mermaid yapmayı bilmiyorsan, diyagram çizmek YERİNE düz metin/madde listesiyle anlat.
-- MERMAID FORMAT KURALLARI:
-  • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
-  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), stateDiagram-v2 (durum). mindmap KULLANMA — parse hatası verir.
-  • Her bağlantı yeni satıra, 2 boşluk indent
-  • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
-  • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
-  • Aynı diyagrama 2 farklı durumu (öncesi/sonrası) sıkıştırma — her biri AYRI \`\`\`mermaid bloğu olsun, başlık yaz aralarına
-  • subgraph kullanmaktan kaçın, gerekmedikçe kullanma — ana ağaca müdahale ediyor
-- ÖRNEK DOĞRU FORMAT (AVL ağacı, sol rotasyon adımları):
-
-ÖNCE:
-\`\`\`mermaid
-graph TD
-  A[10] --> B[5]
-  A --> C[15]
-  C --> D[12]
-  C --> E[20]
-\`\`\`
-
-SONRA (ROTASYON):
-\`\`\`mermaid
-graph TD
-  A[15] --> B[10]
-  A --> C[20]
-  B --> D[5]
-  B --> E[12]
-\`\`\`
-- Slaytta üstü kapalı geçilmiş, hocanın anlattığı varsayılan yerlerde 1-2 cümlelik açıklama ekle ki öğrenci anlasın
-- Sayfanın görsel yapısını (liste, tablo, akış) Markdown ile yansıt
+- Formüller, sayısal değerler, birimler aynen korunsun. PDF parse bozuksa (alt indeks/parantez kaybolmuşsa) bağlamdan tahmin edip düzelt; tahmin edemezsen satırı atla.
+- "Açıklama:" başlığı kullanma — açıklama bir sonraki cümle olarak akıcı şekilde yazılsın.
+- Diyagramı SADECE gerçekten yardımcı olduğunda çiz (ağaç yapısı, akış şeması, durum makinesi). Düz tanım/liste için çizme.
+- Diyagram çiziyorsan \`\`\`mermaid bloğu, graph TD formatı. Etiketlerde tek tırnak, iç parantez, ; YASAK.
 
 Format:
 ## 📄 Sayfa [N]
-[Slaytın Türkçe versiyonu — yapısı korunarak, kısaltılmadan, gerektiğinde açıklamalarla]
+[Slaytın Türkçe versiyonu — yapısı korunarak, temiz Türkçe akışla]
 
 Materyal:
 ${t}`,
@@ -6667,36 +6644,45 @@ function buildPagedPrompt(batchText, pageCount, firstPage, isVision = false){
     ? 'Aşağıda yer alan slayt resimlerini OKU ve Türkçeye çevir.'
     : `Aşağıda bir ders materyalinin ${pageCount} sayfası verilmiştir.`;
 
-  return `${sourceClause} HER SAYFAYI Türkçeye çevir + gerektiğinde kısa açıklama ekle.
+  return `${sourceClause} HER SAYFAYI Türkçeye çevir. Bu bir özet değil — slaytın yapısını ve detayını koru, ama TEMİZ TÜRKÇE yaz.
 
-KURALLAR:
-- Her sayfa için MUTLAKA "## 📄 Sayfa [gerçek sayfa numarası]" başlığı kullan
-- Sayfa numaraları materyalde belirtilen numaralar olsun ${isVision ? '(her resmin altında "===== Yukarıdaki resim SAYFA X =====" yazıyor)' : '(===== SAYFA X ===== içindeki X)'}
-- Bu bir ÖZET DEĞİL — slaytı KISALTMA, slaytın yapısını koru
-- Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı
-- Bullet point ise bullet point olarak, başlık ise başlık olarak yaz
-- Teknik terimleri **orijinal dilde** (Türkçe karşılığı) formatında yaz
+⚠️ DİL KURALI — EN ÖNEMLİSİ:
+- Çıktı baştan sona TÜRKÇE olsun. Almanca/İngilizce CÜMLELER yazma.
+- Sadece **TEKNİK TERİMLER** çift dilli verilir, o da TEK BİR FORMATTA: **OrijinalDil** (Türkçe karşılığı)
+- ÖRNEK DOĞRU: "**Wahrscheinlichkeitsfunktion** (olasılık fonksiyonu), bir ayrık rastgele değişkenin her değerine atanan olasılığı verir."
+- ÖRNEK YANLIŞ: "**Wahrscheinlichkeitsfunktion** (Olasılık Fonksiyonu) → Sei X = (X₁,...) eine d-dimensionale diskrete Zufallsvariable, so ist die Wahrscheinlichkeitsfunktion fX definiert durch (X = (X₁,...) d-boyutlu ayrık bir rastgele değişken olsun, bu durumda olasılık fonksiyonu fX şu şekilde tanımlanır:)"
+- AÇIKLAMALAR TEK DİLDE TÜRKÇE — Almanca cümleyi yazıp parantez içinde tekrar çevirme. Almancayı bir kez bile yazma, doğrudan Türkçesini ver.
+
+YAPI KURALI:
+- Her sayfa MUTLAKA "## 📄 Sayfa [numara]" başlığıyla başlasın
+- Sayfa numarası ${isVision ? 'her resmin altındaki "===== Yukarıdaki resim SAYFA X =====" satırından' : '"===== SAYFA X =====" içindeki X\'ten'} alınsın
+- Slaytın yapısını koru: bullet'lar bullet, başlıklar başlık, formüller blok
+- Slaytta 5 madde varsa Türkçesinde de 5 madde olsun
+- Madde içinde madde içinde açıklama gibi karmaşık yapı yapma — düz akış tercih et
+
+FORMÜL KURALI:
 - Formüller, sayısal değerler, birimler aynen korunsun
-- BAŞLIK KALINTILARI: Sayfanın başında ders kodu (örn. "INF204"), üniversite adı, hoca adı, slayt numarası veya "Algoritmalar ve Veri Yapıları II" gibi tekrar eden başlık satırları varsa bunları çıktıya ALMA — bunlar PDF header'ı, slayt içeriği değil. Sadece o sayfanın gerçek içeriğini çevir.
-- Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
-- DİYAGRAM ÇİZİYORSAN: SADECE \`\`\`mermaid ... \`\`\` bloğu kullan. ASLA \`\`\` (düz code) bloğunda ağaç/akış çizme. ASLA /, \\, |, _, - karakterleriyle ASCII art yapma. Eğer mermaid yapmayı bilmiyorsan, diyagram çizmek YERİNE düz metin/madde listesiyle anlat.
-- MERMAID FORMAT KURALLARI:
-  • Her ifade AYRI SATIRDA olmalı, ASLA tek satıra sıkıştırma
-  • İlk satır diagram tipi: graph TD (ağaç/akış), flowchart LR (yatay akış), stateDiagram-v2 (durum). mindmap KULLANMA — parse hatası verir.
-  • Her bağlantı yeni satıra, 2 boşluk indent
-  • Türkçe label kullan, somut değer/isim yaz (A[Kök 7], B[Akma Sınırı]) — generic "k.sol" gibi sembolik isimler kullanma
-  • Maksimum 12 düğüm — daha çok varsa konuyu böl, ayrı diyagramlar yap
-  • Aynı diyagrama 2 farklı durumu (öncesi/sonrası) sıkıştırma — her biri AYRI \`\`\`mermaid bloğu olsun, başlık yaz aralarına
-  • subgraph kullanmaktan kaçın, gerekmedikçe kullanma — ana ağaca müdahale ediyor
-- Anlaşılması zor yerlerde 1-2 cümlelik kısa açıklama ekleyebilirsin
-- Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş ("Bu sayfa kapak/içindekiler tablosu" gibi)
+- PDF parse'ta formül bozuk gözükebilir (alt-indeksler kaybolur, parantezler yarım kalır). Bağlamdan anlayıp düzelt:
+  • "fX x!, ..., x(" gibi bir şey görürsen muhtemelen "f_X(x_1, ..., x_n)" demektir, doğrusunu yaz
+  • Alt-indeks için _1, _2, _n; üst-indeks için ^2, ^n formatını kullan (markdown render eder)
+- Eğer formül çok bozuksa ve tahmin edemiyorsan, satırı atla, çıktıya bozuk hâliyle yazma
+
+DİĞER:
+- BAŞLIK KALINTILARI: Sayfanın başında ders kodu ("INF204"), üniversite adı, hoca adı, slayt numarası veya "Algoritmalar ve Veri Yapıları II" gibi tekrar eden başlık satırları varsa bunları ÇIKARMA — PDF header'ı, slayt içeriği değil.
+- "Açıklama:" başlığı kullanma — açıklama gerekiyorsa doğrudan bir sonraki cümle olarak yaz.
+- Diyagramı SADECE gerçekten yardımcı olduğunda çiz (ağaç yapısı, akış şeması, durum makinesi). Düz tanım/liste için diyagram çizme.
+- Diyagram çiziyorsan \`\`\`mermaid bloğu, graph TD formatı kullan, etiketlerde tek tırnak / iç parantez / ; YASAK.
+- Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş ("Bu sayfa kapak/içindekiler tablosu" gibi).
 
 Format örneği:
 ## 📄 Sayfa ${firstPage}
-[Slaytın Türkçe versiyonu — yapısı korunarak, bullet'lar bullet, formüller aynen]
+**Temel Kavramlar**
 
-## 📄 Sayfa ${firstPage + 1}
-[Slaytın Türkçe versiyonu...]
+**Wahrscheinlichkeitsfunktion** (olasılık fonksiyonu): Ayrık bir rastgele değişkenin her değerine atanan olasılıktır. d-boyutlu ayrık bir rastgele değişken X = (X_1, ..., X_n) için tanım:
+
+f_X(x_1, ..., x_n) = P(X_1 = x_1 ∩ ... ∩ X_n = x_n)
+
+**Verteilungsfunktion** (dağılım fonksiyonu): Değişkenlerin belirli değerlerden küçük veya eşit olma olasılıklarının kümülatif toplamını verir.
 
 ${isVision ? '' : 'Materyal:\n' + batchText}`;
 }
