@@ -5938,209 +5938,100 @@ async function matRunStudyMode(m, pages){
     }
   }
 
-  // Bilgi mesajı
-  matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:13px;color:var(--muted)">📚 <strong>Çalışma Notu</strong> — Materyalin konuları tespit edilip her konu için defter formatında not hazırlanıyor. İki aşamalı: önce konular bulunur, sonra ayrı ayrı yazılır.</div>');
+  matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:13px;color:var(--muted)">📚 <strong>Çalışma Notu</strong> hazırlanıyor — konular tespit edilip her biri için akıcı not yazılıyor.</div>');
 
   const progressEl = document.createElement('div');
-  progressEl.className = 'chunk-progress';
   progressEl.style.cssText = 'font-size:12px;color:var(--muted);margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;';
-  progressEl.textContent = 'Aşama 1/2: Konular tespit ediliyor...';
+  progressEl.textContent = '⏳ Konular işleniyor...';
   if(panel) panel.appendChild(progressEl);
 
-  let topics = [];
-  try {
-    topics = await studyDetectTopics(pages, sessionId);
-  } catch(e){
-    if(progressEl && progressEl.parentNode) progressEl.remove();
-    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Konu tespit hatası: ' + e.message + '</span>');
-    return;
-  }
-
-  if(!topics || topics.length === 0){
-    if(progressEl && progressEl.parentNode) progressEl.remove();
-    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Konu bulunamadı. Materyal çok kısa veya yapısı belirsiz olabilir.</span>');
-    return;
-  }
-
-  // Aşama 2: Her konu için ayrı yazım
-  const writtenTopics = []; // [{title, content, pages}]
-  for(let ti = 0; ti < topics.length; ti++){
-    const topic = topics[ti];
-    progressEl.textContent = 'Aşama 2/2: Konu ' + (ti+1) + '/' + topics.length + ' yazılıyor: ' + topic.title;
-    try {
-      const content = await studyWriteTopic(topic, pages, sessionId, progressEl, ti+1, topics.length);
-      writtenTopics.push({ title: topic.title, content: content, pages: topic.pages });
-    } catch(e){
-      writtenTopics.push({ title: topic.title, content: '_[Bu konu işlenirken hata: ' + e.message + ']_', pages: topic.pages });
-    }
-    // Konular arası gecikme — rate limit için
-    if(ti < topics.length - 1) await new Promise(function(r){ setTimeout(r, 3500); });
-  }
-
-  if(progressEl && progressEl.parentNode) progressEl.remove();
-
-  // Birleştirilmiş markdown (kayıt için)
-  const combinedMd = writtenTopics.map(function(t){
-    const pageRange = (t.pages && t.pages.length) ? ' (Sayfa ' + t.pages.join(', ') + ')' : '';
-    return '## 📚 ' + t.title + pageRange + '\n' + t.content;
+  // Tüm sayfaları tek metinde birleştir
+  const combinedText = pages.map(function(p){
+    return '===== SAYFA ' + p.page + ' =====\n' + (p.text || '');
   }).join('\n\n');
 
-  // UI render
-  renderStudyTopics(writtenTopics, panel, m);
-
-  // Kaydet
-  if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, combinedMd, { variant: 'study' });
-  if(m.fileHash) saveSharedCache(m.fileHash, mode, 'study', combinedMd, { topicCount: writtenTopics.length });
-  matModeReady[mode] = true;
-  if(typeof updateSummaryPillDots === 'function') updateSummaryPillDots();
-  showToast(writtenTopics.length + ' konu hazır!');
-}
-
-// Aşama 1: Konu tespiti — sayfa başlığı + ilk 200 karakter
-async function studyDetectTopics(pages, sessionId){
-  // Her sayfanın özet snippet'ini çıkar
-  const snippets = pages.map(function(p){
-    const text = (p.text || '').trim();
-    // İlk satırı başlık olarak al, sonraki 200 karakteri özet olarak
-    const lines = text.split('\n').filter(function(l){ return l.trim().length > 0; });
-    const heading = (lines[0] || '').trim().substring(0, 100);
-    const snippet = text.substring(0, 250).replace(/\s+/g, ' ').trim();
-    return 'SAYFA ' + p.page + ' | Başlık: "' + heading + '" | İçerik: ' + snippet;
-  }).join('\n');
-
-  const prompt = `Sen bir ders materyalini analiz ediyorsun. Aşağıda her sayfanın başlığı ve ilk içeriği var. Bu materyaldeki ANA KONULARI tespit et.
-
-GÖREV: Bu materyal hangi konuları işliyor? Her konunun hangi sayfalarda olduğunu da belirt.
-
-KURALLAR:
-- Konular ayrık olmalı — aynı konuyu iki kez listeleme
-- Bir konu birden fazla sayfaya yayılabilir, hepsini birleştir
-- Kapak, içindekiler, kaynakça gibi ana konu olmayan sayfaları "Giriş" veya "Kaynaklar" gibi tek konuya topla — ya da hiç dahil etme
-- Konu sayısı 5-15 arası olsun (çok az ise birleştirme bozulur, çok fazla ise konu bütünlüğü gider)
-- Konu başlıkları Türkçe olsun (orijinal Almanca başlık varsa parantezde ekle)
-
-ÇIKTI FORMATI — KESİN JSON, başka hiçbir şey yazma:
-{
-  "topics": [
-    {"title": "Konu başlığı (Almanca/İngilizce orijinal)", "pages": [3,4,5]},
-    {"title": "İkinci konu", "pages": [6,7]}
-  ]
-}
-
-Materyal sayfaları:
-${snippets}`;
-
-  const resp = await fetch(BACKEND_URL + '/api/ai', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
-    body: JSON.stringify({
-      mode: 'study',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
-    })
-  });
-  const data = await resp.json();
-  if(!resp.ok) throw new Error(data.error || 'Server error: ' + resp.status);
-  const text = (data.content || []).map(function(c){ return c.text || ''; }).join('');
-
-  // JSON parse — bazen ```json ... ``` ile gelebilir
-  let cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
-  // İlk { ile son } arasını al
-  const firstBrace = cleaned.indexOf('{');
-  const lastBrace = cleaned.lastIndexOf('}');
-  if(firstBrace >= 0 && lastBrace > firstBrace){
-    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch(e){
-    throw new Error('Konu listesi parse edilemedi (JSON hatası): ' + e.message);
-  }
-
-  if(!parsed.topics || !Array.isArray(parsed.topics)) return [];
-  // Sayfa numaralarını filtrele (gerçek sayfa olanları al)
-  const validPages = new Set(pages.map(function(p){ return p.page; }));
-  return parsed.topics.map(function(t){
-    return {
-      title: String(t.title || '').trim(),
-      pages: (Array.isArray(t.pages) ? t.pages : []).map(function(p){ return parseInt(p); }).filter(function(p){ return validPages.has(p); })
-    };
-  }).filter(function(t){ return t.title && t.pages.length > 0; });
-}
-
-// Aşama 2: Tek konu için ilgili sayfaları topla, defter formatında yaz
-async function studyWriteTopic(topic, pages, sessionId, progressEl, currentIdx, totalCount){
-  // İlgili sayfaların metnini topla
-  const relevantPages = pages.filter(function(p){ return topic.pages.indexOf(p.page) >= 0; });
-  const combinedText = relevantPages.map(function(p){
-    return '===== SAYFA ' + p.page + ' =====\n' + p.text;
-  }).join('\n\n');
-
-  const prompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademisyensin. Aşağıda "${topic.title}" konusunun materyaldeki sayfaları verilmiştir.
-
-GÖREV: Bu konuyu sınava hazırlanan bir öğrenciye DETAYLI ama TEKRARSIZ olarak anlat.
+  const prompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademisyensin. Aşağıda bir ders materyalinin sayfaları verilmiştir. Bu materyal için TÜM konuları KONU-KONU organize edilmiş çalışma notu olarak yaz.
 
 ⚠️ ANA İLKE — TEKRAR YASAĞI:
 AI'lar "Tanımı: X. Neden önemli: çünkü X. Nasıl çalışır: X yöntemiyle. Örneği: X kullanılır." gibi alt-başlıklar açıp aynı kavramı 4-5 kez farklı kelimelerle tekrarlıyor. BUNU YAPMA.
 Aynı bilgi metinde sadece 1 kez geçsin — farklı açılardan tekrar açıklama.
 
+⚠️ DİL KURALI:
+- Çıktı baştan sona TÜRKÇE olsun. Almanca/İngilizce CÜMLELER yazma.
+- Sadece TEKNİK TERİMLER çift dilli verilir, TEK FORMATTA: **OrijinalDil** (Türkçe karşılığı). Sadece terimin ilk geçtiği yerde.
+- AÇIKLAMALAR TEK DİLDE TÜRKÇE — Almanca cümleyi yazıp parantezde tekrar çevirme.
+
 YAPILANDIRMA:
-- Akıcı bir anlatım yaz: kavramı tanıt → mekanizmasını/işleyişini açıkla → varsa formüller ve sayısal değerler doğal akışta yer alsın → kritik bir örnek varsa sonuna ekle
-- Kalın başlıklar (**X:**) AÇMA — anlatım akıcı paragraflar halinde olsun
-- İhtiyaç varsa 2-3 paragraflık bir anlatım ol — tek paragrafta sıkıştırma da, 7 alt-bölüme bölme de.
-- Slayttaki tüm önemli detayları kapsa (formüller, sayısal eşikler, terim çevirileri, koşullar, istisnalar). Slaytın geçtiği şeyi atlama, ama yorumlama da yapma.
-- Slaytta üstü kapalı bırakılmış bir mekanizma varsa (matematiksel adım, algoritma akışı) onu tamamla — öğrencinin anlaması için bağlam ekle. Ama slaytta hiç olmayan kavramı uydurma.
+- Materyalin ANA KONULARINI tespit et (sayfa başlıkları, bölüm yapısı rehber). Kapak/içindekiler/kaynakça gibi sayfaları konu sayma.
+- Konu sayısı 5-15 arası olsun. Her konu birden fazla sayfaya yayılabilir, birleştir.
+- Her konu için akıcı paragraf(lar)la yaz — alt-başlık AÇMA, "Tanım:", "Nasıl çalışır:" YAZMA.
+- İhtiyaca göre 1-3 paragraf — basit konuda kısa, karmaşık konuda uzun.
+- Slayttaki tüm önemli detayları kapsa (formüller, sayısal eşikler, terim çevirileri, koşullar, istisnalar).
+- Slaytta üstü kapalı bırakılmış mekanizmayı (algoritma adımları, matematiksel türetme) tamamla — bağlam ekle.
+- Yapay genişletme yok: slaytta hiç olmayan kavramı uydurma.
+- Dolgu cümle yok: "şuna dikkat etmek gerekir, bu önemlidir" gibi boş ifadeler kullanma.
 
-KURALLAR:
-- Türkçe yaz, teknik terimleri orijinal dilde tut, parantez içinde Türkçe ekle: **Streckgrenze** (akma sınırı)
+FORMÜL KURALI:
 - Formüller, sayısal değerler, birimler aynen korunsun
-- Diyagramı SADECE gerçekten yardımcı olduğunda çiz (ağaç yapısı, akış, durum makinesi, kavram ilişkileri). Düz tanım/liste için ÇİZME.
-- Diyagram çiziyorsan: \`\`\`mermaid bloğu, graph TD formatında. Etiketlerde tek tırnak, iç parantez, ; YASAK.
-- Konu başlığını TEKRAR YAZMA (zaten dışarıda var)
-- Sadece bu konuyu yaz, başka konulara dalma
+- PDF parse'ta bozulmuşsa (alt-indeksler kaybolur, parantezler yarım kalır) bağlamdan tahmin et:
+  • "fX x!, ..., x(" gibi bir şey → muhtemelen "f_X(x_1, ..., x_n)" demektir
+- Çok bozuksa satırı atla, bozuk hâliyle yazma.
 
-ÇIKTI: Doğrudan akıcı anlatımla başla. Konu basit ise daha kısa, karmaşık ise daha uzun yaz — ama her bilgi metinde sadece 1 kez geçsin.
+DİYAGRAM (opsiyonel):
+- SADECE gerçekten yardımcı oluyorsa çiz (ağaç yapısı, akış, durum makinesi).
+- \`\`\`mermaid bloğu, graph TD formatı. Etiketlerde tek tırnak, iç parantez, ; YASAK.
 
-Sayfalar:
+ÇIKTI FORMATI — KESİN bu format, başka hiçbir şey yazma:
+
+## 📚 [Konu başlığı] (Sayfa 3, 4, 5)
+[Konunun akıcı anlatımı — 1-3 paragraf. Alt-başlık YASAK.]
+
+## 📚 [İkinci konu] (Sayfa 6, 7)
+[İçerik...]
+
+(Her konu başlığı "## 📚 " ile başlamalı, ardından parantez içinde "Sayfa X, Y, Z" formatında o konunun bulunduğu sayfalar listelensin.)
+
+Materyal sayfaları:
 ${combinedText}`;
 
-  const MAX_RETRIES = 3;
-  let attempt = 0;
-  while(attempt <= MAX_RETRIES){
-    try {
-      const resp = await fetch(BACKEND_URL + '/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
-        body: JSON.stringify({
-          mode: 'study',
-          max_tokens: 6000,
-          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
-        })
-      });
-      const data = await resp.json();
-      if(!resp.ok) throw new Error(data.error || 'Server error: ' + resp.status);
-      return (data.content || []).map(function(c){ return c.text || ''; }).join('');
-    } catch(e){
-      const msg = String(e.message || '').toLowerCase();
-      const isRetryable = msg.indexOf('quota') >= 0 || msg.indexOf('rate limit') >= 0 || msg.indexOf('retry in') >= 0 || msg.indexOf('429') >= 0 || msg.indexOf('high demand') >= 0 || msg.indexOf('overload') >= 0 || msg.indexOf('experiencing') >= 0 || msg.indexOf('try again') >= 0 || msg.indexOf('temporary') >= 0 || msg.indexOf('503') >= 0 || msg.indexOf('502') >= 0 || msg.indexOf('529') >= 0 || msg.indexOf('500') >= 0;
-      if(isRetryable && attempt < MAX_RETRIES){
-        const retryMatch = String(e.message || '').match(/retry in (\d+(?:\.\d+)?)\s*s/i);
-        let waitMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000 : 15000;
-        if(waitMs > 90000) waitMs = 90000;
-        attempt++;
-        if(progressEl) progressEl.textContent = '⏸ Gemini API limiti — ' + Math.round(waitMs/1000) + 'sn sonra tekrar denenecek (Konu ' + currentIdx + '/' + totalCount + ', deneme ' + attempt + '/' + MAX_RETRIES + ')';
-        await new Promise(function(r){ setTimeout(r, waitMs); });
-        continue;
-      }
-      throw e;
-    }
+  let resultMd = '';
+  try {
+    const resp = await fetch(BACKEND_URL + '/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+      body: JSON.stringify({
+        mode: 'study',
+        max_tokens: 16000,
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
+      })
+    });
+    const data = await resp.json();
+    if(!resp.ok) throw new Error(data.error || 'Server error: ' + resp.status);
+    resultMd = (data.content || []).map(function(c){ return c.text || ''; }).join('');
+  } catch(e){
+    if(progressEl && progressEl.parentNode) progressEl.remove();
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Hata: ' + e.message + '</span>');
+    return;
   }
-  throw new Error('Max retry aşıldı');
+
+  if(progressEl && progressEl.parentNode) progressEl.remove();
+
+  if(!resultMd.trim()){
+    matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Çalışma notu üretilemedi. Tekrar dene.</span>');
+    return;
+  }
+
+  // UI render — parser ## 📚 Başlık (Sayfa X, Y) formatını tanır
+  renderStudyFromMarkdown(resultMd, panel, m);
+
+  // Kaydet
+  if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, resultMd, { variant: 'study' });
+  if(m.fileHash) saveSharedCache(m.fileHash, mode, 'study', resultMd, {});
+  matModeReady[mode] = true;
+  if(typeof updateSummaryPillDots === 'function') updateSummaryPillDots();
+  showToast('Çalışma notu hazır!');
 }
 
-// Tek konu kartı oluştur (collapsible)
 function buildStudyCard(topic, idx, total){
   const card = document.createElement('div');
   card.className = 'study-card';
