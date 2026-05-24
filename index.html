@@ -32,24 +32,30 @@
       theme: 'dark',
       securityLevel: 'loose',
       flowchart: {
-        curve: 'linear',
+        curve: 'basis',
         useMaxWidth: true,
         htmlLabels: true,
-        nodeSpacing: 40,
-        rankSpacing: 50,
-        padding: 16,
-        diagramPadding: 12
+        nodeSpacing: 25,
+        rankSpacing: 35,
+        padding: 8,
+        diagramPadding: 8
       },
       themeVariables: {
-        primaryColor: '#1e293b',
-        primaryTextColor: '#e2e8f0',
-        primaryBorderColor: '#475569',
+        // App paletiyle uyumlu — accent blue ve surface tonları
+        primaryColor: '#3b82f6',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#60a5fa',
         lineColor: '#94a3b8',
-        secondaryColor: '#334155',
-        tertiaryColor: '#0f172a',
-        clusterBkg: '#1e1b4b',
-        clusterBorder: '#6366f1',
-        fontSize: '14px'
+        secondaryColor: '#323232',
+        tertiaryColor: '#2a2a2a',
+        background: 'transparent',
+        mainBkg: '#3b82f6',
+        secondBkg: '#323232',
+        clusterBkg: '#2a2a2a',
+        clusterBorder: '#475569',
+        edgeLabelBackground: '#2a2a2a',
+        fontSize: '13px',
+        fontFamily: '"DM Sans", sans-serif'
       }
     });
   }
@@ -6889,7 +6895,7 @@ function matMd(text){
     // Benzersiz id (her render için farklı olmalı)
     const id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
     // Code'u textarea olarak gömüyoruz, sonra renderMermaidIn() onu işleyecek
-    return `<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="padding:12px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin:10px 0;overflow-x:auto;max-width:100%;"><div style="font-size:10px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">📊 Diyagram</div><div class="md-mermaid-target" style="text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center;">⏳ Diyagram yükleniyor...</div></div></div>`;
+    return `<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden;max-width:100%;"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">📊 Diyagram</div><div class="md-mermaid-target" style="text-align:center;min-height:40px;display:flex;align-items:center;justify-content:center;">⏳ Diyagram yükleniyor...</div></div></div>`;
   });
 
   // Kod blokları (```)
@@ -7066,22 +7072,19 @@ async function renderMermaidIn(element){
 
     if(svg){
       targetEl.innerHTML = svg;
-      // SVG boyut kontrolü — kompakt ve okunaklı tut
+      // SVG boyut kontrolü — kompakt, ekranı zorlamasın
       const svgEl = targetEl.querySelector('svg');
       if(svgEl){
         svgEl.style.maxWidth = '100%';
         svgEl.style.height = 'auto';
-        svgEl.style.fontSize = '13px';
+        svgEl.style.maxHeight = '400px';
+        svgEl.style.fontSize = '12px';
         svgEl.removeAttribute('width');
-        // Çok uzun diyagramlarda max-height sınırla, scroll ver
-        const svgH = svgEl.viewBox?.baseVal?.height || 0;
-        if(svgH > 600){
-          targetEl.style.maxHeight = '500px';
-          targetEl.style.overflowY = 'auto';
-          targetEl.style.overflowX = 'hidden';
-        } else {
-          svgEl.removeAttribute('height');
-        }
+        svgEl.removeAttribute('height');
+        // Target wrapper'a da max-height: çok uzun diyagramda scroll devreye girsin
+        targetEl.style.maxHeight = '420px';
+        targetEl.style.overflowY = 'auto';
+        targetEl.style.overflowX = 'auto';
       }
       container.setAttribute('data-rendered', '1');
     } else {
