@@ -958,6 +958,20 @@
     border-radius: 0 8px 8px 0; font-style: italic;
     color: var(--text2);
   }
+  /* Markdown tablo */
+  .md-table-wrap { overflow-x: auto; margin: 12px 0; border-radius: 8px; }
+  .md-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .md-table th {
+    background: var(--surface2); color: var(--text);
+    font-weight: 600; padding: 7px 12px;
+    border: 1px solid var(--border); text-align: center;
+  }
+  .md-table td {
+    padding: 6px 12px; border: 1px solid var(--border);
+    text-align: center; color: var(--text2);
+  }
+  .md-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
   /* Grafik açıklama kartı — > 📊 ile başlayan blockquote'lar */
   .md-quote-graphic {
     border-left: 3px solid #34d399;
@@ -6730,6 +6744,7 @@ $$f_X(x_1, ..., x_n) = P(X_1 = x_1 \\cap ... \\cap X_n = x_n)$$
 2. "x_1", "f_X", "Σ", "μ", "∫", "≤" gibi sembolleri ASLA düz metin olarak yazma — hepsi $...$ veya $$...$$ içinde.
 3. Madde işareti: yıldız (*) YERINE tire (-) kullan.
 4. Almanca cümle yazma — sadece terim+Türkçe karşılığı şeklinde.
+5. SAYFA KONTROLÜ: ${pageCount} sayfa verildi — çıktında da tam ${pageCount} adet "## 📄 Sayfa X" başlığı olmalı. SON SAYFAYI ATLAMA.
 
 ${isVision ? '' : 'Materyal:\n' + batchText}`;
 }
@@ -6949,6 +6964,35 @@ function matMd(text){
   });
   // Inline kod
   s = s.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+
+  // Markdown tablolar — | col | col | formatını HTML'e çevir
+  // Separator satırları |:---|---:| şeklinde, header'dan sonra gelir
+  s = s.replace(/((?:(?:^|\n)\|[^\n]+\|[ \t]*){2,})/g, (tableBlock) => {
+    const rows = tableBlock.trim().split('\n')
+      .map(r => r.trim()).filter(r => /^\|.+\|$/.test(r));
+    if(rows.length < 2) return tableBlock;
+    const isSep = r => /^\|[\s|\-:]+\|$/.test(r);
+    const parseRow = r => r.split('|').slice(1,-1).map(c => c.trim());
+    let headerRow = null, dataRows = [];
+    if(rows.length >= 2 && isSep(rows[1])){
+      headerRow = rows[0]; dataRows = rows.slice(2);
+    } else {
+      dataRows = rows;
+    }
+    let html = '<div class="md-table-wrap"><table class="md-table">';
+    if(headerRow){
+      html += '<thead><tr>' + parseRow(headerRow).map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+    }
+    html += '<tbody>';
+    dataRows.forEach(row => {
+      if(!isSep(row)){
+        html += '<tr>' + parseRow(row).map(c => `<td>${c}</td>`).join('') + '</tr>';
+      }
+    });
+    html += '</tbody></table></div>';
+    return html;
+  });
+
   // Başlıklar (uzundan kısaya — regex öncelik için)
   s = s.replace(/^#### (.+)/gm, '<h5 class="md-h4" style="font-size:12px;color:var(--muted);">$1</h5>');
   s = s.replace(/^### (.+)/gm, '<h4 class="md-h4">$1</h4>');
