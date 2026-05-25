@@ -958,6 +958,15 @@
     border-radius: 0 8px 8px 0; font-style: italic;
     color: var(--text2);
   }
+  /* Grafik açıklama kartı — > 📊 ile başlayan blockquote'lar */
+  .md-quote-graphic {
+    border-left: 3px solid #34d399;
+    background: rgba(52,211,153,0.06);
+    font-style: normal;
+    color: var(--text);
+    padding: 10px 14px;
+  }
+  .md-quote-graphic strong { color: #34d399; }
 
   /* SVG Diagram Container */
   .md-svg-container {
@@ -6358,12 +6367,26 @@ async function matRunPagedSummary(m, pages){
   }
 
   // Sayfaları 4'erli batch'lere böl — TEXT sayfaları için
-  // VISION sayfaları AYRI işlenecek (her batch'te 1 sayfa, payload büyük)
-  const PAGES_PER_BATCH_TEXT = 4;
-  const PAGES_PER_BATCH_VISION = 2; // her vision batch'inde max 2 sayfa (token tasarrufu)
+  // VISION sayfaları AYRI işlenecek (her batch'te 2 sayfa, payload büyük)
+  // HYBRID sayfaları = metin var AMA grafik referansı geçiyor → resim+metin birlikte gönder
+  const PAGES_PER_BATCH_TEXT   = 4;
+  const PAGES_PER_BATCH_VISION = 2;
+  const PAGES_PER_BATCH_HYBRID = 2;
 
-  // Sayfaları text vs vision olarak ayır
-  const textPages = pages.filter(p => !emptyPageNums.has(p.page));
+  // Grafik/diyagram referansı içeren metin sayfalarını tespit et.
+  // Bu sayfalar Vision modunda hem resim hem metin olarak gönderilir.
+  const FIGURE_KEYWORDS = /\b(abbildung|abbildungen|abb\.|figure|figures|fig\.|grafik|diagramm|diagramme|schaubild|graph|chart|kurve|kurven|bild|bilder|darstellung|verlauf|kennlinie)\b/i;
+  const figurePageNums = new Set(
+    hasPdfDoc
+      ? pages
+          .filter(p => !emptyPageNums.has(p.page) && p.text && FIGURE_KEYWORDS.test(p.text))
+          .map(p => p.page)
+      : []
+  );
+
+  // Sayfaları text / hybrid / vision olarak sınıflandır
+  const textPages   = pages.filter(p => !emptyPageNums.has(p.page) && !figurePageNums.has(p.page));
+  const hybridPages = pages.filter(p => figurePageNums.has(p.page));
   const visionPages = canUseVision ? pages.filter(p => emptyPageNums.has(p.page)) : [];
 
   // Batch'ler
@@ -6371,12 +6394,24 @@ async function matRunPagedSummary(m, pages){
   for(let i = 0; i < textPages.length; i += PAGES_PER_BATCH_TEXT){
     textBatches.push({ kind: 'text', pages: textPages.slice(i, i + PAGES_PER_BATCH_TEXT) });
   }
+  const hybridBatches = [];
+  for(let i = 0; i < hybridPages.length; i += PAGES_PER_BATCH_HYBRID){
+    hybridBatches.push({ kind: 'hybrid', pages: hybridPages.slice(i, i + PAGES_PER_BATCH_HYBRID) });
+  }
   const visionBatches = [];
   for(let i = 0; i < visionPages.length; i += PAGES_PER_BATCH_VISION){
     visionBatches.push({ kind: 'vision', pages: visionPages.slice(i, i + PAGES_PER_BATCH_VISION) });
   }
   // Sayfa sırasına göre tüm batch'leri birleştir
-  const allBatches = [...textBatches, ...visionBatches].sort((a, b) => a.pages[0].page - b.pages[0].page);
+  const allBatches = [...textBatches, ...hybridBatches, ...visionBatches]
+    .sort((a, b) => a.pages[0].page - b.pages[0].page);
+
+  // Hybrid sayfalar hakkında kullanıcıyı bilgilendir
+  if(hybridPages.length > 0){
+    matAddMsgToPanel(mode, 'ai', `<div style="padding:12px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:10px;font-size:13px;">
+      🖼️ <strong>${hybridPages.length} sayfada</strong> grafik/diyagram referansı tespit edildi — bu sayfalar resim olarak da gönderilecek, görseller açıklanacak.
+    </div>`);
+  }
 
   // Bilgi mesajı
   matAddMsgToPanel(mode, 'ai', `<div style="padding:12px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;font-size:13px;color:var(--muted)">
@@ -6401,7 +6436,21 @@ Kuralların:
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığını ekle: **Streckgrenze** (akma sınırı).
 - Formüller, denklemler, sayısal değerler, birimler aynen korunsun.
 - Slaytta üstü kapalı geçilen yerlerde, kavramı anlamayan öğrenci için 1-2 cümlelik açıklama ekleyebilirsin.
-- HER SAYFAYI ayrı yaz — sayfa atlama, sayfa birleştirme.`;
+- HER SAYFAYI ayrı yaz — sayfa atlama, sayfa birleştirme.
+
+GRAFİK/GÖRSEL İÇERİK KURALLARI (çok önemli):
+Slayt resmini görebiliyorsan (resim veya hibrit modda):
+  - Grafik / Eğri / Plot varsa şu formatta açıkla:
+    > 📊 **[Grafiğin başlığı veya konuya göre isim]**
+    > X ekseni: [ne gösteriyor + birimi]
+    > Y ekseni: [ne gösteriyor + birimi]
+    > [Eğrinin davranışı, önemli nokta/bölge/sıçrama, mühendislik yorumu — 2-3 cümle]
+  - Tablo varsa: Markdown tablo formatına dönüştür (| Başlık | Değer |)
+  - Akış şeması / blok diyagram varsa: \`\`\`mermaid bloğu ile yeniden çiz (graph TD)
+  - Fotoğraf / teknik çizim varsa: 2-3 cümle Türkçe açıklama
+Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi referans geçiyorsa:
+  - Bağlamdan ne gösterdiğini tahmin et: > 📊 **Grafik:** [2 cümle bağlama dayalı açıklama]
+  - Tahmin edemiyorsan: > 📊 **Grafik:** *(Bu sayfada görsel içerik bulunuyor.)*`;
 
   const allPageSummaries = []; // [{page, summary}]
   let processedPages = 0;
@@ -6410,7 +6459,7 @@ Kuralların:
     const batch = allBatches[bi];
     const firstPage = batch.pages[0].page;
     const lastPage = batch.pages[batch.pages.length - 1].page;
-    const kindLabel = batch.kind === 'vision' ? '🖼️ ' : '';
+    const kindLabel = batch.kind === 'vision' ? '🖼️ ' : batch.kind === 'hybrid' ? '🖼️✏️ ' : '';
 
     progressEl.textContent = `⏳ ${kindLabel}Sayfa ${firstPage}-${lastPage} işleniyor... (${processedPages}/${pages.length})`;
 
@@ -6419,7 +6468,7 @@ Kuralların:
     let messageContent; // Anthropic content array
 
     if(batch.kind === 'text'){
-      // TEXT BATCH — eskisi gibi metin gönder
+      // TEXT BATCH — eskisi gibi sadece metin gönder
       const batchText = batch.pages.map(p =>
         `===== SAYFA ${p.page} =====\n${p.text}\n`
       ).join('\n');
@@ -6427,8 +6476,48 @@ Kuralların:
       batchPrompt = buildPagedPrompt(batchText, batch.pages.length, firstPage);
       messageContent = [{type:'text', text: batchPrompt}];
 
+    } else if(batch.kind === 'hybrid'){
+      // HYBRID BATCH — metin var AMA grafik referansı geçiyor
+      // Hem sayfa resmini hem metin katmanını gönder — AI ikisini birlikte değerlendirir
+      progressEl.textContent = `⏳ 🖼️✏️ Sayfa ${firstPage}-${lastPage} (grafik+metin) hazırlanıyor...`;
+
+      messageContent = [];
+      for(const p of batch.pages){
+        try {
+          const { base64, mediaType } = await renderPdfPageToBase64(matFileData.pdfDoc, p.page, 2.0);
+          messageContent.push({
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: base64 }
+          });
+          // Metin katmanını da ekle — formüllerin kesin okunması için
+          messageContent.push({
+            type: 'text',
+            text: `===== SAYFA ${p.page} — Resim yukarıda. Metin katmanı (formüller için referans): =====\n${p.text || ''}\n`
+          });
+        } catch(renderErr){
+          console.error('[paged/hybrid] Sayfa render hatası', p.page, renderErr);
+          // Render başarısız → sadece metin ile devam et
+          messageContent.push({
+            type: 'text',
+            text: `===== SAYFA ${p.page} =====\n${p.text || ''}\n`
+          });
+        }
+      }
+
+      if(messageContent.length === 0){
+        progressEl.textContent = `⚠️ Sayfa ${firstPage}-${lastPage} işlenemedi, atlandı`;
+        processedPages += batch.pages.length;
+        continue;
+      }
+
+      // Hybrid için talimat — hem resim hem metin var, ikisini birlikte değerlendir
+      messageContent.push({
+        type: 'text',
+        text: buildPagedPrompt('[Sayfa resmi ve metin katmanı birlikte verildi — grafikler resimden, formüller metin katmanından oku]', batch.pages.length, firstPage, /*isVision*/ true, /*isHybrid*/ true)
+      });
+
     } else {
-      // VISION BATCH — sayfaları image olarak gönder
+      // VISION BATCH — tamamen görsel sayfa, sadece resim gönder
       progressEl.textContent = `⏳ 🖼️ Sayfa ${firstPage}-${lastPage} resim olarak hazırlanıyor...`;
 
       messageContent = [];
@@ -6559,8 +6648,10 @@ Kuralların:
  * Paged summary için ortak prompt builder.
  * Hem text hem vision modunda kullanılır.
  */
-function buildPagedPrompt(batchText, pageCount, firstPage, isVision = false){
-  const sourceClause = isVision
+function buildPagedPrompt(batchText, pageCount, firstPage, isVision = false, isHybrid = false){
+  const sourceClause = isHybrid
+    ? 'Her sayfa için hem slayt RESMİ (görsel içerik) hem PDF METIN KATMANI (formüller için referans) verilmiştir. İKİSİNİ BİRLİKTE değerlendir: görseli formüller/grafikler için, metin katmanını kesin yazım için kullan.'
+    : isVision
     ? 'Aşağıda yer alan slayt resimlerini OKU ve Türkçeye çevir.'
     : `Aşağıda bir ders materyalinin ${pageCount} sayfası verilmiştir.`;
 
@@ -6605,6 +6696,17 @@ KURAL: Eğer bir ifade içinde tek bir alt-indeks bile varsa (x_1, f_X, μ_X gib
 PDF parse'ta formül bozuk gözükürse bağlamdan tahmin et:
 - "fX x!, ..., x(" muhtemelen "$f_X(x_1, ..., x_n)$"
 - Çok bozuksa satırı atla — bozuk hâliyle yazma.
+
+GRAFİK/GÖRSEL KURALI${(isVision || isHybrid) ? ' (Resim görüyorsun — ZORUNLU)' : ' (Metin modu)'}:
+${(isVision || isHybrid) ? `- Grafiği/eğriyi görüyorsan MUTLAKA şu formatta açıkla (geçiştirme, görmezden gelme):
+  > 📊 **[Grafiğin başlığı veya konuya göre isim]**
+  > X ekseni: [ne, birimi]  |  Y ekseni: [ne, birimi]
+  > [Eğrinin davranışı, tepe/dip/dönüm noktaları, önemli bölgeler, mühendislik yorumu — 2-3 cümle]
+- Tablo varsa: Markdown tablo formatına dönüştür (| Başlık | Değer |)
+- Akış şeması / blok diyagram varsa: \`\`\`mermaid bloğu ile yeniden çiz (graph TD)
+- Fotoğraf / teknik resim / devre şeması varsa: 2-3 cümle Türkçe açıklama` : `- Metinde "Abbildung X", "Abb. X", "Figure X", "Fig. X", "Grafik X" referansı varsa:
+  > 📊 **Grafik:** [bağlamdan 2 cümle — eksenler, değerler veya içeriği tahmin et]
+  Tahmin edemiyorsan: > 📊 **Grafik:** *(Bu sayfada görsel içerik var.)*`}
 
 DİĞER:
 - BAŞLIK KALINTILARI: Sayfanın başında ders kodu ("INF204"), üniversite adı, hoca adı, slayt numarası veya "Algoritmalar ve Veri Yapıları II" gibi tekrar eden başlık satırları varsa bunları ÇIKARMA — PDF header'ı, slayt içeriği değil.
@@ -6864,7 +6966,8 @@ function matMd(text){
   s = s.replace(/((?:<li>.*?<\/li>\s*)+)/g, '<ul class="md-ul">$1</ul>');
   // Yatay çizgi
   s = s.replace(/^---$/gm, '<hr class="md-hr">');
-  // Blockquote
+  // Blockquote — 📊 ile başlayanlar grafik kartı olarak özel stillendirilir
+  s = s.replace(/^&gt; (📊.+)/gm, '<blockquote class="md-quote md-quote-graphic">$1</blockquote>');
   s = s.replace(/^&gt; (.+)/gm, '<blockquote class="md-quote">$1</blockquote>');
   // Satır sonları
   s = s.replace(/\n{2,}/g, '<br><br>');
