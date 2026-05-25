@@ -3383,6 +3383,8 @@ function studioAddMsgToDOM(role, html){
     <div class="studio-msg-bubble">${html}</div>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
+  // KaTeX + Mermaid render — matAddMsgToPanel ile aynı davranış
+  if(role === 'assistant') setTimeout(function(){ renderRichContent(div); }, 0);
   return div;
 }
 
@@ -3626,7 +3628,14 @@ async function studioSend(){
     if(!sessionId) throw new Error('Giriş yapman gerekiyor.');
 
     const msgs = [...studioHistory, { role:'user', content:[{type:'text',text:prompt}] }];
-    const studioSystem = 'Sen AkademiX AI Studio asistanısın. Türkçe cevap ver. Markdown kullan. Konu görsel anlatıma uygunsa (tree, graph, algoritma, devre, akış şeması) SVG diyagram çiz. Materyaller eklendiğinde onların içeriğine dayanarak kapsamlı cevaplar ver.';
+    const studioSystem = `Sen AkademiX AI Studio asistanısın. Türkçe cevap ver. Markdown kullan. Materyaller eklendiğinde onların içeriğine dayanarak kapsamlı cevaplar ver.
+
+DİYAGRAM KURALLARI:
+- Ağaç, akış şeması, durum makinesi, hiyerarşi → \`\`\`mermaid (graph TD)
+- Bar chart, çizgi grafik, scatter, histogram, pasta grafik → MUTLAKA \`\`\`svg (SVG çiz, mermaid xychart KULLANMA)
+- Devre şeması, kuvvet diyagramı, geometrik şekil → \`\`\`svg
+SVG kuralları: viewBox="0 0 700 400", eksenleri çiz (<line>), barlar için <rect>, veri noktaları için <circle>. Renkler: #3b82f6 mavi, #34d399 yeşil, #f87171 kırmızı, #fbbf24 sarı. Arka plan: <rect width="100%" height="100%" fill="var(--surface2,#1e1e2e)"/>. Metin: fill="#94a3b8".`;
+
     const studioMaxTokens = studioAttached.length > 0 ? 8000 : 4000;
     const resp = await fetch(BACKEND_URL + '/api/ai', {
       method:'POST',
