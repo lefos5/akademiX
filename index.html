@@ -6014,6 +6014,12 @@ DİYAGRAM (opsiyonel):
 
 (Her konu başlığı "## 📚 " ile başlamalı, ardından parantez içinde "Sayfa X, Y, Z" formatında o konunun bulunduğu sayfalar listelensin.)
 
+⚠️ SON HATIRLATMA — ÇIKTI ÖNCESİ KONTROL ET:
+1. Her formül/matematik ifade $...$ veya $$...$$ içinde mi?
+2. "x_1", "f_X", "Σ", "μ", "∫", "≤" sembolleri ASLA düz metin değil — hepsi LaTeX'te.
+3. Madde işareti yıldız (*) DEĞİL, tire (-) kullan.
+4. Almanca cümle yazma — sadece **terim** (Türkçe) formatında.
+
 Materyal sayfaları:
 ${combinedText}`;
 
@@ -6607,15 +6613,21 @@ DİĞER:
 - Diyagram çiziyorsan \`\`\`mermaid bloğu, graph TD formatı kullan, etiketlerde tek tırnak / iç parantez / ; YASAK.
 - Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş ("Bu sayfa kapak/içindekiler tablosu" gibi).
 
-Format örneği:
+Format örneği (FORMÜLLER LATEX İÇİNDE — bu örneği aynen takip et):
 ## 📄 Sayfa ${firstPage}
 **Temel Kavramlar**
 
-**Wahrscheinlichkeitsfunktion** (olasılık fonksiyonu): Ayrık bir rastgele değişkenin her değerine atanan olasılıktır. d-boyutlu ayrık bir rastgele değişken X = (X_1, ..., X_n) için tanım:
+**Wahrscheinlichkeitsfunktion** (olasılık fonksiyonu): Ayrık bir rastgele değişkenin her değerine atanan olasılıktır. d-boyutlu ayrık bir rastgele değişken $X = (X_1, ..., X_n)$ için tanım:
 
-f_X(x_1, ..., x_n) = P(X_1 = x_1 ∩ ... ∩ X_n = x_n)
+$$f_X(x_1, ..., x_n) = P(X_1 = x_1 \\cap ... \\cap X_n = x_n)$$
 
-**Verteilungsfunktion** (dağılım fonksiyonu): Değişkenlerin belirli değerlerden küçük veya eşit olma olasılıklarının kümülatif toplamını verir.
+**Verteilungsfunktion** (dağılım fonksiyonu): Değişkenlerin belirli değerlerden küçük veya eşit olma olasılıklarının kümülatif toplamını verir. Tanım: $$F_X(x_1, ..., x_n) = P(X_1 \\leq x_1 \\cap ... \\cap X_n \\leq x_n)$$
+
+⚠️ SON HATIRLATMA — ÇIKTI ÖNCESİ KONTROL ET:
+1. Her sayfada formül veya matematiksel ifade var mı? VARSA LaTeX dolar işareti ($) içinde olmalı.
+2. "x_1", "f_X", "Σ", "μ", "∫", "≤" gibi sembolleri ASLA düz metin olarak yazma — hepsi $...$ veya $$...$$ içinde.
+3. Madde işareti: yıldız (*) YERINE tire (-) kullan.
+4. Almanca cümle yazma — sadece terim+Türkçe karşılığı şeklinde.
 
 ${isVision ? '' : 'Materyal:\n' + batchText}`;
 }
