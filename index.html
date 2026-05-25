@@ -4896,7 +4896,12 @@ KURALLAR:
 - Yapay genişletme yok: slaytta hiç olmayan kavramı uydurma, yapay konu üretme
 - Dolgu cümle yok: "şuna dikkat etmek gerekir, bu önemlidir" gibi boş ifadeler kullanma
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
-- Formüller, sayısal değerler, birimler aynen korunsun
+- FORMÜLLER LaTeX formatında yazılsın — frontend KaTeX ile render eder:
+  • Inline: $\\mu_X = \\sum_i x_i \\cdot P(X = x_i)$
+  • Blok: $$f_X(x_1, ..., x_n) = P(X_1 = x_1 \\cap ... \\cap X_n = x_n)$$
+  • Komutlar: \\sum, \\int, \\mu, \\sigma, \\pi, \\leq, \\geq, \\cdot, \\cap, \\mathbb{E}, \\frac{a}{b}, \\sqrt{x}, x^2, x_i
+  • "μ_X = Σ x_i" gibi düz metin formül YANLIŞ — her zaman LaTeX kullan
+- Sayısal değerler, birimler aynen korunsun
 - Diyagramı SADECE gerçekten yardımcı olduğunda çiz: ağaç yapısı, akış şeması, sınıf hiyerarşisi, durum makinesi, kavram ilişkileri. Düz tanım/liste için diyagram ÇİZME — markdown listesi daha iyi.
 - DİYAGRAM ÇİZİYORSAN: SADECE \`\`\`mermaid ... \`\`\` bloğu kullan. ASLA \`\`\` (düz code) bloğunda ağaç/akış çizme. ASLA /, \\, |, _, - karakterleriyle ASCII art yapma.
 - MERMAID FORMAT KURALLARI:
@@ -4931,7 +4936,11 @@ GÖREV: Materyalden SADECE sınava çıkacak kritik bilgileri damıt. Bu bir öz
 
 KURALLAR:
 - Teknik terimleri orijinal dilde tut, parantez içinde Türkçe karşılığı: **Streckgrenze** (akma sınırı)
-- Formüller, sayısal değerler aynen korunsun
+- FORMÜLLER LaTeX formatında yazılsın — frontend KaTeX ile render eder:
+  • Inline: $\\mu = E[X]$ ・ Blok: $$\\sigma^2 = \\sum (x_i - \\mu)^2 / n$$
+  • Komutlar: \\sum, \\int, \\mu, \\sigma, \\pi, \\leq, \\cdot, \\mathbb{E}, \\frac{a}{b}, x^2, x_i
+  • Düz metin "μ = Σx/n" YANLIŞ, LaTeX "$\\mu = \\sum x / n$" DOĞRU
+- Sayısal değerler, birimler aynen korunsun
 - Yüzeysel geçme — sınavda işe yarayacak somut bilgi ver
 
 ZORUNLU FORMAT:
@@ -4969,7 +4978,11 @@ KURALLAR:
 - HER SAYFA için ayrı bölüm yaz — HİÇBİR SAYFAYI ATLAMA
 - Slaytın yapısını koru: bullet ise bullet, başlık ise başlık, formül ise formül
 - Slaytta 5 madde varsa Türkçesinde de 5 madde olmalı — birleştirme, kısaltma yapma
-- Formüller, sayısal değerler, birimler aynen korunsun. PDF parse bozuksa (alt indeks/parantez kaybolmuşsa) bağlamdan tahmin edip düzelt; tahmin edemezsen satırı atla.
+- FORMÜLLER LaTeX formatında yazılsın — KaTeX ile render edilir:
+  • Inline: $\\mu_X = E[X]$ ・ Blok: $$f_X(x_1,...,x_n) = P(X_1 = x_1 \\cap ... \\cap X_n = x_n)$$
+  • Komutlar: \\sum, \\int, \\mu, \\sigma, \\pi, \\leq, \\cdot, \\cap, \\mathbb{E}, \\frac{a}{b}, x^2, x_i
+  • Düz metin "μ = Σx_i / n" YANLIŞ; LaTeX "$\\mu = \\sum x_i / n$" DOĞRU.
+- Sayısal değerler, birimler aynen korunsun. PDF parse bozuksa (alt indeks/parantez kaybolmuşsa) bağlamdan tahmin edip LaTeX'le yaz; tahmin edemezsen satırı atla.
 - "Açıklama:" başlığı kullanma — açıklama bir sonraki cümle olarak akıcı şekilde yazılsın.
 - Diyagramı SADECE gerçekten yardımcı olduğunda çiz (ağaç yapısı, akış şeması, durum makinesi). Düz tanım/liste için çizme.
 - Diyagram çiziyorsan \`\`\`mermaid bloğu, graph TD formatı. Etiketlerde tek tırnak, iç parantez, ; YASAK.
@@ -5971,11 +5984,21 @@ YAPILANDIRMA:
 - Yapay genişletme yok: slaytta hiç olmayan kavramı uydurma.
 - Dolgu cümle yok: "şuna dikkat etmek gerekir, bu önemlidir" gibi boş ifadeler kullanma.
 
-FORMÜL KURALI:
-- Formüller, sayısal değerler, birimler aynen korunsun
-- PDF parse'ta bozulmuşsa (alt-indeksler kaybolur, parantezler yarım kalır) bağlamdan tahmin et:
-  • "fX x!, ..., x(" gibi bir şey → muhtemelen "f_X(x_1, ..., x_n)" demektir
-- Çok bozuksa satırı atla, bozuk hâliyle yazma.
+FORMÜL KURALI (ZORUNLU — LaTeX kullan, istisna yok):
+İçinde alt-indeks (x_1), üst-indeks (x^2), matematiksel sembol (Σ, μ, σ, ∫), fonksiyon notasyonu (f_X(x), P(X=x)), veya matematiksel eşitlik (=, ≠) olan TÜM ifadeler LaTeX'e sarılmalı.
+
+YAZIM:
+- INLINE: $\\mu_X = E[X]$, $f_X(x_1)$, $x_i$
+- BLOK: $$f_X(x_1, ..., x_n) = P(X_1 = x_1 \\cap ... \\cap X_n = x_n)$$
+- Komutlar: \\sum, \\int, \\mu, \\sigma, \\alpha, \\pi, \\leq, \\cdot, \\cap, \\cup, \\in, \\mathbb{E}, \\mathbb{R}, \\frac{a}{b}, \\sqrt{x}, x^2, x_i
+
+ÖRNEK:
+YANLIŞ: "f_X1(x_1) = ∫ f_X(x_1, x_2) dx_2"
+DOĞRU: "$f_{X_1}(x_1) = \\int f_X(x_1, x_2) \\, dx_2$"
+
+KURAL: Tek bir alt-indeks bile varsa (x_1, f_X) → $...$ içine. İstisna yok. PDF parse bozuksa bağlamdan tahmin et, çok bozuksa atla.
+
+BULLET FORMATI: madde için yıldız ( * ) KULLANMA — tire ( - ) veya numara ( 1. ) kullan.
 
 DİYAGRAM (opsiyonel):
 - SADECE gerçekten yardımcı oluyorsa çiz (ağaç yapısı, akış, durum makinesi).
@@ -6550,13 +6573,32 @@ YAPI KURALI:
 - Slaytın yapısını koru: bullet'lar bullet, başlıklar başlık, formüller blok
 - Slaytta 5 madde varsa Türkçesinde de 5 madde olsun
 - Madde içinde madde içinde açıklama gibi karmaşık yapı yapma — düz akış tercih et
+- BULLET FORMATI: madde işareti için yıldız ( * ) KULLANMA — markdown parser bunu güvenilir parse edemez. Tire ( - ) veya numara ( 1. ) kullan. Slayttaki yıldız işaretlerini tireye çevir.
 
-FORMÜL KURALI:
-- Formüller, sayısal değerler, birimler aynen korunsun
-- PDF parse'ta formül bozuk gözükebilir (alt-indeksler kaybolur, parantezler yarım kalır). Bağlamdan anlayıp düzelt:
-  • "fX x!, ..., x(" gibi bir şey görürsen muhtemelen "f_X(x_1, ..., x_n)" demektir, doğrusunu yaz
-  • Alt-indeks için _1, _2, _n; üst-indeks için ^2, ^n formatını kullan (markdown render eder)
-- Eğer formül çok bozuksa ve tahmin edemiyorsan, satırı atla, çıktıya bozuk hâliyle yazma
+FORMÜL KURALI (ZORUNLU — LaTeX kullan, istisna yok):
+İçinde ŞUNLARDAN HERHANGI BİRİ olan TÜM ifadeler LaTeX delimiter'larıyla sarılmalı:
+- Alt-indeks veya üst-indeks (x_1, x^2, f_X)
+- Matematiksel semboller (Σ, μ, σ, ∫, π, ∞, ≤, ≥, ∩, ∪, ⊂, ∈, ℝ, 𝔼)
+- Fonksiyon notasyonu değişken alt-indeksli (f_X(x), P(X=x), F(x))
+- Eşitlik veya formül (=, ≠, ≈ ile birleştirilmiş matematik)
+
+YAZIM:
+- INLINE: $\\mu_X = E[X]$, $f_X(x_1)$, $x_i$
+- BLOK (kendi satırında): $$f_X(x_1, ..., x_n) = P(X_1 = x_1 \\cap ... \\cap X_n = x_n)$$
+- Komutlar: \\sum, \\int, \\mu, \\sigma, \\alpha, \\beta, \\pi, \\infty, \\leq, \\geq, \\neq, \\approx, \\cdot, \\cap, \\cup, \\subset, \\in, \\notin, \\mathbb{E}, \\mathbb{R}, \\frac{a}{b}, \\sqrt{x}, x^2, x_i, \\hat{x}, \\bar{x}
+
+ÖRNEK — bu cümleyi nasıl yazmalısın:
+YANLIŞ: "f_X1(x_1) = ∫ f_X(x_1, x_2) dx_2 — bu marjinal yoğunluk formülüdür"
+DOĞRU: "$f_{X_1}(x_1) = \\int f_X(x_1, x_2) \\, dx_2$ — bu marjinal yoğunluk formülüdür"
+
+YANLIŞ: "X = (X1, X2) olsun, f marjinal yoğunluğu Σ f_X(x_1, x_2)"
+DOĞRU: "$X = (X_1, X_2)$ olsun, $f$ marjinal yoğunluğu $\\sum f_X(x_1, x_2)$"
+
+KURAL: Eğer bir ifade içinde tek bir alt-indeks bile varsa (x_1, f_X, μ_X gibi) o ifade $...$ içinde olmalı. İstisna yok.
+
+PDF parse'ta formül bozuk gözükürse bağlamdan tahmin et:
+- "fX x!, ..., x(" muhtemelen "$f_X(x_1, ..., x_n)$"
+- Çok bozuksa satırı atla — bozuk hâliyle yazma.
 
 DİĞER:
 - BAŞLIK KALINTILARI: Sayfanın başında ders kodu ("INF204"), üniversite adı, hoca adı, slayt numarası veya "Algoritmalar ve Veri Yapıları II" gibi tekrar eden başlık satırları varsa bunları ÇIKARMA — PDF header'ı, slayt içeriği değil.
