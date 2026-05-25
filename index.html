@@ -8025,26 +8025,28 @@ async function ragSend(){
       answer = result.answer;
       chunks = result.chunks || [];
 
-      // RAG yeterli sonuç bulamadıysa ve matFileData varsa fallback
-      if((!answer || answer.includes('bulunamadı') || answer.includes('bilgi yok') || answer.includes('mevcut değil')) && matFileData?.content){
-        const sessionId = localStorage.getItem('akademix_session');
-        if(sessionId){
-          const fallbackPrompt = `Kullanıcı şu soruyu sordu: "${question}"\n\nAşağıdaki materyale dayanarak cevap ver. Markdown formatı kullan.\n\nMateryal:\n${matFileData.content.substring(0, 50000)}`;
-          const resp2 = await fetch(BACKEND_URL + '/api/ai', {
-            method:'POST',
-            headers:{'Content-Type':'application/json','x-session-id':sessionId},
-            body:JSON.stringify({
-              system: 'Sen bir akademik asistansın. Materyale dayanarak soruları Türkçe cevapla. Markdown kullan. Konu görsel anlatıma uygunsa SVG diyagram çiz.',
-              messages:[{role:'user',content:[{type:'text',text:fallbackPrompt}]}],
-              provider:'gemini'
-            })
-          });
-          const data2 = await resp2.json();
-          if(resp2.ok && data2.content){
-            answer = data2.content.map(c=>c.text||'').join('');
-            chunks = []; // Fallback'te chunk gösterme
-          }
-        }
+      // RAG chunk bulamadıysa otomatik fallback YOK — kullanıcıya buton göster
+      // (önceki otomatik fallback çifte limit tüketiyordu: 1 rag + 1 ai)
+      if(chunks.length === 0 && matFileData?.content){
+        typing.remove();
+        addRagMsg('ai', matMd(answer));
+        sbSaveRagMessage(ragConvId, 'assistant', answer);
+
+        // "Materyali tümüyle tara" butonu — kullanıcı bilinçli tıklar
+        const msgs2 = document.getElementById('rag-messages');
+        const btnDiv = document.createElement('div');
+        btnDiv.className = 'rag-fallback-bar';
+        btnDiv.style.cssText = 'padding:4px 12px 12px;display:flex;align-items:center;gap:8px;';
+        const safeQ = encodeURIComponent(question);
+        btnDiv.innerHTML = `
+          <button class="mat-ws-action" style="font-size:12px;padding:5px 14px;"
+            onclick="ragFullSearch(decodeURIComponent('${safeQ}'), this.closest('.rag-fallback-bar'))">
+            📄 Materyali tümüyle tara
+          </button>
+          <span style="font-size:11px;color:var(--muted);">Vektör aramada bulunamadı — tam metin araması 1 ek kredi kullanır</span>`;
+        msgs2.appendChild(btnDiv);
+        msgs2.scrollTop = msgs2.scrollHeight;
+        return; // typing zaten kaldırıldı
       }
     }
 
@@ -8077,6 +8079,50 @@ async function ragSend(){
       renderRagConvList(m);
     }
   }catch(e){
+    typing.remove();
+    addRagMsg('ai', `<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
+  }
+}
+
+// Kullanıcı "Materyali tümüyle tara" butonuna tıklayınca çağrılır.
+// embed.js chunk araması başarısız olduğunda otomatik fallback yerine kullanıcı onaylı arama.
+async function ragFullSearch(question, barEl){
+  if(barEl) barEl.remove(); // butonu kaldır
+
+  const msgs = document.getElementById('rag-messages');
+  const typing = document.createElement('div');
+  typing.className = 'rag-msg ai';
+  typing.innerHTML = `<div class="rag-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const sessionId = localStorage.getItem('akademix_session');
+  if(!sessionId){ typing.remove(); addRagMsg('ai','<span style="color:var(--red)">❌ Oturum gerekli.</span>'); return; }
+
+  try {
+    const content = matFileData?.content || '';
+    if(!content){ typing.remove(); addRagMsg('ai','<span style="color:var(--red)">❌ Materyal içeriği yüklenemedi.</span>'); return; }
+
+    const fallbackPrompt = `Kullanıcı şu soruyu sordu: "${question}"\n\nAşağıdaki materyale dayanarak Türkçe cevap ver. Markdown formatı kullan.\n\nMateryal:\n${content.substring(0, 50000)}`;
+    const resp = await fetch(BACKEND_URL + '/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-session-id': sessionId },
+      body: JSON.stringify({
+        system: 'Sen bir akademik asistansın. Materyale dayanarak soruları Türkçe cevapla. Markdown kullan.',
+        messages: [{ role:'user', content:[{ type:'text', text: fallbackPrompt }] }],
+        provider: 'gemini'
+      })
+    });
+    const data = await resp.json();
+    typing.remove();
+    if(resp.ok && data.content){
+      const answer = data.content.map(c => c.text||'').join('');
+      addRagMsg('ai', matMd(answer));
+      if(ragConvId) sbSaveRagMessage(ragConvId, 'assistant', answer);
+    } else {
+      addRagMsg('ai', `<span style="color:var(--red)">❌ ${escHtml(data.error || 'Yanıt alınamadı')}</span>`);
+    }
+  } catch(e) {
     typing.remove();
     addRagMsg('ai', `<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
   }
