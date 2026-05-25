@@ -5501,7 +5501,10 @@ function matAddMsgToPanel(panelMode, role, html){
     <div class="mat-msg-avatar ${role === 'ai' ? 'ai' : ''}">${avatar}</div>
     <div class="mat-msg-body"><div class="mat-msg-bubble">${html}</div></div>`;
   panel.appendChild(div);
-  panel.scrollTop = panel.scrollHeight;
+  // Sadece kullanıcı zaten en alttaysa (150px tolerans) scroll et
+  // → sayfa sayfa üretim sırasında kullanıcı yukarı bakarken zorla aşağı çekmez
+  const distFromBottom = panel.scrollHeight - panel.scrollTop - panel.clientHeight;
+  if(distFromBottom < 150) panel.scrollTop = panel.scrollHeight;
   // LaTeX render — KaTeX yüklendiyse bubble içindeki $ ... $ ifadelerini render eder
   setTimeout(function(){ renderRichContent(div); }, 0);
   return div;
@@ -6572,7 +6575,7 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
     try {
       const result = await callAiWithRetry(sessionId, {
         mode: 'paged',
-        max_tokens: 8000,
+        max_tokens: 12000,
         system: systemPrompt,
         messages: [{role:'user', content: messageContent}]
       }, {
@@ -6889,7 +6892,8 @@ function matShowTyping(){
   div.className = 'mat-msg ai'; div.id = 'mat-typing';
   div.innerHTML = `<div class="mat-msg-avatar ai">✨</div><div class="mat-msg-body"><div class="mat-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div></div>`;
   panel.appendChild(div);
-  panel.scrollTop = panel.scrollHeight;
+  const dtb = panel.scrollHeight - panel.scrollTop - panel.clientHeight;
+  if(dtb < 150) panel.scrollTop = panel.scrollHeight;
 }
 function matHideTyping(){ const t=document.getElementById('mat-typing'); if(t) t.remove(); }
 
