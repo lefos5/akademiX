@@ -1689,9 +1689,9 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/></svg>
       <span class="nav-label">Takvim</span>
     </div>
-    <div class="nav-item" onclick="showPage('exams')" data-label="Ara Sınavlar" style="display:none">
+    <div class="nav-item" onclick="showPage('exams')" data-label="Sınavlar">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      <span class="nav-label">Ara Sınavlar</span>
+      <span class="nav-label">Sınavlar</span>
       <span class="badge" id="badge-exam" style="background:var(--red);display:none">0</span>
     </div>
     <div class="nav-section-label">Araçlar</div>
@@ -1825,7 +1825,7 @@
   <!-- EXAMS -->
   <div class="page" id="page-exams">
     <div class="page-header">
-      <div><h2>Ara Sınav Programı</h2><p>2025–2026 Bahar Dönemi · 6–10 Nisan 2026</p></div>
+      <div><h2>Sınav Takvimi</h2><p>2025–2026 Bahar Dönemi</p></div>
     </div>
     <div id="exams-content"></div>
   </div>
@@ -2871,6 +2871,145 @@ const EXAM_SCHEDULE = [
   {code:"ÜSDTUR112",name:"Yabancılar İçin Türkçe II",date:"2026-04-08",time:"13:30-14:30",room:"ODBB"},
 ];
 
+// ===== FİNAL SINAV PROGRAMI 2025-2026 BAHAR =====
+const FINAL_SCHEDULE = [
+  // Perşembe 04 Haziran 2026
+  {code:"ETE484",name:"Güç Dağıtım Sistemleri (EN)",date:"2026-06-04",time:"13:00-15:00",room:"FBE Toplantı"},
+  {code:"INF514",name:"Bilgisayar Grafiği I",date:"2026-06-04",time:"15:00-16:30",room:"C102"},
+  {code:"MAB292",name:"Proje Yönetimi",date:"2026-06-04",time:"15:00-17:00",room:"C201"},
+  {code:"MAB455",name:"Havacılık Endüstrisine Giriş",date:"2026-06-04",time:"15:00-17:00",room:"C106"},
+  {code:"MEC112",name:"Mukavemet",date:"2026-06-04",time:"15:15-17:15",room:"C108"},
+  {code:"WIN322",name:"Havalimanı Yönetimi",date:"2026-06-04",time:"11:00-12:00",room:"C305"},
+  {code:"ÜSDBAU468",name:"Mega Yapılar",date:"2026-06-04",time:"13:00-14:00",room:"D304"},
+  {code:"ÜSDGNÇ202",name:"Gönüllülük Çalışmaları",date:"2026-06-04",time:"11:00-12:00",room:"D304"},
+  // Cuma 05 Haziran 2026
+  {code:"ETE092",name:"Bilimsel Çalışma Yöntemleri",date:"2026-06-05",time:"14:00-16:00",room:"C201"},
+  {code:"ETE374",name:"Sayısal Sinyal İşlemenin Temelleri",date:"2026-06-05",time:"14:00-16:00",room:"C102"},
+  {code:"ETE459",name:"Doğrusal Olmayan Dinamik Sistemler",date:"2026-06-05",time:"09:30-12:30",room:"C102"},
+  {code:"INF804",name:"Proje Geliştirme Metodolojisi - Agile & Scrum",date:"2026-06-05",time:"14:30-16:00",room:"C305"},
+  {code:"MAB314",name:"Akışkanlar Mekaniği",date:"2026-06-05",time:"14:00-16:00",room:"C301"},
+  {code:"MAT106",name:"Lineer Cebir",date:"2026-06-05",time:"09:00-11:00",room:"C301, C302, C304, C108"},
+  {code:"MEC292",name:"Proje Yönetimi",date:"2026-06-05",time:"15:15-17:15",room:"C108"},
+  {code:"WIN312",name:"Dijitalleşme ve Sanayide Akıllı Sistemler: Dönüşüm, İnsan ve İnovasyon",date:"2026-06-05",time:"14:00-16:00",room:"C104"},
+  {code:"ÜSDSKI202",name:"Şehir ve Kültür: İstanbul",date:"2026-06-05",time:"13:00-14:00",room:"D304"},
+  // Cumartesi 06 Haziran 2026
+  {code:"MAT108",name:"Analiz II",date:"2026-06-06",time:"11:00-13:00",room:"C108, C301, C302"},
+  {code:"MAT204-A",name:"Veri Analizinin İstatistiksel Yöntemleri",date:"2026-06-06",time:"14:00-16:00",room:"C108"},
+  // Pazartesi 08 Haziran 2026
+  {code:"BAU205",name:"Akışkanlar Mekaniği",date:"2026-06-08",time:"15:30-17:30",room:"C302"},
+  {code:"BAU302",name:"Zemin Mekaniği ve Temel İnşaatı I",date:"2026-06-08",time:"09:00-11:00",room:"C104"},
+  {code:"BAU356",name:"İnşaat Mühendisleri için Jeoloji",date:"2026-06-08",time:"09:00-11:00",room:"C104"},
+  {code:"ENG102-3",name:"İngilizce II",date:"2026-06-08",time:"11:00-12:15",room:"DB03"},
+  {code:"ENG102-4",name:"İngilizce II",date:"2026-06-08",time:"11:00-12:15",room:"DB03"},
+  {code:"ENG102-6",name:"İngilizce II",date:"2026-06-08",time:"11:00-12:15",room:"DB03"},
+  {code:"ENG202-5",name:"İngilizce IV",date:"2026-06-08",time:"13:00-14:30",room:"C108"},
+  {code:"ENG202-6",name:"İngilizce IV",date:"2026-06-08",time:"13:00-14:30",room:"C108"},
+  {code:"ETE202",name:"Elektrik Devreleri II",date:"2026-06-08",time:"13:00-15:00",room:"C201"},
+  {code:"ETE304",name:"Kontrol Mühendisliğinin Temelleri",date:"2026-06-08",time:"10:00-12:00",room:"C108"},
+  {code:"ETE372",name:"Telekomünikasyon",date:"2026-06-08",time:"10:00-12:00",room:"C201"},
+  {code:"INF104",name:"Özdevinirler ve Biçimsel Diller",date:"2026-06-08",time:"11:30-13:30",room:"C108"},
+  {code:"INF110",name:"İşletim Sistemleri",date:"2026-06-08",time:"15:00-16:30",room:"C108"},
+  {code:"INF202",name:"Yazılım Mühendisliği",date:"2026-06-08",time:"15:00-16:30",room:"C108"},
+  {code:"INF502",name:"Makine Öğrenmesi (DE)",date:"2026-06-08",time:"12:30-14:30",room:"C102"},
+  {code:"INF503",name:"Yapay Sinir Ağları",date:"2026-06-08",time:"12:00-14:00",room:"C301"},
+  {code:"INF510",name:"Bilgi Sistemleri Güvenliği",date:"2026-06-08",time:"10:00-12:00",room:"C201"},
+  {code:"MAB210",name:"İmalat Teknolojisinin Temelleri",date:"2026-06-08",time:"11:30-13:30",room:"C302"},
+  {code:"MAB462",name:"Tasarım: Seçilmiş Konular II",date:"2026-06-08",time:"15:00-17:00",room:"C302"},
+  {code:"MAT204-B",name:"Veri Analizinin İstatistiksel Yöntemleri",date:"2026-06-08",time:"13:00-15:00",room:"DB03"},
+  {code:"VWL210",name:"Para, Banka ve Finans Piyasaları",date:"2026-06-08",time:"11:00-12:00",room:"D103"},
+  {code:"WIN204",name:"Muhasebe ve Bilanço",date:"2026-06-08",time:"10:00-12:00",room:"C305"},
+  {code:"WIN314",name:"Kalite Yönetimi",date:"2026-06-08",time:"15:00-17:00",room:"C305"},
+  // Salı 09 Haziran 2026
+  {code:"BAU352",name:"Yapı İşletmesi I",date:"2026-06-09",time:"15:00-17:00",room:"C104"},
+  {code:"ENG302-6",name:"İleri İngilizce II",date:"2026-06-09",time:"11:00-13:00",room:"C108"},
+  {code:"ENG302-7",name:"İleri İngilizce II",date:"2026-06-09",time:"11:00-13:00",room:"D108"},
+  {code:"ENG302-8",name:"İleri İngilizce II",date:"2026-06-09",time:"11:00-13:00",room:"D108"},
+  {code:"ENG302-9",name:"İleri İngilizce II",date:"2026-06-09",time:"11:00-13:00",room:"C108"},
+  {code:"ENG302-10",name:"İleri İngilizce II",date:"2026-06-09",time:"11:00-13:00",room:"D108"},
+  {code:"ENG302-11",name:"İleri İngilizce II",date:"2026-06-09",time:"11:00-13:00",room:"C108"},
+  {code:"ENG302-14",name:"İleri İngilizce II",date:"2026-06-09",time:"11:00-13:00",room:"C108"},
+  {code:"INF102",name:"Nesnel Programlama",date:"2026-06-09",time:"09:00-10:45",room:"C108"},
+  {code:"INF210",name:"Bilgisayar Mühendisleri için Etik Semineri",date:"2026-06-09",time:"09:00-12:00",room:"INF Toplantı"},
+  {code:"INF608",name:"Sensors and Transducers",date:"2026-06-09",time:"13:00-16:00",room:"INF Toplantı"},
+  {code:"MAB312",name:"Isı Transferi",date:"2026-06-09",time:"15:00-17:00",room:"C201"},
+  {code:"WIN208",name:"Nesnel Programlama",date:"2026-06-09",time:"15:00-17:00",room:"C108"},
+  {code:"ÜSDENG120",name:"İngilizce Etkili İletişim Becerileri",date:"2026-06-09",time:"14:00-15:00",room:"D304"},
+  {code:"ÜSDENG122",name:"İngilizce Bilimsel Yazılarda Dil Bilgisi Yapıları",date:"2026-06-09",time:"14:00-15:30",room:"D303"},
+  {code:"ÜSDENG123",name:"İngilizce Okuma ve Konuşma",date:"2026-06-09",time:"14:00-15:00",room:"D302"},
+  {code:"ÜSDENG125",name:"İngilizce Dinleme ve Anlama Becerileri",date:"2026-06-09",time:"14:00-15:00",room:"D301"},
+  {code:"ÜSDENG126",name:"İngiliz Edebiyatından Seçmeler",date:"2026-06-09",time:"09:30-11:00",room:"D302"},
+  {code:"ÜSDENG127",name:"İngilizce Yaratıcı Yazma",date:"2026-06-09",time:"15:00-16:00",room:"D304"},
+  {code:"ÜSDTUR112",name:"Yabancılar İçin Türkçe II",date:"2026-06-09",time:"13:30-14:30",room:"ODBB"},
+  // Çarşamba 10 Haziran 2026
+  {code:"BAU112",name:"Mukavemet",date:"2026-06-10",time:"09:00-11:00",room:"C201"},
+  {code:"ING404",name:"Girişimcilik",date:"2026-06-10",time:"11:00-13:00",room:"BAU Toplantı"},
+  {code:"INF208",name:"Gömülü Sistemler",date:"2026-06-10",time:"13:00-16:00",room:"INF Toplantı"},
+  {code:"INF712",name:"Bilgisayar Destekli İstatistik",date:"2026-06-10",time:"09:00-10:30",room:"C301"},
+  {code:"MAB108",name:"Tasarım Teknikleri I: Teknik Çizim 2",date:"2026-06-10",time:"09:00-10:45",room:"C108"},
+  {code:"MAB464",name:"Taşıt Sistemleri: Seçilmiş Konular II (Grundlagen der Fahrzeugkonstruktion)",date:"2026-06-10",time:"09:00-11:00",room:"C102"},
+  {code:"MEC214",name:"Elektrik Devreleri II",date:"2026-06-10",time:"11:30-13:30",room:"C305"},
+  {code:"MEC308",name:"Endüstriyel Robotik I",date:"2026-06-10",time:"15:15-17:15",room:"C304"},
+  {code:"TUR002",name:"Türkçe II",date:"2026-06-10",time:"14:00-15:00",room:"C301, C302, C108"},
+  {code:"WIN104",name:"İktisada Giriş",date:"2026-06-10",time:"13:00-14:00",room:"D105"},
+  {code:"WIN292",name:"Proje Yönetimi",date:"2026-06-10",time:"09:00-11:00",room:"C304"},
+  {code:"WIN306",name:"Üretim ve Lojistik için Enformasyon Sistemleri",date:"2026-06-10",time:"09:00-11:00",room:"C305"},
+  {code:"WIN406",name:"Endüstriyel Enformasyon Teknolojisi ve Sanal Ürün Geliştirme",date:"2026-06-10",time:"15:15-16:45",room:"C102"},
+  // Perşembe 11 Haziran 2026
+  {code:"AIT002",name:"Atatürk İlkeleri ve İnkılap Tarihi II",date:"2026-06-11",time:"14:00-15:00",room:"C301, C302, C108"},
+  {code:"BAU458",name:"Yapı Dinamiği I",date:"2026-06-11",time:"10:00-12:00",room:"BAU Toplantı"},
+  {code:"ETE104",name:"Mikroişlemciler",date:"2026-06-11",time:"14:00-16:00",room:"C201"},
+  {code:"INF204",name:"Algoritmalar ve Veri Yapıları II",date:"2026-06-11",time:"09:00-11:00",room:"C201"},
+  {code:"MAB112",name:"Mukavemet",date:"2026-06-11",time:"17:30-19:00",room:"C108"},
+  {code:"MAB384",name:"Taşıt Sistemleri: Seçilmiş Konular I (Ticari Araç Mühendisliği)",date:"2026-06-11",time:"08:30-10:30",room:"C102"},
+  {code:"PHY102",name:"Elektrik ve Manyetizma",date:"2026-06-11",time:"09:00-11:00",room:"C108"},
+  {code:"WIN318",name:"Ergonomi: Metod-Zaman Ölçümü ve İş Bilimi",date:"2026-06-11",time:"10:00-12:00",room:"C104"},
+  {code:"ÜSDCVA120",name:"Çocuk ve Aile",date:"2026-06-11",time:"11:00-12:00",room:"D303"},
+  {code:"ÜSDPYB123",name:"Pozitif Psikoloji ve Yaşam Becerileri",date:"2026-06-11",time:"10:00-11:00",room:"D304"},
+  // Cuma 12 Haziran 2026
+  {code:"BAU204",name:"Yapı Statiği II",date:"2026-06-12",time:"15:30-17:30",room:"C302"},
+  {code:"BAU466",name:"Kaya Mekaniği: Kaya Kütleleri İçinde/Üzerinde Yapılan Mühendislik İşleri",date:"2026-06-12",time:"10:00-12:00",room:"BAU Toplantı"},
+  {code:"DEU118",name:"İşletme Almancası",date:"2026-06-12",time:"09:00-11:00",room:"C108"},
+  {code:"DEU122-BAU",name:"Teknik Almanca II",date:"2026-06-12",time:"09:00-11:00",room:"C108"},
+  {code:"DEU122-ETE",name:"Teknik Almanca II",date:"2026-06-12",time:"13:00-15:00",room:"C108"},
+  {code:"DEU122-INF",name:"Teknik Almanca II",date:"2026-06-12",time:"09:00-11:00",room:"C108"},
+  {code:"DEU122-MAB",name:"Teknik Almanca II",date:"2026-06-12",time:"13:00-15:00",room:"C108"},
+  {code:"DEU122-MEC",name:"Teknik Almanca II",date:"2026-06-12",time:"13:00-15:00",room:"C108"},
+  {code:"ETE312",name:"Elektronik II",date:"2026-06-12",time:"13:00-15:00",room:"C201"},
+  {code:"ETE414",name:"İşlemsel Yükselteçler ile Devre Tasarımı (EN)",date:"2026-06-12",time:"10:00-12:00",room:"C102"},
+  {code:"MAB214",name:"Diferansiyel Denklemler ve Mak. Müh için Sayısal Yöntemler",date:"2026-06-12",time:"15:00-17:00",room:"C301"},
+  {code:"MAB394",name:"Proje: Taşıt Sistemleri",date:"2026-06-12",time:"15:00-17:00",room:"C102"},
+  {code:"MEC302",name:"Kontrol Mühendisliğinin Temelleri",date:"2026-06-12",time:"15:15-17:15",room:"C305"},
+  {code:"WIN316",name:"Yöneylem Araştırması II - Rassal Modeller",date:"2026-06-12",time:"13:00-14:45",room:"C104"},
+  {code:"ÜSDDSD123",name:"Dijital Süreç Dönüşümü",date:"2026-06-12",time:"13:00-14:00",room:"D304"},
+  {code:"ÜSDSKY123",name:"Sürdürülebilirlik, İklim Krizi ve Karbon Ayak İzi Yönetimi",date:"2026-06-12",time:"11:00-12:00",room:"D304"},
+  // Cumartesi 13 Haziran 2026
+  {code:"ISG002",name:"İş Sağlığı ve Güvenliği II",date:"2026-06-13",time:"10:00-12:00",room:"ONLINE"},
+  // Pazartesi 15 Haziran 2026
+  {code:"BAU092",name:"Bilimsel Çalışma Yöntemleri",date:"2026-06-15",time:"13:00-15:00",room:"C201"},
+  // Salı 16 Haziran 2026
+  {code:"BAU203",name:"Yapı İnşaatı I",date:"2026-06-16",time:"15:30-18:30",room:"C302"},
+  {code:"BAU207",name:"Yapı Malzemesi ve Kimyası II",date:"2026-06-16",time:"09:00-11:00",room:"C102"},
+  {code:"BAU252",name:"Yapı Fiziği",date:"2026-06-16",time:"15:30-17:30",room:"C104"},
+  {code:"MEC048",name:"Hızlı Prototipleme",date:"2026-06-16",time:"11:00-13:00",room:"C301"},
+  {code:"MEC208",name:"Ölçüm Teknikleri",date:"2026-06-16",time:"15:15-17:15",room:"C108"},
+  // Çarşamba 17 Haziran 2026
+  {code:"ING406",name:"Mühendisler için Hukuk",date:"2026-06-17",time:"15:00-16:00",room:"C302"},
+  {code:"INF523",name:"İnsan-Makine Etkileşimi",date:"2026-06-17",time:"15:00-17:00",room:"INF Toplantı"},
+  {code:"MAT302",name:"Numerik Matematik",date:"2026-06-17",time:"12:00-14:00",room:"C302"},
+  {code:"MAT392",name:"Kompleks Analiz",date:"2026-06-17",time:"10:00-12:00",room:"C301"},
+  {code:"MEC002",name:"Uygulamalı Kontrol Mühendisliği",date:"2026-06-17",time:"18:00-20:00",room:"ONLINE"},
+  {code:"MEC030",name:"Bilgisayar Mühendisliği: Seçilmiş Konular I - Derin Öğrenme",date:"2026-06-17",time:"10:00-12:00",room:"MEC Toplantı"},
+  {code:"MEC092",name:"Bilimsel Çalışma Yöntemleri",date:"2026-06-17",time:"10:30-12:30",room:"C201"},
+  {code:"MEC312",name:"Elektrik Devre Elemanları",date:"2026-06-17",time:"15:00-17:00",room:"MEC Toplantı"},
+  {code:"MEC324",name:"Görüntü Tabanlı Otomasyon II",date:"2026-06-17",time:"12:00-14:00",room:"MEC Toplantı"},
+  {code:"WIN302",name:"Fabrika Yönetimine Giriş",date:"2026-06-17",time:"09:00-11:00",room:"C305"},
+  {code:"ÜSDAFY101",name:"Afet Yönetimi",date:"2026-06-17",time:"11:00-12:00",room:"D304"},
+  {code:"ÜSDING045",name:"Tıbbi Cihazlar, Yasal Düzenlemeleri ve Süreçler",date:"2026-06-17",time:"14:00-15:00",room:"D303"},
+  {code:"ÜSDING046",name:"Elektrifikasyon ve Otomasyonda Uygulamalar ve Süreç Yönetimi",date:"2026-06-17",time:"15:00-16:00",room:"D302"},
+  {code:"ÜSDKAR123",name:"Kariyer Planlama",date:"2026-06-17",time:"13:00-14:00",room:"D304"},
+  {code:"ÜSDKTI123",name:"Kriz ve Travma Sarmalında İnsan",date:"2026-06-17",time:"11:00-12:00",room:"D304"},
+];
+
 const DAYS=["Mon","Tue","Wed","Thu","Fri"];
 const DAY_TR={Mon:"Pazartesi",Tue:"Salı",Wed:"Çarşamba",Thu:"Perşembe",Fri:"Cuma",Sat:"Cumartesi"};
 const DEPT_COLORS={INF:"c-purple",MAT:"c-blue",ENG:"c-green",ETE:"c-orange",PHY:"c-red",TUR:"c-pink",AIT:"c-pink",DEU:"c-orange",BAU:"c-blue",ISG:"c-green",MAB:"c-purple",MEC:"c-red",WIN:"c-blue",VWL:"c-orange",ING:"c-green",OTH:"c-purple"};
@@ -2961,111 +3100,117 @@ function getMyExams(){
   }).sort((a,b) => new Date(a.date) - new Date(b.date));
 }
 
+function getMyFinals(){
+  const enrolledBases = new Set([...enrolled].map(baseCode));
+  const removed = new Set(safeLocalStorage('removed_finals', []));
+  return FINAL_SCHEDULE.filter(exam => {
+    if(removed.has(exam.code)) return false;
+    if(enrolled.has(exam.code)) return true;
+    if(enrolledBases.has(exam.code)) return true;
+    const examBase = baseCode(exam.code);
+    if([...enrolledBases].some(eb => eb === examBase || eb.startsWith(examBase + '-'))) return true;
+    return false;
+  }).sort((a,b) => new Date(a.date) - new Date(b.date));
+}
+
 function renderExams(){
-  const myExams = getMyExams();
+  const myMidterms = getMyExams();
+  const myFinals   = getMyFinals();
   const manualExams = safeLocalStorage('manual_exams', []);
-  const allExams = [...myExams, ...manualExams].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const totalCount = myMidterms.length + myFinals.length + manualExams.length;
 
   const container = document.getElementById('exams-content');
   if(!container) return;
 
   const badge = document.getElementById('badge-exam');
-  if(badge){ badge.textContent = allExams.length; badge.style.display = allExams.length ? 'inline-block' : 'none'; }
+  if(badge){ badge.textContent = totalCount; badge.style.display = totalCount ? 'inline-block' : 'none'; }
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const dayNames = {
-    '2026-04-04':'Cumartesi, 4 Nisan',
-    '2026-04-06':'Pazartesi, 6 Nisan',
-    '2026-04-07':'Salı, 7 Nisan',
-    '2026-04-08':'Çarşamba, 8 Nisan',
-    '2026-04-09':'Perşembe, 9 Nisan',
-    '2026-04-10':'Cuma, 10 Nisan',
-    '2026-04-11':'Cumartesi, 11 Nisan',
-  };
 
-  const myExamCodes = new Set(myExams.map(e => e.code));
-  const manualCodes = new Set(manualExams.map(e => e.code));
-  // Henüz listede olmayan VE silinmiş sınavların tamamını dropdown'da göster
-  const missingExams = EXAM_SCHEDULE.filter(e => !myExamCodes.has(e.code) && !manualCodes.has(e.code));
-
-  // Sınav ekleme — sadece programda olmayan sınavları dropdown'da listele
-  const addFormHTML = `
-    <div id="exam-add-section" style="margin-bottom:24px;">
-      <button class="mat-ws-action" id="exam-add-toggle" onclick="toggleExamAddForm()" style="display:flex;align-items:center;gap:6px;font-size:13px;padding:8px 14px;">
-        ＋ Sınav Ekle
-      </button>
-      <div id="exam-add-form" style="display:none;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;">
-        ${missingExams.length === 0
-          ? '<p style="font-size:13px;color:var(--muted);">Programdaki tüm sınavlar zaten eklenmiş.</p>'
-          : `<div style="margin-bottom:12px;">
-              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Sınav Seç</label>
-              <select id="exam-add-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;">
-                <option value="">— Sınav seç —</option>
-                ${missingExams.map(e =>
-                  `<option value="${escHtml(e.code)}">${escHtml(e.code)} · ${escHtml(e.name)} · ${dayNames[e.date]||e.date} ${e.time} · ${escHtml(e.room)}</option>`
-                ).join('')}
-              </select>
-            </div>
-            <div style="display:flex;gap:8px;">
-              <button class="add-btn" onclick="saveManualExam()" style="flex:1;justify-content:center;">Ekle</button>
-              <button class="mat-ws-action" onclick="toggleExamAddForm()">İptal</button>
-            </div>`
-        }
-      </div>
-    </div>`;
-
-  if(!allExams.length){
-    container.innerHTML = addFormHTML + `<div class="empty-state">
-      <div class="icon">🎓</div>
-      <h3>Sınavın yok, tebrikler!</h3>
-      <p>Kayıtlı derslerinde henüz sınav bulunmuyor. Kendin eklemek istersen yukarıdaki formu kullan.</p>
-    </div>`;
-    return;
+  // Tüm tarihler için Türkçe etiket
+  function dateLabel(dateStr){
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
   }
 
-  const grouped = {};
-  allExams.forEach(e => { if(!grouped[e.date]) grouped[e.date]=[]; grouped[e.date].push(e); });
-
-  let html = addFormHTML;
-  Object.entries(grouped).forEach(([date, exams]) => {
-    const d = new Date(date);
-    const isPast = d < today;
-    const isToday = d.toDateString() === today.toDateString();
-    const label = dayNames[date] || d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
-    html += `
-      <div style="margin-bottom:24px;">
-        <div style="font-size:12px;font-weight:700;
-          color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
-          text-transform:uppercase;letter-spacing:0.8px;padding:8px 0;
-          border-bottom:2px solid ${isToday?'var(--accent)':'var(--border)'};
-          margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-          ${label}
-          ${isToday?'<span style="background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">BUGÜN</span>':''}
-          ${isPast&&!isToday?'<span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">Geçti</span>':''}
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          ${exams.map(exam => `
-            <div style="background:var(--surface);border:1px solid ${isPast?'var(--border)':'rgba(248,113,113,0.2)'};
-              border-left:4px solid ${isPast?'var(--border2)':'var(--red)'};
-              border-radius:12px;padding:14px 18px;
-              display:flex;align-items:center;gap:16px;opacity:${isPast?'0.55':'1'};">
-              <div style="flex-shrink:0;min-width:56px;text-align:center;">
-                <div style="font-size:13px;font-weight:700;color:var(--red);">${exam.time?exam.time.split('-')[0]:'—'}</div>
-                <div style="font-size:10px;color:var(--muted);">${exam.time?'–'+exam.time.split('-')[1]:''}</div>
-              </div>
-              <div style="flex:1;min-width:0;">
-                <div style="margin-bottom:3px;">
-                  <span style="background:rgba(248,113,113,0.1);color:var(--red);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;">${escHtml(exam.code)}</span>
+  // Sınav gruplarını render eden yardımcı fonksiyon
+  // accentColor: solid CSS color | accentAlpha: transparent version for borders/bg
+  function renderGroup(exams, accentColor, accentAlpha, accentBg, deleteFn){
+    if(!exams.length) return '<p style="font-size:13px;color:var(--muted);padding:4px 0;">Bu dönem için kayıtlı ders bulunamadı.</p>';
+    const grouped = {};
+    exams.forEach(e => { if(!grouped[e.date]) grouped[e.date]=[]; grouped[e.date].push(e); });
+    let html = '';
+    Object.entries(grouped).sort(([a],[b])=>a<b?-1:1).forEach(([date, dayExams]) => {
+      const d = new Date(date);
+      const isPast = d < today;
+      const isToday = d.toDateString() === today.toDateString();
+      const label = dateLabel(date);
+      html += `
+        <div style="margin-bottom:24px;">
+          <div style="font-size:12px;font-weight:700;
+            color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
+            text-transform:uppercase;letter-spacing:0.8px;padding:8px 0;
+            border-bottom:2px solid ${isToday?'var(--accent)':'var(--border)'};
+            margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            ${label}
+            ${isToday?'<span style="background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">BUGÜN</span>':''}
+            ${isPast&&!isToday?'<span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">Geçti</span>':''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${dayExams.map(exam => `
+              <div style="background:var(--surface);border:1px solid ${isPast?'var(--border)':accentAlpha};
+                border-left:4px solid ${isPast?'var(--border2)':accentColor};
+                border-radius:12px;padding:14px 18px;
+                display:flex;align-items:center;gap:16px;opacity:${isPast?'0.55':'1'};">
+                <div style="flex-shrink:0;min-width:56px;text-align:center;">
+                  <div style="font-size:13px;font-weight:700;color:${accentColor};">${exam.time?exam.time.split('-')[0]:'—'}</div>
+                  <div style="font-size:10px;color:var(--muted);">${exam.time?'–'+exam.time.split('-')[1]:''}</div>
                 </div>
-                <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${escHtml(exam.name)}</div>
-                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room||'—')}</div>
-              </div>
-              <button class="mat-list-del" style="opacity:1;flex-shrink:0;" title="Sil"
-                onclick="${exam._manual?`deleteManualExam('${exam._id}')`:`deleteScheduledExam('${exam.code}')`}">✕</button>
-            </div>`).join('')}
-        </div>
-      </div>`;
-  });
+                <div style="flex:1;min-width:0;">
+                  <div style="margin-bottom:3px;">
+                    <span style="background:${accentBg};color:${accentColor};font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;">${escHtml(exam.code)}</span>
+                  </div>
+                  <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${escHtml(exam.name)}</div>
+                  <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room||'—')}</div>
+                </div>
+                <button class="mat-list-del" style="opacity:1;flex-shrink:0;" title="Sil"
+                  onclick="${exam._manual?`deleteManualExam('${escHtml(exam._id)}')`:`${deleteFn}('${escHtml(exam.code)}')`}">✕</button>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    });
+    return html;
+  }
+
+  // Bölüm başlığı
+  function sectionHeader(title, count, color, bgColor){
+    return `<div style="display:flex;align-items:center;gap:10px;margin:28px 0 16px;">
+      <div style="width:3px;height:20px;background:${color};border-radius:2px;flex-shrink:0;"></div>
+      <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--text);">${title}</h3>
+      ${count>0?`<span style="background:${bgColor};color:${color};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${count}</span>`:''}
+    </div>`;
+  }
+
+  let html = '';
+
+  // === ARA SINAVLAR ===
+  const midtermMissingCodes = new Set([...myMidterms, ...manualExams].map(e=>e.code));
+  html += sectionHeader('Ara Sınavlar', myMidterms.length + manualExams.filter(e=>EXAM_SCHEDULE.some(s=>s.code===e.code)).length, 'var(--red)', 'rgba(248,113,113,0.1)');
+  if(myMidterms.length || manualExams.some(e=>EXAM_SCHEDULE.some(s=>s.code===e.code))){
+    const midtermExams = [...myMidterms, ...manualExams.filter(e=>EXAM_SCHEDULE.some(s=>s.code===e.code))].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    html += renderGroup(midtermExams, 'var(--red)', 'rgba(248,113,113,0.2)', 'rgba(248,113,113,0.1)', 'deleteScheduledExam');
+  } else {
+    html += '<p style="font-size:13px;color:var(--muted);padding:4px 0 16px;">Kayıtlı ders bulunamadı.</p>';
+  }
+
+  // === FİNAL SINAVLARI ===
+  html += sectionHeader('Final Sınavları', myFinals.length, '#f59e0b', 'rgba(245,158,11,0.1)');
+  if(myFinals.length){
+    html += renderGroup(myFinals, '#f59e0b', 'rgba(245,158,11,0.2)', 'rgba(245,158,11,0.1)', 'deleteFinalExam');
+  } else {
+    html += '<p style="font-size:13px;color:var(--muted);padding:4px 0 16px;">Kayıtlı ders bulunamadı.</p>';
+  }
+
   container.innerHTML = html;
 }
 
@@ -3078,7 +3223,7 @@ function toggleExamAddForm(){
 function saveManualExam(){
   const select = document.getElementById('exam-add-select');
   if(!select || !select.value){ showToast('❌ Lütfen bir sınav seçin.'); return; }
-  const exam = EXAM_SCHEDULE.find(e => e.code === select.value);
+  const exam = EXAM_SCHEDULE.find(e => e.code === select.value) || FINAL_SCHEDULE.find(e => e.code === select.value);
   if(!exam){ showToast('❌ Sınav bulunamadı.'); return; }
 
   // Daha önce silinmişse removed listesinden çıkar
@@ -3098,13 +3243,23 @@ function saveManualExam(){
 }
 
 function deleteScheduledExam(code){
-  if(!confirm('Bu sınavı listeden kaldırmak istiyor musun?\nDaha sonra "＋ Sınav Ekle" ile geri ekleyebilirsin.')) return;
+  if(!confirm('Bu sınavı listeden kaldırmak istiyor musun?')) return;
   const removed = safeLocalStorage('removed_exams', []);
   if(!removed.includes(code)) removed.push(code);
   try{ localStorage.setItem('removed_exams', JSON.stringify(removed)); }catch(e){}
   renderExams();
   renderCalendar();
-  showToast('🗑️ Sınav kaldırıldı. Geri eklemek için ＋ Sınav Ekle butonunu kullan.');
+  showToast('🗑️ Sınav kaldırıldı.');
+}
+
+function deleteFinalExam(code){
+  if(!confirm('Bu final sınavını listeden kaldırmak istiyor musun?')) return;
+  const removed = safeLocalStorage('removed_finals', []);
+  if(!removed.includes(code)) removed.push(code);
+  try{ localStorage.setItem('removed_finals', JSON.stringify(removed)); }catch(e){}
+  renderExams();
+  renderCalendar();
+  showToast('🗑️ Final sınavı kaldırıldı.');
 }
 
 function deleteManualExam(id){
@@ -3123,7 +3278,7 @@ function renderSchedule(){
   document.getElementById('stat-online').textContent=my.filter(c=>Object.values(c.schedule).some(s=>s.includes('ONLINE'))).length;
   // Badge güncelle
   const examBadge = document.getElementById('badge-exam');
-  if(examBadge){ const n=getMyExams().length; examBadge.textContent=n; examBadge.style.display=n?'inline-block':'none'; }
+  if(examBadge){ const n=getMyExams().length+getMyFinals().length; examBadge.textContent=n; examBadge.style.display=n?'inline-block':'none'; }
   if(my.length===0){document.getElementById('schedule-grid').style.display='none';document.getElementById('schedule-empty').style.display='block';return;}
   document.getElementById('schedule-grid').style.display='block';document.getElementById('schedule-empty').style.display='none';
   const slots={};DAYS.forEach(d=>slots[d]=[]);
@@ -3821,25 +3976,28 @@ function getCalEvents() {
   });
 
   // Ara sınav programı — kayıtlı derslerle eşleştir
-  EXAM_SCHEDULE.forEach(exam => {
-    const examBase = baseCode(exam.code);
-    const isEnrolled = [...enrolled].some(code => {
-      const enrolledBase = baseCode(code);
-      return code === exam.code || enrolledBase === examBase || enrolledBase === exam.code || enrolledBase.startsWith(examBase + '-') || examBase.startsWith(enrolledBase + '-');
+  function addExamsToCalendar(schedule, color){
+    const removed = new Set(safeLocalStorage(color==='var(--red)'?'removed_exams':'removed_finals', []));
+    schedule.forEach(exam => {
+      if(removed.has(exam.code)) return;
+      const examBase = baseCode(exam.code);
+      const isEnrolled = [...enrolled].some(code => {
+        const enrolledBase = baseCode(code);
+        return code === exam.code || enrolledBase === examBase || enrolledBase === exam.code || enrolledBase.startsWith(examBase + '-') || examBase.startsWith(enrolledBase + '-');
+      });
+      if(!isEnrolled) return;
+      const [year, month, day] = exam.date.split('-').map(Number);
+      const d = new Date(year, month-1, day);
+      events.push({
+        date: d, type: 'exam',
+        title: '🎓 ' + exam.code,
+        sub: exam.name + ' · ' + exam.time + (exam.room ? ' · ' + exam.room : ''),
+        time: exam.time, room: exam.room, color
+      });
     });
-    if(!isEnrolled) return;
-    const [year, month, day] = exam.date.split('-').map(Number);
-    const d = new Date(year, month-1, day);
-    events.push({
-      date: d,
-      type: 'exam',
-      title: '🎓 ' + exam.code,
-      sub: exam.name + ' · ' + exam.time + (exam.room ? ' · ' + exam.room : ''),
-      time: exam.time,
-      room: exam.room,
-      color: 'var(--red)'
-    });
-  });
+  }
+  addExamsToCalendar(EXAM_SCHEDULE, 'var(--red)');
+  addExamsToCalendar(FINAL_SCHEDULE, '#f59e0b');
 
   // Manuel eklenmiş sınavlar
   safeLocalStorage('manual_exams', []).forEach(exam => {
