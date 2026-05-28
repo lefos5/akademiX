@@ -6469,7 +6469,7 @@ function normalizeMermaidNodeWidths(svgEl){
   if(nodeInfos.length < 2) return;
 
   const maxWidth = Math.max.apply(null, nodeInfos.map(function(n){ return n.width; }));
-  const minTarget = maxWidth * 0.75; // en dar node en geniş'in en az %75'i kadar
+  const minTarget = maxWidth * 0.88; // en dar node en geniş'in en az %88'i kadar
 
   nodeInfos.forEach(function(info){
     if(info.width >= minTarget) return; // zaten yeterince geniş
