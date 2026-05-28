@@ -5789,7 +5789,7 @@ async function matRunPagedSummary(m, pages){
   // Sayfaları 4'erli batch'lere böl — TEXT sayfaları için
   // VISION sayfaları AYRI işlenecek (her batch'te 2 sayfa, payload büyük)
   // HYBRID sayfaları = metin var AMA grafik referansı geçiyor → resim+metin birlikte gönder
-  const PAGES_PER_BATCH_TEXT   = 4;
+  const PAGES_PER_BATCH_TEXT   = 3;
   const PAGES_PER_BATCH_VISION = 2;
   const PAGES_PER_BATCH_HYBRID = 2;
 
@@ -5979,7 +5979,7 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
     try {
       const result = await callAiWithRetry(sessionId, {
         mode: 'paged',
-        max_tokens: 12000,
+        max_tokens: 20000,
         system: systemPrompt,
         messages: [{role:'user', content: messageContent}]
       }, {
@@ -6054,7 +6054,7 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
 
         const retryResult = await callAiWithRetry(sessionId, {
           mode: 'paged',
-          max_tokens: 4000,
+          max_tokens: 8000,
           system: systemPrompt,
           messages: [{ role: 'user', content: retryContent }]
         }, { maxRetries: 2 });
