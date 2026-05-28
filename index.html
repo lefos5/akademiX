@@ -6251,6 +6251,16 @@ function matMd(text){
   s = s.replace(/\$([^\$\n]+?)\$/g, stash);
   s = s.replace(/\\\(([\s\S]+?)\\\)/g, stash);
 
+  // HTML bloklarını \n→<br> geçişinden koru — SVG içindeki <br> SVG parser'ı kırar,
+  // mermaid <pre> içindeki <br> ise textContent okumada newline'ları siler.
+  // LaTeX stash ile aynı mantık: üretilen HTML'i placeholder ile sakla, sonda geri koy.
+  const blockStash = [];
+  const stashBlock = function(html){
+    const idx = blockStash.length;
+    blockStash.push(html);
+    return 'BLOCK' + idx + '';
+  };
+
   // SVG blokları — escape edilmiş SVG'yi geri çöz ve güvenli render et
   s = s.replace(/```svg\n([\s\S]*?)```/g, (_, svgEscaped) => {
     // Sadece SVG etiketlerini geri çöz, script/event handler'ları temizle
@@ -6261,8 +6271,8 @@ function matMd(text){
     svg = svg.replace(/\bon\w+\s*=/gi, 'data-blocked=');
     svg = svg.replace(/<script[\s\S]*?<\/script>/gi, '');
     // SVG'yi validate et — açılış etiketi var mı?
-    if(!/<svg[\s>]/i.test(svg)) return `<div class="md-code-block"><div class="md-code-lang">svg</div><pre><code>${svgEscaped}</code></pre></div>`;
-    return `<div class="md-svg-container">${svg}</div>`;
+    if(!/<svg[\s>]/i.test(svg)) return stashBlock(`<div class="md-code-block"><div class="md-code-lang">svg</div><pre><code>${svgEscaped}</code></pre></div>`);
+    return stashBlock(`<div class="md-svg-container">${svg}</div>`);
   });
 
   // Mermaid blokları — diyagram, akış, ağaç, kavram haritası
@@ -6281,8 +6291,8 @@ function matMd(text){
     } catch(e){ /* sanitize failed, ham kodla devam et */ }
     // Benzersiz id (her render için farklı olmalı)
     const id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
-    // Code'u textarea olarak gömüyoruz, sonra renderMermaidIn() onu işleyecek
-    return `<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden;max-width:100%;"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">📊 Diyagram</div><div class="md-mermaid-target" style="text-align:center;min-height:40px;display:flex;align-items:center;justify-content:center;">⏳ Diyagram yükleniyor...</div></div></div>`;
+    // Code'u <pre> olarak gömüyoruz, sonra renderMermaidIn() onu işleyecek
+    return stashBlock(`<div class="md-mermaid-container" data-mermaid-id="${id}"><pre class="md-mermaid-source" style="display:none;">${escHtml(code)}</pre><div class="md-mermaid-output" style="padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden;max-width:100%;"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">📊 Diyagram</div><div class="md-mermaid-target" style="text-align:center;min-height:40px;display:flex;align-items:center;justify-content:center;">⏳ Diyagram yükleniyor...</div></div></div>`);
   });
 
   // Kod blokları (```)
@@ -6297,9 +6307,9 @@ function matMd(text){
       !/^(function|class|const|let|var|import|export|def|return|if|for|while)\b/m.test(trimmed);
 
     if(looksLikeAsciiArt){
-      return `<div class="md-code-block" style="border-left:3px solid var(--orange,#f59e0b);"><div class="md-code-lang" style="background:rgba(245,158,11,0.1);color:#f59e0b;">⚠️ ${lang||'ASCII'} — Bu diyagram düzgün çizilemedi (yeniden oluştur denemeye değer)</div><pre><code>${trimmed}</code></pre></div>`;
+      return stashBlock(`<div class="md-code-block" style="border-left:3px solid var(--orange,#f59e0b);"><div class="md-code-lang" style="background:rgba(245,158,11,0.1);color:#f59e0b;">⚠️ ${lang||'ASCII'} — Bu diyagram düzgün çizilemedi (yeniden oluştur denemeye değer)</div><pre><code>${trimmed}</code></pre></div>`);
     }
-    return `<div class="md-code-block"><div class="md-code-lang">${lang||'code'}</div><pre><code>${trimmed}</code></pre></div>`;
+    return stashBlock(`<div class="md-code-block"><div class="md-code-lang">${lang||'code'}</div><pre><code>${trimmed}</code></pre></div>`);
   });
   // Inline kod
   s = s.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
@@ -6361,6 +6371,11 @@ function matMd(text){
   // LaTeX placeholder'ları geri koy — KaTeX auto-render bunları yakalayacak
   s = s.replace(/\u0000LATEX(\d+)\u0000/g, function(_, idx){
     return latexBlocks[parseInt(idx)] || '';
+  });
+
+  // HTML blok placeholder'lari geri koy - \n-><br> gecisi bittikten sonra
+  s = s.replace(/BLOCK(\d+)/g, function(_, idx){
+    return blockStash[parseInt(idx)] || '';
   });
 
   return s;
