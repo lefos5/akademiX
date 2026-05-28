@@ -6401,7 +6401,7 @@ async function matRunPagedSummary(m, pages){
 
   // Grafik/diyagram referansı içeren metin sayfalarını tespit et.
   // Bu sayfalar Vision modunda hem resim hem metin olarak gönderilir.
-  const FIGURE_KEYWORDS = /\b(abbildung|abbildungen|abb\.|figure|figures|fig\.|grafik|diagramm|diagramme|schaubild|graph|chart|kurve|kurven|bild|bilder|darstellung|verlauf|kennlinie)\b/i;
+  const FIGURE_KEYWORDS = /\b(abbildung|abbildungen|abb\.|figure|figures|fig\.|grafik|diagramm|diagramme|schaubild|graph|chart|kurve|kurven|bild|bilder|darstellung|verlauf|kennlinie|dichten|dichte|verteilung|verteilungen|density|distribution|histogram|plot|scatter|regression|korrelation|funktion|funktionen|spektrum|frequenz)\b/i;
   const figurePageNums = new Set(
     hasPdfDoc
       ? pages
@@ -6723,6 +6723,13 @@ PDF parse'ta formül bozuk gözükürse bağlamdan tahmin et:
 - "fX x!, ..., x(" muhtemelen "$f_X(x_1, ..., x_n)$"
 - Çok bozuksa satırı atla — bozuk hâliyle yazma.
 
+⚠️ ALT İNDEKS TUZAĞI — ÇOK YAYGIN PDF PARSE HATASI:
+PDF parser büyük harfli alt indeksleri bazen yanlış okur. Bu kombinasyonları ASLA faktöriyel olarak yorumlama:
+- "nF", "nR", "nK", "nT", "nP" → bunlar alt indeksli parametreler: $n_F$, $n_R$, $n_K$
+- "x!" veya "n!" bağlamda anlamsızsa → muhtemelen $x_i$ veya $n_i$ gibi bir alt indeks
+- χ²-dağılımı bağlamında "nF" → serbestlik derecesi $n_F$ (faktöriyel DEĞİL)
+- YANLIŞ: "n! serbestlik derecesi" / DOĞRU: "$n_F$ serbestlik derecesi"
+
 GRAFİK/GÖRSEL KURALI${(isVision || isHybrid) ? ' (Resim görüyorsun — ZORUNLU)' : ' (Metin modu)'}:
 ${(isVision || isHybrid) ? `- Grafiği/eğriyi görüyorsan MUTLAKA şu formatta açıkla (geçiştirme, görmezden gelme):
   > 📊 **[Grafiğin başlığı veya konuya göre isim]**
@@ -6808,6 +6815,8 @@ Kuralların:
         chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe sayfa sayfa analiz et. Bu materyal bölümü ${i+1}/${chunks.length}. numaralı bölümdür.
 
 HER SAYFAYI atlamadan detaylı özetle. Teknik terimleri: **Almanca** (Türkçe) formatında yaz. Formüller aynen korunsun.
+
+⚠️ ALT İNDEKS TUZAĞI: "nF", "nR", "nK" gibi kombinasyonlar alt indeksli parametredir ($n_F$, $n_R$), faktöriyel DEĞİL. "n!" veya "x!" bağlamda anlamsızsa alt indeks olarak yorumla.
 
 Format:
 ## 📄 Sayfa [numara]
