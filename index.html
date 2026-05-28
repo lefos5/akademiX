@@ -4731,8 +4731,8 @@ async function selectMat(idx){
     }
   }
 
-  // Önceki AI çıktılarını ve chat geçmişini Supabase'den yükle
-  if(m._sbId || m.id) await loadMatHistory(m._sbId || m.id);
+  // historyPromise: selectMat başında parallel olarak başlatıldı — burada sadece bekle
+  await historyPromise;
 
   // Summary modunu göster (varsayılan)
   const summaryBtn = document.querySelector('.mat-mode-btn[data-mode="summary"]');
@@ -6335,18 +6335,20 @@ Format:
 Materyal Bölümü:
 ${chunks[i]}`;
       } else if(variant === 'study'){
-        chunkPrompt = `Sen TAÜ Mühendislik Fakültesi öğrencileri için çalışma notu hazırlıyorsun. Bu materyal bölümü ${i+1}/${chunks.length}. numaralı bölümdür.
+        chunkPrompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademisyensin. Bu materyal bölümü ${i+1}/${chunks.length}. numaralı bölümdür — içeriği anlayıp Türkçe çalışma notu hazırla.
 
-Bu bölümdeki konuları KONU-KONU grupla ve her konu için defter formatında not yaz. Sayfa-sayfa değil, KONU-KONU.
+⚠️ TEKRAR YASAĞI: "Tanım:", "Neden önemli:", "Nasıl çalışır:", "Örnek:" gibi alt-başlıklar AÇMA — aynı bilgiyi birden fazla başlık altında tekrarlama.
 
-Format her konu için:
+KURALLAR:
+- Bu bölümdeki konuları tespit et; her konu için akıcı paragraflar halinde yaz: kavramı tanıt → mekanizması → formüller doğal akışta → kritik örnek
+- İhtiyaca göre 1-3 paragraf — basit konuda kısa, karmaşık konuda uzun
+- Teknik terimleri orijinal dilde tut: **Streckgrenze** (akma sınırı)
+- Formüller LaTeX formatında: inline $\\mu = E[X]$, blok $$\\sigma^2 = \\sum (x_i-\\mu)^2/n$$
+- Diyagram SADECE gerçekten yardımcıysa çiz (ağaç, akış, durum makinesi) — \`\`\`mermaid bloğu, graph TD. Etiketlerde tek tırnak, iç parantez, ; YASAK.
+
+Format (SADECE bu yapı):
 ## 📚 [Konu başlığı]
-**Tanım:** [...]
-**Neden önemli:** [...]
-**Nasıl çalışır:** [...]
-**Örnek:** [...]
-
-Teknik terimleri: **Almanca/İngilizce** (Türkçe) formatında. Formüller aynen korunsun.
+[Akıcı anlatım — alt-başlık AÇMA]
 
 Materyal Bölümü:
 ${chunks[i]}`;
