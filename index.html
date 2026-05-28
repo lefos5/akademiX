@@ -6450,6 +6450,54 @@ function sanitizeMermaidCode(raw){
   return code.trim();
 }
 
+// Mermaid node genişlik normalizasyonu — kısa etiketli kutular en geniş node'un
+// en az %75'i kadar olsun. SVG'nin rect+label transform'unu doğrudan düzeltir.
+function normalizeMermaidNodeWidths(svgEl){
+  if(!svgEl) return;
+  const nodeInfos = [];
+
+  svgEl.querySelectorAll('g.node').forEach(function(nodeG){
+    // Node'un ana rect'ini bul: en geniş rect (ufak inner rect'leri ele)
+    let mainRect = null, maxW = 0;
+    nodeG.querySelectorAll('rect').forEach(function(r){
+      const w = parseFloat(r.getAttribute('width') || '0');
+      if(w > maxW){ maxW = w; mainRect = r; }
+    });
+    if(mainRect && maxW > 20) nodeInfos.push({ nodeG, rect: mainRect, width: maxW });
+  });
+
+  if(nodeInfos.length < 2) return;
+
+  const maxWidth = Math.max.apply(null, nodeInfos.map(function(n){ return n.width; }));
+  const minTarget = maxWidth * 0.75; // en dar node en geniş'in en az %75'i kadar
+
+  nodeInfos.forEach(function(info){
+    if(info.width >= minTarget) return; // zaten yeterince geniş
+    const expand  = minTarget - info.width;
+    const halfExp = expand / 2;
+
+    // Rect'i genişlet — merkezi sabit kalsın (x negatif, ortalı)
+    info.rect.setAttribute('width', String(minTarget));
+    info.rect.setAttribute('x', String(parseFloat(info.rect.getAttribute('x') || '0') - halfExp));
+
+    // Label g'yi sola kaydır + foreignObject'i genişlet
+    const labelG = info.nodeG.querySelector('g.label');
+    if(labelG){
+      const tr = labelG.getAttribute('transform') || '';
+      const m  = tr.match(/translate\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)/);
+      if(m){
+        const newTx = (parseFloat(m[1]) - halfExp).toFixed(2);
+        labelG.setAttribute('transform', 'translate(' + newTx + ', ' + m[2] + ')');
+      }
+      const fo = labelG.querySelector('foreignObject');
+      if(fo){
+        const foW = parseFloat(fo.getAttribute('width') || '0');
+        fo.setAttribute('width', String(foW + expand));
+      }
+    }
+  });
+}
+
 // Mermaid diagram render — verilen elementin içindeki ```mermaid``` bloklarını çizer.
 // matMd `.md-mermaid-container` div'leri oluşturur, biz onları burada render ederiz.
 async function renderMermaidIn(element){
@@ -6517,6 +6565,8 @@ async function renderMermaidIn(element){
         targetEl.style.maxHeight = '420px';
         targetEl.style.overflowY = 'auto';
         targetEl.style.overflowX = 'auto';
+        // Node genişliklerini normalize et — kısa etiketli kutular dar kalmasın
+        normalizeMermaidNodeWidths(svgEl);
       }
       container.setAttribute('data-rendered', '1');
     } else {
