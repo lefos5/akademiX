@@ -6411,7 +6411,8 @@ async function matRunPagedSummary(m, pages){
   );
 
   // Sayfaları text / hybrid / vision olarak sınıflandır
-  const textPages   = pages.filter(p => !emptyPageNums.has(p.page) && !figurePageNums.has(p.page));
+  // ÖNEMLİ: canUseVision=false iken boş sayfalar textPages'e dahil edilir — sessizce drop edilmez
+  const textPages   = pages.filter(p => !figurePageNums.has(p.page) && (!emptyPageNums.has(p.page) || !canUseVision));
   const hybridPages = pages.filter(p => figurePageNums.has(p.page));
   const visionPages = canUseVision ? pages.filter(p => emptyPageNums.has(p.page)) : [];
 
@@ -6624,13 +6625,71 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
     return;
   }
 
-  // Eksik sayfaları kontrol et — AI sayfa atlamış olabilir
+  // ---------- EKSİK SAYFA RETRY — tek tek yeniden dene ----------
+  // Token kesimi veya atlama nedeniyle işlenemeyen sayfaları birer birer gönder
   const seenPages = new Set(allPageSummaries.map(s => s.page));
-  pages.forEach(p => {
-    if(!seenPages.has(p.page)){
-      allPageSummaries.push({ page: p.page, summary: '_[Bu sayfa için özet üretilemedi]_' });
+  const missingPages = pages.filter(p => !seenPages.has(p.page));
+
+  if(missingPages.length > 0){
+    const retryEl = document.createElement('div');
+    retryEl.style.cssText = 'font-size:12px;color:var(--muted);margin:6px 0;padding:8px 10px;background:var(--surface2);border-radius:8px;';
+    retryEl.textContent = `⚠️ ${missingPages.length} sayfa işlenemedi, tek tek yeniden deneniyor...`;
+    if(panel) panel.appendChild(retryEl);
+
+    for(const p of missingPages){
+      retryEl.textContent = `🔄 Sayfa ${p.page} yeniden deneniyor...`;
+      try {
+        // Sayfa türünü belirle
+        const isEmpty = emptyPageNums.has(p.page);
+        const isHybrid = figurePageNums.has(p.page);
+        let retryContent;
+
+        if((isEmpty || isHybrid) && hasPdfDoc){
+          // Vision ile dene
+          const { base64, mediaType } = await renderPdfPageToBase64(matFileData.pdfDoc, p.page, 2.0);
+          retryContent = [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: `===== Yukarıdaki resim SAYFA ${p.page} =====` },
+            { type: 'text', text: buildPagedPrompt('', 1, p.page, /*isVision*/true) }
+          ];
+        } else {
+          // Metin ile dene
+          const batchText = `===== SAYFA ${p.page} =====\n${p.text || '(boş sayfa)'}\n`;
+          retryContent = [{ type: 'text', text: buildPagedPrompt(batchText, 1, p.page) }];
+        }
+
+        const retryResult = await callAiWithRetry(sessionId, {
+          mode: 'paged',
+          max_tokens: 4000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: retryContent }]
+        }, { maxRetries: 2 });
+
+        // Sonucu parse et
+        const retryBlocks = retryResult.split(/^##\s*📄?\s*Sayfa\s+(\d+)/im);
+        let added = false;
+        for(let k = 1; k < retryBlocks.length; k += 2){
+          const pageNum = parseInt(retryBlocks[k]);
+          const pageContent = (retryBlocks[k+1] || '').trim();
+          if(!isNaN(pageNum) && pageContent && !seenPages.has(pageNum)){
+            allPageSummaries.push({ page: pageNum, summary: pageContent });
+            seenPages.add(pageNum);
+            added = true;
+          }
+        }
+        // Parse başarısız olduysa ham sonucu kullan
+        if(!added && retryResult.trim()){
+          allPageSummaries.push({ page: p.page, summary: retryResult.trim() });
+          seenPages.add(p.page);
+        }
+      } catch(retryErr){
+        console.error('[paged] Retry başarısız, sayfa', p.page, retryErr);
+        allPageSummaries.push({ page: p.page, summary: `_⚠️ Bu sayfa işlenemedi: ${retryErr.message || 'bilinmeyen hata'}_` });
+        seenPages.add(p.page);
+      }
     }
-  });
+    retryEl.remove();
+  }
 
   // Sayfa numarasına göre sırala
   allPageSummaries.sort((a, b) => a.page - b.page);
