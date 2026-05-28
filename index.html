@@ -3114,102 +3114,80 @@ function getMyFinals(){
 }
 
 function renderExams(){
-  const myMidterms = getMyExams();
-  const myFinals   = getMyFinals();
-  const manualExams = safeLocalStorage('manual_exams', []);
-  const totalCount = myMidterms.length + myFinals.length + manualExams.length;
+  const myFinals = getMyFinals();
 
   const container = document.getElementById('exams-content');
   if(!container) return;
 
   const badge = document.getElementById('badge-exam');
-  if(badge){ badge.textContent = totalCount; badge.style.display = totalCount ? 'inline-block' : 'none'; }
+  if(badge){ badge.textContent = myFinals.length; badge.style.display = myFinals.length ? 'inline-block' : 'none'; }
 
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // Tüm tarihler için Türkçe etiket
+  // 'YYYY-MM-DD' → local Date (ISO string parse eder UTC gibi davranır, bu 1 gün kaymasına neden olur)
+  function parseLocalDate(s){
+    const [y,m,d] = s.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+
+  // Tüm tarihler için Türkçe etiket — local date kullan
   function dateLabel(dateStr){
-    const d = new Date(dateStr);
+    const d = parseLocalDate(dateStr);
     return d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
   }
 
-  // Sınav gruplarını render eden yardımcı fonksiyon
-  // accentColor: solid CSS color | accentAlpha: transparent version for borders/bg
-  function renderGroup(exams, accentColor, accentAlpha, accentBg, deleteFn){
-    if(!exams.length) return '<p style="font-size:13px;color:var(--muted);padding:4px 0;">Bu dönem için kayıtlı ders bulunamadı.</p>';
-    const grouped = {};
-    exams.forEach(e => { if(!grouped[e.date]) grouped[e.date]=[]; grouped[e.date].push(e); });
-    let html = '';
-    Object.entries(grouped).sort(([a],[b])=>a<b?-1:1).forEach(([date, dayExams]) => {
-      const d = new Date(date);
-      const isPast = d < today;
-      const isToday = d.toDateString() === today.toDateString();
-      const label = dateLabel(date);
-      html += `
-        <div style="margin-bottom:24px;">
-          <div style="font-size:12px;font-weight:700;
-            color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
-            text-transform:uppercase;letter-spacing:0.8px;padding:8px 0;
-            border-bottom:2px solid ${isToday?'var(--accent)':'var(--border)'};
-            margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-            ${label}
-            ${isToday?'<span style="background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">BUGÜN</span>':''}
-            ${isPast&&!isToday?'<span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">Geçti</span>':''}
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            ${dayExams.map(exam => `
-              <div style="background:var(--surface);border:1px solid ${isPast?'var(--border)':accentAlpha};
-                border-left:4px solid ${isPast?'var(--border2)':accentColor};
-                border-radius:12px;padding:14px 18px;
-                display:flex;align-items:center;gap:16px;opacity:${isPast?'0.55':'1'};">
-                <div style="flex-shrink:0;min-width:56px;text-align:center;">
-                  <div style="font-size:13px;font-weight:700;color:${accentColor};">${exam.time?exam.time.split('-')[0]:'—'}</div>
-                  <div style="font-size:10px;color:var(--muted);">${exam.time?'–'+exam.time.split('-')[1]:''}</div>
-                </div>
-                <div style="flex:1;min-width:0;">
-                  <div style="margin-bottom:3px;">
-                    <span style="background:${accentBg};color:${accentColor};font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;">${escHtml(exam.code)}</span>
-                  </div>
-                  <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${escHtml(exam.name)}</div>
-                  <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room||'—')}</div>
-                </div>
-                <button class="mat-list-del" style="opacity:1;flex-shrink:0;" title="Sil"
-                  onclick="${exam._manual?`deleteManualExam('${escHtml(exam._id)}')`:`${deleteFn}('${escHtml(exam.code)}')`}">✕</button>
-              </div>`).join('')}
-          </div>
-        </div>`;
-    });
-    return html;
+  if(!myFinals.length){
+    container.innerHTML = `<div class="empty-state">
+      <div class="icon">🎓</div>
+      <h3>Final sınavın yok</h3>
+      <p>Kayıtlı derslerine ait final sınavı bulunamadı. Ders kaydını kontrol et.</p>
+    </div>`;
+    return;
   }
 
-  // Bölüm başlığı
-  function sectionHeader(title, count, color, bgColor){
-    return `<div style="display:flex;align-items:center;gap:10px;margin:28px 0 16px;">
-      <div style="width:3px;height:20px;background:${color};border-radius:2px;flex-shrink:0;"></div>
-      <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--text);">${title}</h3>
-      ${count>0?`<span style="background:${bgColor};color:${color};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${count}</span>`:''}
-    </div>`;
-  }
+  const grouped = {};
+  myFinals.forEach(e => { if(!grouped[e.date]) grouped[e.date]=[]; grouped[e.date].push(e); });
 
   let html = '';
-
-  // === ARA SINAVLAR ===
-  const midtermMissingCodes = new Set([...myMidterms, ...manualExams].map(e=>e.code));
-  html += sectionHeader('Ara Sınavlar', myMidterms.length + manualExams.filter(e=>EXAM_SCHEDULE.some(s=>s.code===e.code)).length, 'var(--red)', 'rgba(248,113,113,0.1)');
-  if(myMidterms.length || manualExams.some(e=>EXAM_SCHEDULE.some(s=>s.code===e.code))){
-    const midtermExams = [...myMidterms, ...manualExams.filter(e=>EXAM_SCHEDULE.some(s=>s.code===e.code))].sort((a,b)=>new Date(a.date)-new Date(b.date));
-    html += renderGroup(midtermExams, 'var(--red)', 'rgba(248,113,113,0.2)', 'rgba(248,113,113,0.1)', 'deleteScheduledExam');
-  } else {
-    html += '<p style="font-size:13px;color:var(--muted);padding:4px 0 16px;">Kayıtlı ders bulunamadı.</p>';
-  }
-
-  // === FİNAL SINAVLARI ===
-  html += sectionHeader('Final Sınavları', myFinals.length, '#f59e0b', 'rgba(245,158,11,0.1)');
-  if(myFinals.length){
-    html += renderGroup(myFinals, '#f59e0b', 'rgba(245,158,11,0.2)', 'rgba(245,158,11,0.1)', 'deleteFinalExam');
-  } else {
-    html += '<p style="font-size:13px;color:var(--muted);padding:4px 0 16px;">Kayıtlı ders bulunamadı.</p>';
-  }
+  Object.entries(grouped).sort(([a],[b])=>a<b?-1:1).forEach(([date, dayExams]) => {
+    const d = parseLocalDate(date);
+    const isPast = d < today;
+    const isToday = d.toDateString() === today.toDateString();
+    const label = dateLabel(date);
+    html += `
+      <div style="margin-bottom:24px;">
+        <div style="font-size:12px;font-weight:700;
+          color:${isToday?'var(--accent2)':isPast?'var(--muted)':'var(--text)'};
+          text-transform:uppercase;letter-spacing:0.8px;padding:8px 0;
+          border-bottom:2px solid ${isToday?'var(--accent)':'var(--border)'};
+          margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          ${label}
+          ${isToday?'<span style="background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">BUGÜN</span>':''}
+          ${isPast&&!isToday?'<span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">Geçti</span>':''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${dayExams.map(exam => `
+            <div style="background:var(--surface);border:1px solid ${isPast?'var(--border)':'rgba(245,158,11,0.25)'};
+              border-left:4px solid ${isPast?'var(--border2)':'#f59e0b'};
+              border-radius:12px;padding:14px 18px;
+              display:flex;align-items:center;gap:16px;opacity:${isPast?'0.55':'1'};">
+              <div style="flex-shrink:0;min-width:56px;text-align:center;">
+                <div style="font-size:13px;font-weight:700;color:#f59e0b;">${exam.time?exam.time.split('-')[0]:'—'}</div>
+                <div style="font-size:10px;color:var(--muted);">${exam.time?'–'+exam.time.split('-')[1]:''}</div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="margin-bottom:3px;">
+                  <span style="background:rgba(245,158,11,0.12);color:#f59e0b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;">${escHtml(exam.code)}</span>
+                </div>
+                <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${escHtml(exam.name)}</div>
+                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(exam.room||'—')}</div>
+              </div>
+              <button class="mat-list-del" style="opacity:1;flex-shrink:0;" title="Sil"
+                onclick="deleteFinalExam('${escHtml(exam.code)}')">✕</button>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  });
 
   container.innerHTML = html;
 }
@@ -3278,7 +3256,7 @@ function renderSchedule(){
   document.getElementById('stat-online').textContent=my.filter(c=>Object.values(c.schedule).some(s=>s.includes('ONLINE'))).length;
   // Badge güncelle
   const examBadge = document.getElementById('badge-exam');
-  if(examBadge){ const n=getMyExams().length+getMyFinals().length; examBadge.textContent=n; examBadge.style.display=n?'inline-block':'none'; }
+  if(examBadge){ const n=getMyFinals().length; examBadge.textContent=n; examBadge.style.display=n?'inline-block':'none'; }
   if(my.length===0){document.getElementById('schedule-grid').style.display='none';document.getElementById('schedule-empty').style.display='block';return;}
   document.getElementById('schedule-grid').style.display='block';document.getElementById('schedule-empty').style.display='none';
   const slots={};DAYS.forEach(d=>slots[d]=[]);
