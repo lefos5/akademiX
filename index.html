@@ -5876,11 +5876,27 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
   const allPageSummaries = []; // [{page, summary}]
   let processedPages = 0;
 
+  // Gemini free tier ≈10 RPM → her 6sn'de 1 istek izni var.
+  // Reaktif 60sn beklemeye düşmemek için batch'ler arası proaktif throttle uygula.
+  // Her AI çağrısının tamamlanma süresini ölç; min interval geçmediyse kalan süre kadar bekle.
+  const MIN_REQUEST_INTERVAL_MS = 5000; // 5sn → ≈12 RPM, limit öncesinde güvenli marj
+  let lastRequestFinishedAt = 0;
+
   for(let bi = 0; bi < allBatches.length; bi++){
     const batch = allBatches[bi];
     const firstPage = batch.pages[0].page;
     const lastPage = batch.pages[batch.pages.length - 1].page;
     const kindLabel = batch.kind === 'vision' ? '🖼️ ' : batch.kind === 'hybrid' ? '🖼️✏️ ' : '';
+
+    // İlk batch'te bekleme yok; sonraki batch'lerde min aralığı kontrol et
+    if(bi > 0){
+      const elapsed = Date.now() - lastRequestFinishedAt;
+      const remaining = MIN_REQUEST_INTERVAL_MS - elapsed;
+      if(remaining > 0){
+        progressEl.textContent = `⏳ Hazırlanıyor... (${processedPages}/${pages.length})`;
+        await new Promise(r => setTimeout(r, remaining));
+      }
+    }
 
     progressEl.textContent = `⏳ ${kindLabel}Sayfa ${firstPage}-${lastPage} işleniyor... (${processedPages}/${pages.length})`;
 
@@ -5984,9 +6000,12 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
         messages: [{role:'user', content: messageContent}]
       }, {
         onWait: (waitMs, attempt, maxRetries) => {
-          progressEl.textContent = `⏸ Gemini API limiti — ${Math.round(waitMs/1000)}sn sonra tekrar denenecek (deneme ${attempt}/${maxRetries}) — ${kindLabel}Sayfa ${firstPage}-${lastPage}`;
+          // 429 yakalandı — throttle süresini sıfırla (retry sonrası da bekleme uygulansın)
+          lastRequestFinishedAt = Date.now() + waitMs;
+          progressEl.textContent = `⏸ API limiti — ${Math.round(waitMs/1000)}sn bekleniyor (deneme ${attempt}/${maxRetries}) — ${kindLabel}Sayfa ${firstPage}–${lastPage}`;
         }
       });
+      lastRequestFinishedAt = Date.now(); // başarılı çağrı zamanını kaydet
 
       // Sonucu sayfa sayfa parse et — "## 📄 Sayfa N" başlıklarına göre böl
       const pageBlocks = result.split(/^##\s*📄?\s*Sayfa\s+(\d+)/im);
@@ -5998,8 +6017,8 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
         }
       }
     } catch(e) {
+      lastRequestFinishedAt = Date.now();
       console.error('[paged] Batch hatası', firstPage, lastPage, e);
-      // Bu batch atlandı — devam et, kalan sayfaları yine de almaya çalış
       allPageSummaries.push({
         page: firstPage,
         summary: `_⚠️ Bu sayfa(lar) işlenirken hata oluştu: ${e.message || 'bilinmeyen hata'}_`
