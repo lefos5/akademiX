@@ -4576,6 +4576,9 @@ async function selectMat(idx){
   document.getElementById('mat-workspace').style.display = 'flex';
   document.getElementById('mat-workspace').style.flexDirection = 'column';
 
+  // Önceki AI çıktılarını ve chat geçmişini HEMEN yüklemeye başla (extraction ile parallel)
+  const historyPromise = (m._sbId || m.id) ? loadMatHistory(m._sbId || m.id) : Promise.resolve();
+
   // Dosyayı AI için hazırla (Supabase URL'den)
   matFileData = null;
   if(m.type==='file' && (m.fileUrl || m.url)){
@@ -4586,91 +4589,126 @@ async function selectMat(idx){
 
     try{
       if(ext === 'pdf'){
-        // PDF: pdfjs ile URL'den direkt aç — tüm dosyayı belleğe almadan
-        showToast('⏳ PDF analiz ediliyor...');
-        // pdf.js yüklenmesini bekle (ESM async import)
-        if (typeof pdfjsLib === 'undefined') {
-          await new Promise(resolve => {
-            if (typeof pdfjsLib !== 'undefined') return resolve();
-            window.addEventListener('pdfjs-ready', resolve, { once: true });
-            // Güvenlik: 5 saniye sonra timeout
-            setTimeout(resolve, 5000);
-          });
-        }
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
-        const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
-        const rawPages = []; // ham sayfa metni
-        const maxPages = Math.min(pdf.numPages, 150);
-        for(let i = 1; i <= maxPages; i++){
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = pdfItemsToText(textContent.items);
-          rawPages.push({ page: i, text: pageText });
-        }
-
-        // ===== Header/Footer otomatik temizliği =====
-        // Strateji: Aynı kısa satır birden fazla sayfada tekrar ediyorsa header/footer'dır.
-        // Slayt başlığı, kurum adı, hoca adı, sayfa numarası gibi şeyleri yakalar.
-        const lineFreq = {};
-        const pageSegments = rawPages.map(p => {
-          const segments = (p.text || '')
-            .split(/\n+/)
-            .map(s => s.trim())
-            .filter(s => s.length >= 4 && s.length <= 100);
-          // Aynı sayfada tekrarsa bir kez say
-          const seen = new Set();
-          segments.forEach(s => {
-            const norm = s.replace(/\s+/g, ' ').toLowerCase();
-            if(!seen.has(norm)){
-              seen.add(norm);
-              lineFreq[norm] = (lineFreq[norm] || 0) + 1;
+        // ── sessionStorage önbelleği: aynı oturumda aynı dosyayı tekrar açarsa extraction atla ──
+        const PDF_CACHE_KEY = m.fileHash ? 'pdftxt_' + m.fileHash : null;
+        let usedCache = false;
+        if(PDF_CACHE_KEY){
+          try{
+            const hit = sessionStorage.getItem(PDF_CACHE_KEY);
+            if(hit){
+              const parsed = JSON.parse(hit);
+              matFileData = parsed; // pdfDoc yoktur (serialize edilemez)
+              usedCache = true;
+              showToast('✅ PDF yüklendi');
+              // pdfDoc'u arka planda yükle (sayfa sayfa görsel modu için)
+              if(typeof pdfjsLib !== 'undefined'){
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
+                pdfjsLib.getDocument({ url: fileUrl }).promise
+                  .then(pdf => { if(matFileData) matFileData.pdfDoc = pdf; })
+                  .catch(() => {});
+              }
             }
+          }catch(cacheErr){
+            if(PDF_CACHE_KEY) try{ sessionStorage.removeItem(PDF_CACHE_KEY); }catch(e2){}
+          }
+        }
+
+        if(!usedCache){
+          // PDF: pdfjs ile URL'den direkt aç — tüm dosyayı belleğe almadan
+          showToast('⏳ PDF analiz ediliyor...');
+          // pdf.js yüklenmesini bekle (ESM async import)
+          if (typeof pdfjsLib === 'undefined') {
+            await new Promise(resolve => {
+              if (typeof pdfjsLib !== 'undefined') return resolve();
+              window.addEventListener('pdfjs-ready', resolve, { once: true });
+              // Güvenlik: 5 saniye sonra timeout
+              setTimeout(resolve, 5000);
+            });
+          }
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
+          const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
+          const rawPages = []; // ham sayfa metni
+          const maxPages = Math.min(pdf.numPages, 150);
+          for(let i = 1; i <= maxPages; i++){
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = pdfItemsToText(textContent.items);
+            rawPages.push({ page: i, text: pageText });
+          }
+
+          // ===== Header/Footer otomatik temizliği =====
+          // Strateji: Aynı kısa satır birden fazla sayfada tekrar ediyorsa header/footer'dır.
+          const lineFreq = {};
+          const pageSegments = rawPages.map(p => {
+            const segments = (p.text || '')
+              .split(/\n+/)
+              .map(s => s.trim())
+              .filter(s => s.length >= 4 && s.length <= 100);
+            const seen = new Set();
+            segments.forEach(s => {
+              const norm = s.replace(/\s+/g, ' ').toLowerCase();
+              if(!seen.has(norm)){
+                seen.add(norm);
+                lineFreq[norm] = (lineFreq[norm] || 0) + 1;
+              }
+            });
+            return { page: p.page, segments };
           });
-          return { page: p.page, segments };
-        });
 
-        // Toplam sayfa sayısının %30'undan fazlasında geçen satırlar = header/footer
-        const totalPages = rawPages.length;
-        const headerThreshold = Math.max(3, Math.ceil(totalPages * 0.3));
-        const headerFooterSet = new Set(
-          Object.keys(lineFreq).filter(line => lineFreq[line] >= headerThreshold)
-        );
+          // Toplam sayfa sayısının %30'undan fazlasında geçen satırlar = header/footer
+          const totalPages = rawPages.length;
+          const headerThreshold = Math.max(3, Math.ceil(totalPages * 0.3));
+          const headerFooterSet = new Set(
+            Object.keys(lineFreq).filter(line => lineFreq[line] >= headerThreshold)
+          );
 
-        // Ek manuel desenler
-        const manualPatterns = [
-          /^internal$/i,
-          /^public$/i,
-          /^confidential$/i,
-          /^\d+$/,                          // sadece sayfa numarası "8"
-          /^\d{1,2}\/\d{1,2}\/\d{2,4}/,     // tarih "3/1/2026"
-          /^seite\s+\d+/i,
-          /^page\s+\d+/i,
-          /^slide\s+\d+/i,
-          /^sayfa\s+\d+/i,
-        ];
+          // Ek manuel desenler
+          const manualPatterns = [
+            /^internal$/i,
+            /^public$/i,
+            /^confidential$/i,
+            /^\d+$/,
+            /^\d{1,2}\/\d{1,2}\/\d{2,4}/,
+            /^seite\s+\d+/i,
+            /^page\s+\d+/i,
+            /^slide\s+\d+/i,
+            /^sayfa\s+\d+/i,
+          ];
 
-        // Her sayfayı temizle
-        const pages = pageSegments.map(ps => {
-          const cleaned = [];
-          ps.segments.forEach(seg => {
-            const norm = seg.replace(/\s+/g, ' ').toLowerCase();
-            if(headerFooterSet.has(norm)) return;
-            if(manualPatterns.some(re => re.test(seg.trim()))) return;
-            cleaned.push(seg);
+          // Her sayfayı temizle
+          const pages = pageSegments.map(ps => {
+            const cleaned = [];
+            ps.segments.forEach(seg => {
+              const norm = seg.replace(/\s+/g, ' ').toLowerCase();
+              if(headerFooterSet.has(norm)) return;
+              if(manualPatterns.some(re => re.test(seg.trim()))) return;
+              cleaned.push(seg);
+            });
+            return { page: ps.page, text: cleaned.join('  ').trim() };
           });
-          return { page: ps.page, text: cleaned.join('  ').trim() };
-        });
 
-        let fullText = '';
-        pages.forEach(p => {
-          fullText += `[Sayfa ${p.page}]\n${p.text}\n\n`;
-        });
+          let fullText = '';
+          pages.forEach(p => {
+            fullText += `[Sayfa ${p.page}]\n${p.text}\n\n`;
+          });
 
-        if(pdf.numPages > 150) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 150 sayfa analiz edildi]`;
-        matFileData = { type: 'text', content: fullText.substring(0, 100000), fullContent: fullText, pages: pages, pageCount: pdf.numPages, pdfDoc: pdf };
+          if(pdf.numPages > 150) fullText += `[Not: PDF ${pdf.numPages} sayfa, ilk 150 sayfa analiz edildi]`;
+          matFileData = { type: 'text', content: fullText.substring(0, 100000), fullContent: fullText, pages: pages, pageCount: pdf.numPages, pdfDoc: pdf };
 
-        const removedCount = headerFooterSet.size;
-        showToast(`✅ PDF analiz edildi (${pdf.numPages} sayfa${removedCount > 0 ? ', ' + removedCount + ' tekrar eden satır temizlendi' : ''})`);
+          // Extraction sonucunu sessionStorage'a kaydet (pdfDoc hariç — serialize edilemez)
+          if(PDF_CACHE_KEY){
+            try{
+              const { pdfDoc: _pd, ...cacheable } = matFileData;
+              const json = JSON.stringify(cacheable);
+              if(json.length < 3 * 1024 * 1024){ // 3MB altındaysa kaydet
+                sessionStorage.setItem(PDF_CACHE_KEY, json);
+              }
+            }catch(saveErr){} // sessionStorage dolu olabilir — görmezden gel
+          }
+
+          const removedCount = headerFooterSet.size;
+          showToast(`✅ PDF analiz edildi (${pdf.numPages} sayfa${removedCount > 0 ? ', ' + removedCount + ' tekrar eden satır temizlendi' : ''})`);
+        }
       } else if(fileSize > FILE_DIRECT_LIMIT){
         // Büyük non-PDF dosya — indirme yapma, sadece başlık bilgisi tut
         matFileData = { type: 'text', content: `[Dosya: ${m.fileName || 'dosya'} (${formatFileSize(fileSize)}) — dosya çok büyük olduğu için tam metin çıkarılamadı. Dosya adı ve türü baz alınarak cevap verilecek.]` };
