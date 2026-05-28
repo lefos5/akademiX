@@ -335,8 +335,7 @@
   .main { margin-left: 248px; min-height: 100vh; transition: margin-left 0.3s cubic-bezier(0.16,1,0.3,1); }
   body.sidebar-collapsed .main { margin-left: 64px; }
   body.sidebar-collapsed .page { padding-left: 36px; }
-  body.sidebar-collapsed .mat-layout,
-  body.sidebar-collapsed .studio-layout { padding-left: 0; }
+  body.sidebar-collapsed .mat-layout { padding-left: 0; }
   .page { padding: 32px 36px; }
   #page-materials { padding: 0 !important; }
   .page { display: none; }
@@ -1242,26 +1241,6 @@
     border-radius:6px; font-size:11px; line-height:1.5; color:var(--text2);
   }
   .rag-source-num { font-weight:700; color:var(--accent2); margin-right:4px; }
-  .studio-layout { display:flex; height:100vh; overflow:hidden; }
-
-  .studio-sidebar {
-    width: 240px; flex-shrink:0;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex; flex-direction:column;
-    padding: 16px 0;
-    transition: width 0.25s cubic-bezier(0.16,1,0.3,1), padding 0.25s;
-    overflow: hidden;
-  }
-  .studio-sidebar.collapsed { width: 0; padding: 0; border-right: none; }
-  .studio-sidebar.collapsed > * { opacity: 0; pointer-events: none; }
-  .studio-sidebar-top {
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 0 16px 12px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 0; flex-shrink: 0;
-  }
-  .studio-sidebar-title { font-size:13px; font-weight:700; color:var(--text); }
   .studio-new-btn {
     width:28px; height:28px; border-radius:8px;
     background:var(--accent); color:#fff; border:none;
@@ -1269,30 +1248,6 @@
     cursor:pointer; transition:opacity 0.15s;
   }
   .studio-new-btn:hover { opacity:0.85; }
-  .studio-recents-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; padding:12px 16px 8px; flex-shrink:0; }
-  .studio-recents { flex:1; overflow-y:auto; padding:0 8px; }
-  /* Studio boş sohbet durumu */
-  .studio-recents:empty::after,
-  .studio-recents:has(> div:only-child:empty)::after {
-    content: '';
-  }
-  .studio-empty-state {
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    flex:1; padding:32px 16px; text-align:center; color:var(--muted);
-  }
-  .studio-empty-state .icon { font-size:32px; opacity:0.3; margin-bottom:10px; }
-  .studio-empty-state p { font-size:12px; line-height:1.5; }
-  .studio-conv-item {
-    padding: 9px 10px; border-radius:8px; cursor:pointer;
-    transition:background 0.12s; margin-bottom:2px;
-    display:flex; align-items:center; gap:8px;
-  }
-  .studio-conv-item:hover { background:var(--surface2); }
-  .studio-conv-item.active { background:var(--accent-glow); }
-  .studio-conv-title { font-size:12px; font-weight:500; color:var(--text2); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .studio-conv-time { font-size:10px; color:var(--muted); flex-shrink:0; }
-  .studio-conv-del { opacity:0; font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; padding:2px 4px; }
-  .studio-conv-item:hover .studio-conv-del { opacity:1; }
 
   /* ── Collapsible Panel Toggle ── */
   .panel-toggle {
@@ -1308,102 +1263,11 @@
   .panel-toggle.left { left:0; }
   .panel-toggle.flipped { border-radius:8px 0 0 8px; border:1px solid var(--border); border-right:none; }
 
-  .studio-main {
-    flex:1; display:flex; flex-direction:column;
-    overflow:hidden; position:relative;
-  }
-  .studio-welcome {
-    flex:1; display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    gap: 8px;
-  }
-  /* Welcome modunda: input welcome div'in içinde, otomatik ortalanır */
-  .studio-main.welcome-mode .studio-welcome {
-    flex: 1;
-    justify-content: center;
-    padding: 40px 24px;
-  }
-  .studio-welcome-input {
-    position: relative;
-  }
-  .studio-welcome-input .studio-input-row:focus-within {
-    border-color: var(--accent) !important;
-    box-shadow: 0 4px 24px rgba(59,130,246,0.15) !important;
-  }
   .studio-messages {
     flex:1; overflow-y:auto; padding:24px 28px;
     display:flex; flex-direction:column; gap:16px;
   }
-  .studio-msg { display:flex; gap:12px; max-width:820px; width:100%; }
-  .studio-msg.user { flex-direction:row-reverse; margin-left:auto; }
-  .studio-msg-avatar {
-    width:30px; height:30px; border-radius:8px; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; font-size:14px;
-    background:var(--surface2); border:1px solid var(--border);
-  }
-  .studio-msg-avatar.ai { background:linear-gradient(135deg,var(--accent),#6366f1); color:#fff; border:none; }
-  .studio-msg-bubble {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:12px; padding:12px 16px;
-    font-size:13px; line-height:1.7; color:var(--text2);
-    max-width:680px;
-  }
-  .studio-msg.user .studio-msg-bubble {
-    background:var(--accent-glow); border-color:rgba(59,130,246,0.2);
-  }
-  .studio-msg-bubble h3 { font-size:14px; font-weight:700; margin:8px 0 4px; color:var(--text); }
-  .studio-msg-bubble ul { padding-left:18px; margin:6px 0; }
-  .studio-msg-bubble li { margin-bottom:3px; }
-  .studio-msg-bubble strong { color:var(--text); }
 
-  /* Ekli materyaller chips */
-  .studio-attached { display:flex; flex-wrap:wrap; gap:6px; padding:8px 16px 0; }
-  .studio-attached:empty { padding: 0; }
-  .studio-chip {
-    display:inline-flex; align-items:center; gap:6px;
-    background:var(--accent-glow); border:1px solid var(--accent);
-    border-radius:20px; padding:5px 4px 5px 12px;
-    font-size:12px; font-weight:600; color:var(--accent2);
-    box-shadow: 0 1px 4px rgba(59,130,246,0.15);
-    animation: chipIn 0.2s cubic-bezier(0.16,1,0.3,1);
-  }
-  .studio-chip-icon { font-size:13px; line-height:1; }
-  .studio-chip-label { line-height:1.2; }
-  .studio-chip button {
-    display:flex; align-items:center; justify-content:center;
-    width:18px; height:18px; border-radius:50%;
-    background:rgba(0,0,0,0.08); border:none; color:var(--accent2);
-    cursor:pointer; font-size:11px; line-height:1; padding:0;
-    transition: background 0.15s, color 0.15s, transform 0.15s;
-  }
-  .studio-chip button:hover { background:var(--red); color:#fff; transform:scale(1.1); }
-  @keyframes chipIn {
-    from { opacity:0; transform:scale(0.8); }
-    to { opacity:1; transform:scale(1); }
-  }
-
-  .studio-input-area {
-    border-top:1px solid var(--border);
-    background:var(--surface);
-    padding:12px 16px;
-    position:relative;
-    overflow:visible;
-  }
-  .studio-input-row { display:flex; align-items:flex-end; gap:8px; }
-  .studio-attach-btn {
-    width:34px; height:34px; border-radius:8px; flex-shrink:0;
-    background:var(--surface2); border:1px solid var(--border);
-    color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center;
-    transition:all 0.15s;
-  }
-  .studio-attach-btn:hover { border-color:var(--accent); color:var(--accent2); }
-  #studio-input {
-    flex:1; background:var(--surface2); border:1px solid var(--border);
-    border-radius:10px; padding:9px 14px; color:var(--text);
-    font-size:13px; font-family:'DM Sans',sans-serif; outline:none; resize:none;
-    transition:border-color 0.15s; min-height:36px; max-height:140px;
-  }
-  #studio-input:focus { border-color:var(--accent); }
   .studio-send-btn {
     width:34px; height:34px; border-radius:8px; flex-shrink:0;
     background:var(--accent); color:#fff; border:none;
@@ -1412,28 +1276,6 @@
   }
   .studio-send-btn:hover { opacity:0.85; }
   .studio-send-btn:disabled { opacity:0.4; cursor:not-allowed; }
-
-  /* Materyal picker */
-  .studio-picker {
-    position:absolute; bottom:calc(100% + 8px); left:16px; right:16px;
-    background:var(--surface); border:1px solid var(--border2);
-    border-radius:12px; padding:8px; max-height:220px; overflow-y:auto;
-    box-shadow:0 8px 32px rgba(0,0,0,0.35); z-index:500;
-  }
-  /* Portal modunda (body'e taşındığında) */
-  body > .studio-picker {
-    background:var(--surface) !important;
-    border:2px solid var(--accent) !important;
-    box-shadow:0 8px 40px rgba(0,0,0,0.4) !important;
-  }
-  .studio-picker-item {
-    display:flex; align-items:center; gap:10px; padding:8px 10px;
-    border-radius:8px; cursor:pointer; transition:background 0.12s;
-  }
-  .studio-picker-item:hover { background:var(--surface2); }
-  .studio-picker-item.selected { background:var(--accent-glow); }
-  .studio-picker-item-name { font-size:12px; font-weight:500; color:var(--text2); }
-  .studio-picker-item-course { font-size:10px; color:var(--muted); }
   .mat-send-btn {
     width: 34px; height: 34px; border-radius: 9px;
     background: var(--surface3); border: 1px solid var(--border2);
@@ -1613,7 +1455,7 @@
       background: rgba(0,0,0,0.5); z-index: 198;
     }
     .mobile-overlay.visible { display: block; }
-    .mat-layout, .studio-layout { height: calc(100vh - 56px) !important; }
+    .mat-layout { height: calc(100vh - 56px) !important; }
     .page { padding: 16px !important; }
     #page-materials { padding: 0 !important; }
     .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
@@ -1622,8 +1464,6 @@
     .mat-layout { flex-direction: column; height: auto !important; }
     .mat-sidebar { width: 100% !important; max-height: 40vh; border-right: none !important; border-bottom: 1px solid var(--border); }
     .mat-detail { min-height: 60vh; }
-    .studio-layout { flex-direction: column; }
-    .studio-sidebar { width: 100% !important; max-height: 30vh; border-right: none !important; border-bottom: 1px solid var(--border); }
     .schedule-grid { overflow-x: auto; }
     .schedule-header, .schedule-body { min-width: 600px; }
     .modal { width: 95vw !important; padding: 20px !important; }
@@ -1859,11 +1699,7 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
       <span class="nav-label">Materyaller</span>
     </div>
-    <div class="nav-item" onclick="showPage('studio')" data-label="AI Studio">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <span class="nav-label">AI Studio</span>
-    </div>
-  </nav>
+    </nav>
   <div class="user-card" id="user-card">
     <img class="user-avatar" id="user-avatar" src="" alt="">
     <div class="user-info">
@@ -1992,69 +1828,6 @@
       <div><h2>Ara Sınav Programı</h2><p>2025–2026 Bahar Dönemi · 6–10 Nisan 2026</p></div>
     </div>
     <div id="exams-content"></div>
-  </div>
-
-  <!-- AI STUDIO -->
-  <div class="page" id="page-studio" style="padding:0">
-    <div class="studio-layout">
-      <!-- Sol: Recents -->
-      <div class="studio-sidebar" id="studio-sidebar">
-        <div class="studio-sidebar-top">
-          <span class="studio-sidebar-title">AI Studio</span>
-          <div style="display:flex;gap:4px;align-items:center">
-            <button class="studio-new-btn" onclick="studioNewConversation()" title="Yeni Sohbet">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="studio-recents-label">Son Sohbetler</div>
-        <div class="studio-recents" id="studio-recents"></div>
-      </div>
-      <!-- Sidebar toggle -->
-      <button class="panel-toggle left" id="studio-panel-toggle" onclick="togglePanel('studio-sidebar','studio-panel-toggle')" title="Paneli daralt" style="position:relative;flex-shrink:0;border-radius:0;border-top:none;border-bottom:none;height:auto;width:16px;transform:none;top:0;">‹</button>
-      <!-- Sağ: Aktif sohbet -->
-      <div class="studio-main">
-        <div class="studio-welcome" id="studio-welcome">
-          <div style="font-size:48px;margin-bottom:16px;">✨</div>
-          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">AI Studio</div>
-          <div style="font-size:13px;color:var(--muted);max-width:320px;text-align:center;line-height:1.6;margin-bottom:24px;">Serbest soru sor ya da materyallerini ekleyerek AI ile çalış.</div>
-          <!-- Welcome mode input — ortada -->
-          <div class="studio-welcome-input" style="width:100%;max-width:580px;">
-            <div class="studio-attached" id="studio-attached-welcome"></div>
-            <div class="studio-input-row" style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:6px 6px 6px 12px;box-shadow:0 4px 24px rgba(0,0,0,0.12);">
-              <button class="studio-attach-btn" onclick="toggleStudioMaterialPicker(event)" title="Materyal Ekle" style="border:none;background:transparent;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-              </button>
-              <textarea id="studio-input-welcome" placeholder="Bir şey sor..." rows="1"
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();studioSendFromWelcome()}"
-                oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px'"
-                style="flex:1;background:transparent;border:none;padding:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:none;min-height:36px;max-height:140px;"></textarea>
-              <button class="studio-send-btn" onclick="studioSendFromWelcome()">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="studio-messages" id="studio-messages"></div>
-        <div class="studio-input-area" id="studio-input-area">
-          <!-- Ekli materyaller -->
-          <div class="studio-attached" id="studio-attached"></div>
-          <div class="studio-input-row">
-            <button class="studio-attach-btn" onclick="toggleStudioMaterialPicker(event)" title="Materyal Ekle">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-            </button>
-            <textarea id="studio-input" placeholder="Bir şey sor..." rows="1"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();studioSend()}"
-              oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px'"></textarea>
-            <button class="studio-send-btn" onclick="studioSend()">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
-          </div>
-          <!-- Materyal picker dropdown -->
-          <div class="studio-picker" id="studio-picker" style="display:none"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- MATERIALS -->
@@ -2711,66 +2484,6 @@ async function sbLoadSummaries(email){ return null; }
 
 
 // ═══════════════════════════════════════
-// AI STUDIO — CONVERSATIONS
-// ═══════════════════════════════════════
-
-async function sbCreateConversation(title){
-  const { data, error } = await apiDb({
-    table: 'ai_conversations', action: 'insert',
-    data: { title: title || 'Yeni Sohbet', material_ids: [] }
-  });
-  if(error || !data) return null;
-  return data;
-}
-
-async function sbLoadConversations(){
-  const { data, error } = await apiDb({
-    table: 'ai_conversations', action: 'select'
-  });
-  return error ? [] : (data || []);
-}
-
-async function sbUpdateConversationTitle(id, title){
-  if(!id) return;
-  await apiDb({
-    table: 'ai_conversations', action: 'update',
-    data: { title, updated_at: new Date().toISOString() },
-    filters: { id }
-  });
-}
-
-async function sbDeleteConversation(id){
-  if(!id) return;
-  await apiDb({ table: 'studio_messages', action: 'delete', filters: { conversation_id: id } });
-  await apiDb({ table: 'ai_conversations', action: 'delete', filters: { id } });
-}
-
-async function sbSaveStudioMessage(conversationId, role, content, materialIds=[]){
-  if(!conversationId) return null;
-  const { data, error } = await apiDb({
-    table: 'studio_messages', action: 'insert',
-    data: { conversation_id: conversationId, role, content, material_ids: materialIds }
-  });
-  if(error || !data) return null;
-  // updated_at güncelle
-  await apiDb({
-    table: 'ai_conversations', action: 'update',
-    data: { updated_at: new Date().toISOString() },
-    filters: { id: conversationId }
-  });
-  return data.id;
-}
-
-async function sbLoadStudioMessages(conversationId){
-  if(!conversationId) return [];
-  const { data, error } = await apiDb({
-    table: 'studio_messages', action: 'select',
-    filters: { conversation_id: conversationId }
-  });
-  return error ? [] : (data || []);
-}
-
-// ═══════════════════════════════════════
 // RAG CONVERSATIONS
 // ═══════════════════════════════════════
 
@@ -3206,7 +2919,6 @@ function showPage(id) {
   if(id==='calendar') renderCalendar();
   if(id==='exams') renderExams();
   if(id==='materials') renderMaterials();
-  if(id==='studio') renderStudio();
   if(id==='classroom'){
     if(!accessToken){
       // Sessizce token almayı dene
@@ -3248,460 +2960,6 @@ function getMyExams(){
     return false;
   }).sort((a,b) => new Date(a.date) - new Date(b.date));
 }
-
-// ═══════════════════════════════════════
-// AI STUDIO
-// ═══════════════════════════════════════
-
-let studioConvId = null;       // aktif sohbet ID
-let studioHistory = [];        // [{role, content}] — API için
-let studioAttached = [];       // ekli materyal idx'leri
-let studioConversations = [];  // recents listesi
-
-async function renderStudio(){
-  // currentUserEmail henüz set olmamış olabilir — kısa bekle
-  if(!currentUserEmail){
-    studioSetWelcomeMode(true);
-    setTimeout(() => {
-      if(currentUserEmail) renderStudio();
-    }, 1000);
-    return;
-  }
-  studioConversations = await sbLoadConversations();
-  renderStudioRecents();
-  if(!studioConvId){
-    studioSetWelcomeMode(true);
-  }
-}
-
-function studioSetWelcomeMode(isWelcome){
-  const main = document.querySelector('.studio-main');
-  const welcome = document.getElementById('studio-welcome');
-  const msgs = document.getElementById('studio-messages');
-  const chatInput = document.getElementById('studio-input-area');
-  if(isWelcome){
-    if(welcome) welcome.style.display = 'flex';
-    if(msgs) msgs.style.display = 'none';
-    if(chatInput) chatInput.style.display = 'none';
-    if(main) main.classList.add('welcome-mode');
-  } else {
-    if(welcome) welcome.style.display = 'none';
-    if(msgs) msgs.style.display = 'flex';
-    if(chatInput) chatInput.style.display = '';
-    if(main) main.classList.remove('welcome-mode');
-  }
-}
-
-function renderStudioRecents(){
-  const container = document.getElementById('studio-recents');
-  if(!container) return;
-  if(!studioConversations.length){
-    container.innerHTML = `<div class="empty-state compact">
-      <div class="icon">💬</div>
-      <h3>İlk sohbetini başlat</h3>
-      <p>Aşağıdan soru sormaya başla — AI Studio materyallerinle çalışır.</p>
-    </div>`;
-    return;
-  }
-  container.innerHTML = studioConversations.map(c => `
-    <div class="studio-conv-item ${c.id === studioConvId ? 'active' : ''}" onclick="studioOpenConversation('${c.id}')">
-      <div style="flex:1;min-width:0;">
-        <div class="studio-conv-title">${escHtml(c.title)}</div>
-        <div class="studio-conv-time">${timeAgo(c.updated_at || c.created_at)}</div>
-      </div>
-      <button class="studio-conv-del" onclick="event.stopPropagation();studioDeleteConversation('${c.id}')" title="Sil">✕</button>
-    </div>`).join('');
-}
-
-function timeAgo(dateStr){
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const m = Math.floor(diff/60000);
-  if(m < 1) return 'Az önce';
-  if(m < 60) return m + ' dk';
-  const h = Math.floor(m/60);
-  if(h < 24) return h + ' sa';
-  return Math.floor(h/24) + ' gün';
-}
-
-async function studioNewConversation(){
-  studioConvId = null;
-  studioHistory = [];
-  studioAttached = [];
-  document.getElementById('studio-messages').innerHTML = '';
-  studioSetWelcomeMode(true);
-  renderStudioAttached();
-  document.getElementById('studio-input').value = '';
-  document.querySelectorAll('.studio-conv-item').forEach(el => el.classList.remove('active'));
-}
-
-async function studioOpenConversation(id){
-  studioConvId = id;
-  studioAttached = [];
-  renderStudioAttached();
-  document.getElementById('studio-input').value = '';
-
-  // Aktif sohbeti vurgula
-  renderStudioRecents();
-
-  // Mesajları yükle
-  const msgs = await sbLoadStudioMessages(id);
-  studioHistory = msgs.map(m => {
-    const content = m.content;
-    // Normalize: her zaman array format
-    if(m.role === 'assistant'){
-      return { role: m.role, content: typeof content === 'string' ? [{type:'text',text:content}] : content };
-    }
-    return { role: m.role, content: typeof content === 'string' ? [{type:'text',text:content}] : content };
-  });
-
-  const container = document.getElementById('studio-messages');
-  container.innerHTML = '';
-  studioSetWelcomeMode(false);
-
-  msgs.forEach(m => {
-    studioAddMsgToDOM(m.role, m.role === 'assistant' ? matMd(m.content) : escHtml(m.content));
-  });
-  container.scrollTop = container.scrollHeight;
-}
-
-async function studioDeleteConversation(id){
-  if(!confirm('Bu sohbeti silmek istiyor musun?')) return;
-  await sbDeleteConversation(id);
-  if(studioConvId === id) studioNewConversation();
-  studioConversations = studioConversations.filter(c => c.id !== id);
-  renderStudioRecents();
-  showToast('🗑️ Sohbet silindi.');
-}
-
-function studioAddMsgToDOM(role, html){
-  const container = document.getElementById('studio-messages');
-  const div = document.createElement('div');
-  div.className = 'studio-msg ' + (role === 'assistant' ? 'ai' : 'user');
-  const avatar = role === 'assistant' ? '✨' : '👤';
-  div.innerHTML = `
-    <div class="studio-msg-avatar ${role === 'assistant' ? 'ai' : ''}">${avatar}</div>
-    <div class="studio-msg-bubble">${html}</div>`;
-  container.appendChild(div);
-  container.scrollTop = container.scrollHeight;
-  // KaTeX + Mermaid render — matAddMsgToPanel ile aynı davranış
-  if(role === 'assistant') setTimeout(function(){ renderRichContent(div); }, 0);
-  return div;
-}
-
-// Materyal picker
-function toggleStudioMaterialPicker(ev){
-  // Event bubbling'i durdur — document click handler hemen kapatmasın
-  if(ev){ ev.stopPropagation(); }
-
-  const picker = document.getElementById('studio-picker');
-  if(!picker) return;
-
-  // Picker'ı body'e taşı (overflow:hidden parent'lardan kurtul)
-  if(picker.parentElement !== document.body){
-    document.body.appendChild(picker);
-  }
-
-  // Zaten açıksa kapat
-  const isOpen = picker.dataset.open === 'true';
-  if(isOpen){
-    picker.style.display = 'none';
-    picker.dataset.open = 'false';
-    return;
-  }
-
-  // Tıklanan butonu event'ten al (welcome mi chat mi — fark etmez)
-  const btn = ev?.currentTarget || ev?.target?.closest('.studio-attach-btn');
-  if(!btn){
-    console.warn('[picker] attach button bulunamadı');
-    return;
-  }
-
-  // İçeriği doldur
-  const attachedIds = new Set(studioAttached);
-  const isLightTheme = document.documentElement.getAttribute('data-theme') === 'light';
-  const itemTextColor = isLightTheme ? '#1e3a5f' : '#b8c4d8';
-  const itemSubColor = isLightTheme ? '#6b7a99' : '#6b7a99';
-
-  picker.innerHTML = materials.length === 0
-    ? `<div style="padding:12px;font-size:12px;color:${itemSubColor};">Henüz materyal yok.</div>`
-    : materials.map((m, idx) => `
-        <div class="studio-picker-item ${attachedIds.has(idx) ? 'selected' : ''}" onclick="studioToggleMaterial(${idx})"
-          style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;">
-          <span style="font-size:16px;">${m.type === 'file' ? getFileIcon(m.fileName||'') : (MAT_ICONS[m.type]||'📎')}</span>
-          <div>
-            <div style="font-size:12px;font-weight:500;color:${itemTextColor};">${escHtml(m.title)}</div>
-            <div style="font-size:10px;color:${itemSubColor};">${escHtml(m.course||'')}</div>
-          </div>
-        </div>`).join('');
-
-  // Konumlandır — önce göster ve boyutlandır, sonra top hesapla
-  const rect = btn.getBoundingClientRect();
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-  const bgColor = isLight ? '#ffffff' : '#2a2a2a';
-  const borderColor = isLight ? '#c4cde0' : '#363a5a';
-  const shadowColor = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.4)';
-
-  // İlk geçiş: görünür + sabit width, top'u 0 yap ki yüksekliği ölçebilelim
-  // right/bottom override edilmeli, çünkü .studio-picker CSS'inde absolute kurallar var
-  picker.style.cssText = [
-    'display:block',
-    'position:fixed',
-    'top:0',
-    'left:0',
-    'right:auto',
-    'bottom:auto',
-    'transform:none',
-    'width:280px',
-    'z-index:9999',
-    'background:' + bgColor,
-    'border:1px solid ' + borderColor,
-    'border-radius:12px',
-    'padding:8px',
-    'max-height:220px',
-    'overflow-y:auto',
-    'box-shadow:0 8px 32px ' + shadowColor,
-    'visibility:hidden',
-  ].join(';');
-
-  // Şimdi gerçek yüksekliği ölç
-  const actualHeight = Math.min(picker.scrollHeight, 220);
-  const spaceAbove = rect.top;
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const openUpward = spaceAbove >= actualHeight + 16 || spaceAbove > spaceBelow;
-
-  const finalTop = openUpward
-    ? Math.max(8, rect.top - 8 - actualHeight)
-    : Math.min(window.innerHeight - actualHeight - 8, rect.bottom + 8);
-  const finalLeft = Math.max(8, Math.min(rect.left, window.innerWidth - 288));
-
-  picker.style.top = finalTop + 'px';
-  picker.style.left = finalLeft + 'px';
-  picker.style.visibility = 'visible';
-  picker.dataset.open = 'true';
-}
-
-function studioToggleMaterial(idx){
-  const i = studioAttached.indexOf(idx);
-  if(i === -1) studioAttached.push(idx);
-  else studioAttached.splice(i, 1);
-  renderStudioAttached();
-  // Picker'ı kapat
-  const picker = document.getElementById('studio-picker');
-  if(picker){ picker.style.display = 'none'; picker.dataset.open = 'false'; }
-}
-
-function renderStudioAttached(){
-  const html = studioAttached.map(idx => {
-    const m = materials[idx];
-    if(!m) return '';
-    const icon = m.type === 'file' ? getFileIcon(m.fileName||'') : (MAT_ICONS[m.type]||'📎');
-    const title = m.title.length > 20 ? m.title.slice(0,20)+'…' : m.title;
-    return `<div class="studio-chip" title="${escHtml(m.title)}">
-      <span class="studio-chip-icon">${icon}</span>
-      <span class="studio-chip-label">${escHtml(title)}</span>
-      <button onclick="studioRemoveMaterial(${idx})" title="Kaldır" aria-label="Kaldır">✕</button>
-    </div>`;
-  }).join('');
-  // Hem welcome hem chat moddaki container'a yaz
-  const containers = [
-    document.getElementById('studio-attached'),
-    document.getElementById('studio-attached-welcome'),
-  ];
-  containers.forEach(c => { if(c) c.innerHTML = html; });
-}
-
-function studioRemoveMaterial(idx){
-  studioAttached = studioAttached.filter(i => i !== idx);
-  renderStudioAttached();
-}
-
-function studioSendFromWelcome(){
-  const welcomeInp = document.getElementById('studio-input-welcome');
-  const mainInp = document.getElementById('studio-input');
-  if(!welcomeInp) return;
-  const text = welcomeInp.value.trim();
-  if(!text) return;
-  // Welcome input'un değerini main input'a aktar ve ana send fonksiyonunu çağır
-  mainInp.value = text;
-  welcomeInp.value = '';
-  welcomeInp.style.height = 'auto';
-  studioSend();
-}
-
-async function studioSend(){
-  const inp = document.getElementById('studio-input');
-  const text = inp.value.trim();
-  if(!text) return;
-
-  inp.value = ''; inp.style.height = 'auto';
-  const pickerEl = document.getElementById('studio-picker');
-  if(pickerEl){ pickerEl.style.display = 'none'; pickerEl.dataset.open = 'false'; }
-
-  // Mesaj alanını göster
-  studioSetWelcomeMode(false);
-  const container = document.getElementById('studio-messages');
-
-  studioAddMsgToDOM('user', escHtml(text));
-
-  // Yeni sohbet mi?
-  if(!studioConvId){
-    const conv = await sbCreateConversation('Yükleniyor...');
-    if(!conv) { showToast('❌ Sohbet oluşturulamadı.'); return; }
-    studioConvId = conv.id;
-    studioHistory = [];
-    studioConversations.unshift(conv);
-    renderStudioRecents();
-  }
-
-  // Kullanıcı mesajını kaydet
-  const matIds = studioAttached.map(i => materials[i]?._sbId).filter(Boolean);
-  sbSaveStudioMessage(studioConvId, 'user', text, matIds);
-
-  // Prompt oluştur — ekli materyaller varsa context ekle
-  let prompt = text;
-  if(studioAttached.length){
-    showToast('⏳ Materyaller okunuyor...');
-    const matContextParts = [];
-    for(const idx of studioAttached){
-      const m = materials[idx];
-      if(!m) continue;
-      let content = '';
-
-      if(m.type === 'file' && (m.fileUrl || m.url)){
-        const ext = (m.fileName || '').split('.').pop().toLowerCase();
-        const fileUrl = m.fileUrl || m.url;
-        try{
-          if(ext === 'pdf'){
-            // PDF: pdfjs ile URL'den metin çıkar
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';
-            const pdf = await pdfjsLib.getDocument({ url: fileUrl }).promise;
-            const maxP = Math.min(pdf.numPages, 40);
-            const pages = [];
-            for(let i = 1; i <= maxP; i++){
-              const page = await pdf.getPage(i);
-              const tc = await page.getTextContent();
-              pages.push(`[Sayfa ${i}] ${pdfItemsToText(tc.items)}`);
-            }
-            content = pages.join('\n\n');
-            if(content.length > 20000) content = content.substring(0, 20000) + '\n[...metin kısaltıldı]';
-          } else if(['doc','docx'].includes(ext)){
-            const resp = await fetch(fileUrl);
-            const buf = await resp.arrayBuffer();
-            const result = await mammoth.extractRawText({arrayBuffer: buf});
-            content = result.value.substring(0, 15000);
-          } else {
-            // Diğer dosyalar — küçükse metin oku
-            const fileSize = m.fileSize || 0;
-            if(fileSize < 2 * 1024 * 1024){
-              const resp = await fetch(fileUrl);
-              content = (await resp.text()).substring(0, 10000);
-            } else {
-              content = `[Dosya: ${m.fileName} (${formatFileSize(fileSize)}) — içerik çok büyük]`;
-            }
-          }
-        }catch(e){
-          console.warn('[Studio] Materyal okunamadı:', m.title, e.message);
-          content = `[Dosya okunamadı: ${m.fileName || m.title}]`;
-        }
-      } else if(m.url){
-        content = `[Link: ${m.url}]`;
-      }
-
-      matContextParts.push(`## Materyal: ${m.title}\n${content || m.note || '(içerik yok)'}`);
-    }
-    const matContext = matContextParts.join('\n\n---\n\n');
-    prompt = `Aşağıdaki materyallere dayanarak cevap ver. Markdown formatı kullan.\n\n${matContext}\n\n---\nKullanıcı Sorusu: ${text}`;
-  }
-
-  // Typing göster
-  const typingDiv = document.createElement('div');
-  typingDiv.className = 'studio-msg ai'; typingDiv.id = 'studio-typing';
-  typingDiv.innerHTML = `<div class="studio-msg-avatar ai">✨</div><div class="studio-msg-bubble"><div class="mat-typing"><span></span><span></span><span></span></div></div>`;
-  container.appendChild(typingDiv);
-  container.scrollTop = container.scrollHeight;
-
-  const sendBtn = document.querySelector('.studio-send-btn');
-  if(sendBtn) sendBtn.disabled = true;
-
-  try{
-    const sessionId = localStorage.getItem('akademix_session');
-    if(!sessionId) throw new Error('Giriş yapman gerekiyor.');
-
-    const msgs = [...studioHistory, { role:'user', content:[{type:'text',text:prompt}] }];
-    const studioSystem = `Sen AkademiX AI Studio asistanısın. Türkçe cevap ver. Markdown kullan. Materyaller eklendiğinde onların içeriğine dayanarak kapsamlı cevaplar ver.
-
-DİYAGRAM KURALLARI:
-- Ağaç, akış şeması, durum makinesi, hiyerarşi → \`\`\`mermaid (graph TD)
-- Bar chart, çizgi grafik, scatter, histogram, pasta grafik → MUTLAKA \`\`\`svg (SVG çiz, mermaid xychart KULLANMA)
-- Devre şeması, kuvvet diyagramı, geometrik şekil → \`\`\`svg
-SVG kuralları: viewBox="0 0 700 400", eksenleri çiz (<line>), barlar için <rect>, veri noktaları için <circle>. Renkler: #3b82f6 mavi, #34d399 yeşil, #f87171 kırmızı, #fbbf24 sarı. Arka plan: <rect width="100%" height="100%" fill="var(--surface2,#1e1e2e)"/>. Metin: fill="#94a3b8".`;
-
-    const studioMaxTokens = studioAttached.length > 0 ? 8000 : 4000;
-    const resp = await fetch(BACKEND_URL + '/api/ai', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-session-id':sessionId},
-      body: JSON.stringify({ system:studioSystem, messages:msgs, provider:'gemini' })
-    });
-    const data = await resp.json();
-    if(!resp.ok) throw new Error(data.error || 'Sunucu hatası');
-
-    const result = data.content?.map(c=>c.text||'').join('') || 'Yanıt alınamadı.';
-
-    studioHistory.push({ role:'user', content:[{type:'text',text:prompt}] });
-    studioHistory.push({ role:'assistant', content:[{type:'text',text:result}] });
-
-    typingDiv.remove();
-    studioAddMsgToDOM('assistant', matMd(result));
-
-    // Asistan mesajını kaydet
-    sbSaveStudioMessage(studioConvId, 'assistant', result);
-
-    // İlk mesajsa başlığı otomatik üret
-    if(studioHistory.length === 2){
-      studioGenerateTitle(text, result);
-    }
-
-    // Ekli materyalleri temizle
-    studioAttached = [];
-    renderStudioAttached();
-
-  }catch(e){
-    typingDiv.remove();
-    studioAddMsgToDOM('assistant', `<span style="color:var(--red)">❌ ${escHtml(e.message)}</span>`);
-  }finally{
-    if(sendBtn) sendBtn.disabled = false;
-  }
-}
-
-async function studioGenerateTitle(userMsg, assistantMsg){
-  try{
-    const sessionId = localStorage.getItem('akademix_session');
-    if(!sessionId) return;
-    const prompt = `Bu konuşma için çok kısa (3-6 kelime) bir başlık üret. Sadece başlığı yaz, başka hiçbir şey yazma.\n\nKullanıcı: ${userMsg}\nAsistan: ${assistantMsg.slice(0,200)}`;
-    const resp = await fetch(BACKEND_URL + '/api/ai', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-session-id':sessionId},
-      body: JSON.stringify({ provider: 'gemini', max_tokens:30,
-        messages:[{role:'user',content:[{type:'text',text:prompt}]}] })
-    });
-    const data = await resp.json();
-    const title = data.content?.map(c=>c.text||'').join('').trim().replace(/^["']|["']$/g,'') || 'Yeni Sohbet';
-    await sbUpdateConversationTitle(studioConvId, title);
-    // Recents'i güncelle
-    const conv = studioConversations.find(c => c.id === studioConvId);
-    if(conv){ conv.title = title; renderStudioRecents(); }
-  }catch(e){ /* başlık üretilemeZse sorun değil */ }
-}
-
-// Dışarı tıklayınca picker kapat
-document.addEventListener('click', e => {
-  const picker = document.getElementById('studio-picker');
-  if(!picker || picker.dataset.open !== 'true') return;
-  if(picker.contains(e.target)) return;
-  if(e.target.closest('.studio-attach-btn')) return;
-  picker.style.display = 'none';
-  picker.dataset.open = 'false';
-});
 
 function renderExams(){
   const myExams = getMyExams();
