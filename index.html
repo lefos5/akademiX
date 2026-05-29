@@ -2546,6 +2546,47 @@ async function sbLoadRagMessages(convId){
 const BACKEND_URL = 'https://akademix-backend.vercel.app';
 let accessToken = null, currentUserEmail = null;
 let tokenExpiresAt = null, tokenRefreshTimer = null;
+
+// ============================================================
+// SIGNED FILE URL — Private Supabase bucket için geçici URL
+// ============================================================
+// Supabase storage URL'inden filePath çıkar:
+// "https://xxx.supabase.co/storage/v1/object/public/materials/email/uuid.pdf"
+// → "email/uuid.pdf"
+const _signedUrlCache = new Map(); // filePath → { url, expiresAt }
+
+async function getSignedFileUrl(storedUrl) {
+  if (!storedUrl) return null;
+
+  // Supabase storage URL'i mi? Değilse (Drive, YouTube vb.) direkt dön
+  const marker = '/object/public/materials/';
+  const idx = storedUrl.indexOf(marker);
+  if (idx === -1) return storedUrl; // Harici URL — olduğu gibi kullan
+
+  const filePath = storedUrl.slice(idx + marker.length);
+
+  // Cache: 45 dakika geçerliyse yeniden istek atma (signed URL 1 saat geçerli)
+  const cached = _signedUrlCache.get(filePath);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+
+  const sessionId = localStorage.getItem('akademix_session');
+  if (!sessionId) return storedUrl; // Session yoksa fallback
+
+  try {
+    const resp = await fetch(BACKEND_URL + '/api/upload?action=file-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+      body: JSON.stringify({ filePath }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.signedUrl) return storedUrl; // Hata → fallback
+
+    _signedUrlCache.set(filePath, { url: data.signedUrl, expiresAt: Date.now() + 45 * 60 * 1000 });
+    return data.signedUrl;
+  } catch(e) {
+    return storedUrl; // Network hatası → fallback
+  }
+}
 let clData = { courses:[], assignments:[], announcements:[] };
 
 const rawCourses = [
@@ -4590,7 +4631,8 @@ async function selectMat(idx){
   // Dosyayı AI için hazırla (Supabase URL'den)
   matFileData = null;
   if(m.type==='file' && (m.fileUrl || m.url)){
-    const fileUrl = m.fileUrl || m.url;
+    // Private bucket: geçici signed URL al (public bucket'ta da çalışır — fallback var)
+    const fileUrl = await getSignedFileUrl(m.fileUrl || m.url);
     const ext = (m.fileName || '').split('.').pop().toLowerCase();
     const fileSize = m.fileSize || 0;
     const FILE_DIRECT_LIMIT = 10 * 1024 * 1024; // 10 MB
