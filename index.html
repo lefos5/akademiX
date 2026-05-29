@@ -7600,6 +7600,8 @@ function addRagMsg(role, html){
   div.innerHTML = `<div class="rag-msg-bubble">${html}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
+  // KaTeX + Mermaid render — formüller ve diyagramlar için
+  if(role === 'ai') setTimeout(function(){ renderRichContent(div); }, 0);
 }
 
 async function ragSend(){
