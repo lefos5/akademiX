@@ -4640,7 +4640,9 @@ async function selectMat(idx){
     try{
       if(ext === 'pdf'){
         // ── sessionStorage önbelleği: aynı oturumda aynı dosyayı tekrar açarsa extraction atla ──
-        const PDF_CACHE_KEY = m.fileHash ? 'pdftxt_' + m.fileHash : null;
+        // Key: hem fileHash hem materialId — farklı materyallere yüklenen aynı dosya çakışmasın
+        const matId = m._sbId || m.id || '';
+        const PDF_CACHE_KEY = m.fileHash ? 'pdftxt_' + m.fileHash + '_' + matId : null;
         let usedCache = false;
         if(PDF_CACHE_KEY){
           try{
