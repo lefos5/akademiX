@@ -4390,9 +4390,16 @@ ZORUNLU FORMAT:
 Materyal:
 ${t}`,
 
-    paged: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden bir akademik tercümansın. Slayt Almanca/İngilizce — bunu TEMİZ TÜRKÇEye çevir.
+    paged: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademisyen ve akademik tercümansın. Slayt Almanca/İngilizce — bunu TEMİZ TÜRKÇEye çevir.
 
 ÖNEMLİ: Bu bir ÖZET DEĞİL, bir ÇEVİRİ çalışmasıdır. Slaytı kısaltma, yapısını koru.
+
+🧠 ÖNCE KONUYA HAKİM OL, SONRA ÇEVİR:
+Materyali çevirmeden önce tüm içeriği oku ve şunları kavra:
+- Bu slayt hangi mühendislik/matematik konusunu işliyor?
+- Formüllerdeki semboller, değişkenler, indeksler ne anlama geliyor?
+- PDF parse bozukluğu var mı? (Alt indeks kaybı: "nF" → $n_F$, "x1" → $x_1$, "sigma2" → $\\sigma^2$ gibi)
+Bu bağlamı kullanarak formülleri doğru LaTeX'e dönüştür — körü körüne kopyalama.
 
 ⚠️ DİL KURALI — EN ÖNEMLİSİ:
 - Çıktı baştan sona TÜRKÇE olsun. Almanca/İngilizce CÜMLELER yazma.
@@ -4408,7 +4415,8 @@ KURALLAR:
   • Inline: $\\mu_X = E[X]$ ・ Blok: $$f_X(x_1,...,x_n) = P(X_1 = x_1 \\cap ... \\cap X_n = x_n)$$
   • Komutlar: \\sum, \\int, \\mu, \\sigma, \\pi, \\leq, \\cdot, \\cap, \\mathbb{E}, \\frac{a}{b}, x^2, x_i
   • Düz metin "μ = Σx_i / n" YANLIŞ; LaTeX "$\\mu = \\sum x_i / n$" DOĞRU.
-- Sayısal değerler, birimler aynen korunsun. PDF parse bozuksa (alt indeks/parantez kaybolmuşsa) bağlamdan tahmin edip LaTeX'le yaz; tahmin edemezsen satırı atla.
+- FORMÜL ONARIMI: PDF parse bozuksa konuyu anladığına göre formülü yeniden inşa et ve doğru LaTeX yaz. Örn: "E[X2] - (E[X])2" → $$\\text{Var}(X) = E[X^2] - (E[X])^2$$ — konuyu biliyorsun, doğru yaz.
+- Sayısal değerler, birimler aynen korunsun.
 - "Açıklama:" başlığı kullanma — açıklama bir sonraki cümle olarak akıcı şekilde yazılsın.
 - Diyagramı SADECE gerçekten yardımcı olduğunda çiz (ağaç yapısı, akış şeması, durum makinesi). Düz tanım/liste için çizme.
 - Diyagram çiziyorsan \`\`\`mermaid bloğu, graph TD formatı. Etiketlerde tek tırnak, iç parantez, ; YASAK.
@@ -6322,9 +6330,11 @@ Kuralların:
     let chunkPrompt = '';
     if(mode === 'summary'){
       if(variant === 'paged'){
-        chunkPrompt = `Materyal Almanca olabilir — içeriği anlayıp Türkçe sayfa sayfa analiz et. Bu materyal bölümü ${i+1}/${chunks.length}. numaralı bölümdür.
+        chunkPrompt = `Sen deneyimli bir akademisyen ve akademik tercümansın. Materyal Almanca/İngilizce olabilir — bu bölüm ${i+1}/${chunks.length}. bölümdür, HER sayfayı Türkçeye çevir.
 
-HER SAYFAYI atlamadan detaylı özetle. Teknik terimleri: **Almanca** (Türkçe) formatında yaz. Formüller aynen korunsun.
+🧠 ÖNCE KONUYA HAKİM OL: Bu bölümü çevirmeden önce hangi mühendislik/matematik konusu işlendiğini, formüllerdeki sembollerin ne anlama geldiğini kavra. PDF parse bozukluklarını (alt indeks kayıpları, "nF"→$n_F$, "sigma2"→$\\sigma^2$) bağlamdan düzelt — kör kopyalama değil, konuya dayalı yeniden inşa.
+
+HER SAYFAYI atlamadan detaylı çevir. Teknik terimleri: **Almanca** (Türkçe) formatında yaz. Formüller LaTeX ile yazılsın: inline $...$, blok $$...$$
 
 ⚠️ ALT İNDEKS TUZAĞI: "nF", "nR", "nK" gibi kombinasyonlar alt indeksli parametredir ($n_F$, $n_R$), faktöriyel DEĞİL. "n!" veya "x!" bağlamda anlamsızsa alt indeks olarak yorumla.
 
