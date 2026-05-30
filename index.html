@@ -5016,6 +5016,11 @@ async function matResetMode(mode){
 
   // Supabase'den eski AI çıktısını sil
   const m = currentMatIdx !== null ? materials[currentMatIdx] : null;
+
+  // Paged summary partial progress cache'ini temizle (Yeniden Oluştur = sıfırdan başla)
+  if(mode === 'summary' && m?.fileHash){
+    try { localStorage.removeItem('pagedPartial_' + m.fileHash); } catch(e) {}
+  }
   const matId = m?._sbId || m?.id;
   if(matId){
     if(mode === 'summary'){
@@ -5892,7 +5897,7 @@ async function matRunPagedSummary(m, pages){
   // Sayfaları 4'erli batch'lere böl — TEXT sayfaları için
   // VISION sayfaları AYRI işlenecek (her batch'te 2 sayfa, payload büyük)
   // HYBRID sayfaları = metin var AMA grafik referansı geçiyor → resim+metin birlikte gönder
-  const PAGES_PER_BATCH_TEXT   = 3;
+  const PAGES_PER_BATCH_TEXT   = 5; // 3→5: 70 sayfa için ~14 batch (eskiden ~23), %40 daha az API çağrısı
   const PAGES_PER_BATCH_VISION = 2;
   const PAGES_PER_BATCH_HYBRID = 2;
 
@@ -5976,8 +5981,32 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
   - Bağlamdan ne gösterdiğini tahmin et: > 📊 **Grafik:** [2 cümle bağlama dayalı açıklama]
   - Tahmin edemiyorsan: > 📊 **Grafik:** *(Bu sayfada görsel içerik bulunuyor.)*`;
 
+  // ---------- PARTIAL PROGRESS RECOVERY ----------
+  // Önceki işlem limit/hata nedeniyle yarıda kaldıysa kaldığı yerden devam et.
+  // Her başarılı batch sonrası localStorage'a kaydedilir; tamamlanınca silinir.
+  const PARTIAL_KEY = m.fileHash ? 'pagedPartial_' + m.fileHash : null;
+  const PARTIAL_TTL = 24 * 60 * 60 * 1000; // 24 saat geçerli
   const allPageSummaries = []; // [{page, summary}]
-  let processedPages = 0;
+  const resumedPageSet = new Set();
+
+  if(PARTIAL_KEY){
+    try {
+      const raw = localStorage.getItem(PARTIAL_KEY);
+      if(raw){
+        const saved = JSON.parse(raw);
+        const isValid = saved.savedAt && (Date.now() - saved.savedAt < PARTIAL_TTL) &&
+                        Array.isArray(saved.data) && saved.data.length > 0;
+        if(isValid){
+          for(const entry of saved.data){ allPageSummaries.push(entry); resumedPageSet.add(entry.page); }
+          matAddMsgToPanel(mode, 'ai', `<div style="padding:10px 12px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:10px;font-size:13px;">⚡ <strong>${resumedPageSet.size} sayfa</strong> önceki oturumdan kurtarıldı — kaldığı yerden devam ediliyor.</div>`);
+        } else {
+          localStorage.removeItem(PARTIAL_KEY); // Eski/bozuk veriyi temizle
+        }
+      }
+    } catch(e) { /* localStorage erişim hatası — yok say */ }
+  }
+
+  let processedPages = resumedPageSet.size;
 
   // Gemini free tier ≈10 RPM → her 6sn'de 1 istek izni var.
   // Reaktif 60sn beklemeye düşmemek için batch'ler arası proaktif throttle uygula.
@@ -5990,6 +6019,12 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
     const firstPage = batch.pages[0].page;
     const lastPage = batch.pages[batch.pages.length - 1].page;
     const kindLabel = batch.kind === 'vision' ? '🖼️ ' : batch.kind === 'hybrid' ? '🖼️✏️ ' : '';
+
+    // Zaten işlendiyse atla (partial progress recovery)
+    if(batch.pages.every(p => resumedPageSet.has(p.page))){
+      processedPages += batch.pages.length;
+      continue;
+    }
 
     // İlk batch'te bekleme yok; sonraki batch'lerde min aralığı kontrol et
     if(bi > 0){
@@ -6119,6 +6154,10 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
           allPageSummaries.push({ page: pageNum, summary: pageContent });
         }
       }
+      // Başarılı batch — partial progress'i güncelle (limit/hata gelirse kaldığı yerden devam)
+      if(PARTIAL_KEY){
+        try { localStorage.setItem(PARTIAL_KEY, JSON.stringify({ savedAt: Date.now(), data: allPageSummaries })); } catch(e) {}
+      }
     } catch(e) {
       lastRequestFinishedAt = Date.now();
       console.error('[paged] Batch hatası', firstPage, lastPage, e);
@@ -6132,6 +6171,8 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
   }
 
   // ---------- TÜM SAYFALAR İŞLENDİ — BİRLEŞTİR ----------
+  // Tamamlandı — partial progress cache'i temizle
+  if(PARTIAL_KEY) { try { localStorage.removeItem(PARTIAL_KEY); } catch(e) {} }
   progressEl.remove();
 
   if(allPageSummaries.length === 0){
