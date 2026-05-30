@@ -4342,6 +4342,9 @@ const MAT_COLORS = {drive:'rgba(26,115,232,0.15)', youtube:'rgba(255,0,0,0.15)',
 // ═══════════════════════════════════════
 let currentMatIdx = null;
 let currentMatMode = 'summary';
+// Race condition guard: selectMat her çağrıldığında artar.
+// Async fonksiyonlar başlarken kopyalar, bitmeden materyal değiştiyse UI'a yazmaz.
+let _matGen = 0;
 let matChatHistory = [];
 let matFileData = null;
 
@@ -4565,6 +4568,7 @@ function renderMaterials(){
 }
 
 async function selectMat(idx){
+  _matGen++; // Önceki tüm async işlemleri geçersiz say
   currentMatIdx = idx;
   // Yeni materyal seçilince tüm mod durumlarını sıfırla
   // Yeni materyal — tüm panelleri sıfırla
@@ -5222,6 +5226,7 @@ function attachPageThumbnails(panelEl){
 
 
 async function matRunVariant(mode, variant){
+  const myGen = _matGen;
   // Sadece aktif paneldeki seçenek butonlarını devre dışı bırak
   const panel = getPanel(mode);
   if(panel) panel.querySelectorAll('.mat-option-btn').forEach(b=>{ b.disabled=true; b.style.opacity='0.5'; });
@@ -5234,6 +5239,7 @@ async function matRunVariant(mode, variant){
   if(m.fileHash && mode === 'quiz'){
     const cached = await checkSharedCache(m.fileHash, mode, variant || null);
     if(cached && cached.content){
+      if(_matGen !== myGen) return; // Materyal değişti
       const html = matBuildQuiz(cached.content);
       matAddMsgToPanel(mode, 'ai', html);
 
@@ -5406,6 +5412,7 @@ function renderExamFromMarkdown(resultMd, panel, material){
 // Damıtılmış sınav cevheri çıkarır: Formüller / Sözlük / Kritik / Karşılaştırma / Hatalar
 // 5 ayrı kart olarak render eder.
 async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
+  const myGen = _matGen;
   const mode = 'summary';
   const panel = getPanel(mode);
   const sessionId = localStorage.getItem('akademix_session');
@@ -5415,6 +5422,7 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
   if(m.fileHash){
     const cached = await checkSharedCache(m.fileHash, 'summary', 'exam_ref');
     if(cached && cached.content){
+      if(_matGen !== myGen) return;
       renderExamFromMarkdown(cached.content, panel, m);
       if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, cached.content, { variant: 'exam_ref', from_cache: true });
       matModeReady[mode] = true;
@@ -5434,6 +5442,7 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || 'Server error');
     const text = (data.content || []).map(c => c.text || '').join('');
+    if(_matGen !== myGen) return;
     renderExamFromMarkdown(text, panel, m);
     matModeReady[mode] = true;
     if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, text, { variant: 'exam_ref' });
@@ -5451,6 +5460,7 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
 // Aşama 2: Her konu için ilgili sayfaları toplayıp ayrı ayrı yaz
 // Sonuç: Konu konu collapsible kartlar
 async function matRunStudyMode(m, pages){
+  const myGen = _matGen;
   const mode = 'summary';
   const panel = getPanel(mode);
   const sessionId = localStorage.getItem('akademix_session');
@@ -5563,6 +5573,8 @@ ${combinedText}`;
   }
 
   if(progressEl && progressEl.parentNode) progressEl.remove();
+
+  if(_matGen !== myGen) return; // Materyal değişti — bu sonucu gösterme
 
   if(!resultMd.trim()){
     matAddMsgToPanel(mode, 'ai', '<span style="color:var(--red)">Çalışma notu üretilemedi. Tekrar dene.</span>');
@@ -5807,6 +5819,7 @@ async function callAiWithRetry(sessionId, requestBody, opts = {}){
 }
 
 async function matRunPagedSummary(m, pages){
+  const myGen = _matGen;
   const mode = 'summary';
   const variant = 'paged';
   const panel = getPanel(mode);
@@ -6200,6 +6213,8 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
     `## 📄 Sayfa ${p.page}\n\n${p.summary}`
   ).join('\n\n---\n\n');
 
+  if(_matGen !== myGen) return; // Materyal değişti — bu sonucu gösterme
+
   const html = matMd(finalContent);
   const msgEl = matAddMsgToPanel(mode, 'ai', html);
   setTimeout(() => {
@@ -6331,6 +6346,7 @@ ${isVision ? '' : 'Materyal:\n' + batchText}`;
 }
 
 async function matRunVariantChunked(mode, variant, m, fullContent, chunkSize){
+  const myGen = _matGen;
   const chunks = [];
   for(let i = 0; i < fullContent.length; i += chunkSize){
     chunks.push(fullContent.substring(i, i + chunkSize));
@@ -6442,6 +6458,7 @@ ${chunks[i]}`).replace('10 ', `${qCount} `);
   }
 
   // Sonuçları birleştir ve göster
+  if(_matGen !== myGen) return; // Materyal değişti — bu sonucu gösterme
   const combined = allResults.join('\n\n---\n\n');
   const html = (mode==='quiz') ? matBuildQuiz(combined) : matMd(combined);
   const msgEl = matAddMsgToPanel(mode, 'ai', html);
@@ -7358,6 +7375,7 @@ async function prepareFileForClaude(f){
 }
 
 async function matCallAI(userText, opts={}){
+  const myGen = _matGen; // Bu çağrının ait olduğu nesli kaydet
   const m = currentMatIdx!==null ? materials[currentMatIdx] : null;
   if(!m){ showToast('❌ Önce bir materyal seç.'); return; }
 
@@ -7443,6 +7461,7 @@ Kuralların:
     }
 
     matHideTyping();
+    if(_matGen !== myGen) return; // Materyal değişti — sonucu yanlış panele yazma
     const html = (mode==='quiz') ? matBuildQuiz(result) : matMd(result);
     const msgEl = matAddMsg('ai', html);
 
