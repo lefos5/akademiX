@@ -5897,9 +5897,9 @@ async function matRunPagedSummary(m, pages){
   // Sayfaları 4'erli batch'lere böl — TEXT sayfaları için
   // VISION sayfaları AYRI işlenecek (her batch'te 2 sayfa, payload büyük)
   // HYBRID sayfaları = metin var AMA grafik referansı geçiyor → resim+metin birlikte gönder
-  const PAGES_PER_BATCH_TEXT   = 5; // 3→5: 70 sayfa için ~14 batch (eskiden ~23), %40 daha az API çağrısı
-  const PAGES_PER_BATCH_VISION = 2;
-  const PAGES_PER_BATCH_HYBRID = 2;
+  const PAGES_PER_BATCH_TEXT   = 50; // Metin sayfaları büyük batch: 70 sayfa → 1-2 call (eskiden 14-23)
+  const PAGES_PER_BATCH_VISION = 2;  // Vision: resim payload büyük, 2'de kal
+  const PAGES_PER_BATCH_HYBRID = 2;  // Hybrid: aynı sebep
 
   // Grafik/diyagram referansı içeren metin sayfalarını tespit et.
   // Bu sayfalar Vision modunda hem resim hem metin olarak gönderilir.
@@ -5944,7 +5944,7 @@ async function matRunPagedSummary(m, pages){
 
   // Bilgi mesajı
   matAddMsgToPanel(mode, 'ai', `<div style="padding:12px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;font-size:13px;color:var(--muted)">
-    📄 ${pages.length} sayfa, ${allBatches.length} bölüm halinde işlenecek. <strong>Bu mod özet değil, çeviri+ açıklamadır</strong> — slayt yapısı korunur, kısaltma yapılmaz.
+    📄 ${pages.length} sayfa, ${allBatches.length} API çağrısı (metin sayfaları tek seferde). <strong>Bu mod özet değil, çeviri+ açıklamadır</strong> — slayt yapısı korunur, kısaltma yapılmaz.
   </div>`);
 
   // Progress göstergesi
@@ -6130,10 +6130,13 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
     progressEl.textContent = `⏳ ${kindLabel}Sayfa ${firstPage}-${lastPage} AI'ya gönderiliyor... (${processedPages}/${pages.length})`;
 
     // ---------- AI ÇAĞRISI (RETRY İLE) ----------
+    // Büyük metin batch'leri için yüksek token limiti: 50 sayfa → ~35-45K output token gerekebilir
+    // Vision/hybrid 2 sayfada kalır — 20K yeterli
+    const batchMaxTokens = (batch.kind === 'text' && batch.pages.length > 10) ? 65000 : 20000;
     try {
       const result = await callAiWithRetry(sessionId, {
         mode: 'paged',
-        max_tokens: 20000,
+        max_tokens: batchMaxTokens,
         system: systemPrompt,
         messages: [{role:'user', content: messageContent}]
       }, {
