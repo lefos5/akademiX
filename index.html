@@ -5487,7 +5487,7 @@ async function matRunStudyMode(m, pages){
     }
   }
 
-  matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:13px;color:var(--muted)">📚 <strong>Çalışma Notu</strong> hazırlanıyor — konular tespit edilip her biri için akıcı not yazılıyor.</div>');
+  const loadingBubble = matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:13px;color:var(--muted)">📚 <strong>Çalışma Notu</strong> hazırlanıyor — konular tespit edilip her biri için akıcı not yazılıyor.</div>');
 
   const progressEl = document.createElement('div');
   progressEl.style.cssText = 'font-size:12px;color:var(--muted);margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;';
@@ -5580,6 +5580,7 @@ ${combinedText}`;
   }
 
   if(progressEl && progressEl.parentNode) progressEl.remove();
+  if(loadingBubble && loadingBubble.parentNode) loadingBubble.remove(); // "hazırlanıyor" balonunu temizle
 
   if(_matGen !== myGen) return; // Materyal değişti — bu sonucu gösterme
 
@@ -5719,7 +5720,8 @@ function renderStudyFromMarkdown(combinedMd, panel, material){
     const end = (i + 1 < matches.length) ? matches[i+1].index : combinedMd.length;
     const content = combinedMd.substring(start, end).trim();
     const pages = matches[i].pagesStr.split(',').map(function(s){ return parseInt(s.trim()); }).filter(function(n){ return !isNaN(n); });
-    topics.push({ title: matches[i].title, content: content, pages: pages });
+    if(content.length > 0) // Boş konu kartlarını filtrele — boş AI çıktısı kaynaklı katman bugı
+      topics.push({ title: matches[i].title, content: content, pages: pages });
   }
 
   if(topics.length === 0){
