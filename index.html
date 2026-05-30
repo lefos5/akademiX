@@ -4169,7 +4169,8 @@ async function viewFile(idx){
     modal.classList.add('open');
     revokeBlobURLs();
     try{
-      const resp = await fetch(m.fileUrl);
+      const fetchUrl = await getSignedFileUrl(m.fileUrl); // private bucket → signed URL al
+      const resp = await fetch(fetchUrl);
       const blob = await resp.blob();
       const blobURL = URL.createObjectURL(blob);
       activeBlobURLs.push(blobURL);
@@ -4184,7 +4185,7 @@ async function viewFile(idx){
       } else {
         content.innerHTML = `<div style="padding:60px;text-align:center;color:var(--muted)"><div style="font-size:48px;margin-bottom:16px">${getFileIcon(m.fileName||'')}</div><div style="font-size:14px;margin-bottom:20px">${escHtml(m.fileName||'')}</div><button class="add-btn" style="margin:0 auto" id="fv-open-newtab">↗ Yeni Sekmede Aç</button></div>`;
         const openBtn = document.getElementById('fv-open-newtab');
-        if(openBtn) openBtn.onclick = () => { const u = safeUrl(m.fileUrl); if(u !== '#') window.open(u, '_blank', 'noopener,noreferrer'); };
+        if(openBtn) openBtn.onclick = () => { const u = safeUrl(fetchUrl); if(u !== '#') window.open(u, '_blank', 'noopener,noreferrer'); };
       }
     }catch(e){
       content.innerHTML = `<div style="padding:40px;text-align:center;color:var(--red)">❌ Dosya yüklenemedi: ${escHtml(e.message)}</div>`;
@@ -4297,9 +4298,10 @@ async function downloadCurrentFile(){
 async function downloadFile(idx){
   const m = materials[idx];
   if(!m){ showToast('❌ Materyal bulunamadı.'); return; }
-  const fileUrl = m.fileUrl || m.url;
-  if(!fileUrl){ showToast('❌ Dosya bulunamadı.'); return; }
+  const rawUrl = m.fileUrl || m.url;
+  if(!rawUrl){ showToast('❌ Dosya bulunamadı.'); return; }
   try{
+    const fileUrl = await getSignedFileUrl(rawUrl); // private bucket → signed URL al
     const resp = await fetch(fileUrl);
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
