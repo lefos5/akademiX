@@ -851,9 +851,11 @@
   /* Chat messages */
   .mat-messages {
     flex: 1; overflow-y: auto; padding: 20px 24px;
-    display: flex; flex-direction: column; gap: 16px;
+    display: block; /* flex değil — iç içe flex-column yükseklik bozukluğunu önler */
     min-height: 0;
   }
+  /* flex gap: 16px yerine block margin */
+  .mat-messages > * + * { margin-top: 16px; }
   .mat-msg {
     display: flex; gap: 10px; align-items: flex-start;
     animation: msgIn 0.2s ease;
@@ -892,6 +894,14 @@
   .mat-msg-bubble li { margin-bottom: 5px; }
   .mat-msg-bubble strong { color: var(--text); }
   .mat-msg-bubble br + br { display: none; }
+  /* Study/exam kart gövdelerinde de çift br boşluğu gizle — paged modla tutarlı */
+  .study-card-body br + br, .exam-card-body br + br { display: none; }
+  /* Mermaid container yükseklik sınırı — render edilen SVG ne kadar büyük olursa olsun layout'u patlatmasın */
+  .md-mermaid-output { max-height: 460px !important; overflow: hidden !important; }
+  .md-mermaid-container { max-height: 480px !important; overflow: hidden !important; }
+  /* Block layout gap simülasyonu — flex yerine block kullandığımız için */
+  .study-cards-container > *, .exam-cards-container > * { margin-bottom: 14px; }
+  .study-cards-container > *:last-child, .exam-cards-container > *:last-child { margin-bottom: 0; }
 
   /* ── Rich Markdown Styles ── */
   .md-h3 {
@@ -1866,6 +1876,7 @@
             <button class="mat-mode-btn active" data-mode="summary" onclick="setMatMode('summary',this)">📝 Özet</button>
             <button class="mat-mode-btn" data-mode="quiz" onclick="setMatMode('quiz',this)">❓ Sınav</button>
             <button class="mat-mode-btn" data-mode="rag" onclick="setMatMode('rag',this)">🔍 Kaynaktan Sor</button>
+            <span id="ai-usage-badge" style="margin-left:auto;font-size:11px;color:var(--muted);padding:0 12px;align-self:center;white-space:nowrap;"></span>
           </div>
           <!-- Özet variant pill bar — sadece Özet aktifken görünür -->
           <div class="mat-summary-pills" id="mat-summary-pills" style="display:flex">
@@ -1880,8 +1891,8 @@
             </button>
           </div>
           <!-- Her mod için ayrı container — display:none ile gizlenir -->
-          <div class="mat-messages" id="mat-panel-summary" style="display:flex;flex-direction:column"></div>
-          <div class="mat-messages" id="mat-panel-quiz" style="display:none;flex-direction:column"></div>
+          <div class="mat-messages" id="mat-panel-summary" style="display:block"></div>
+          <div class="mat-messages" id="mat-panel-quiz" style="display:none"></div>
           <div id="mat-panel-rag" style="display:none;flex:1;overflow:hidden;flex-direction:row">
             <!-- RAG sol sidebar -->
             <div class="rag-sidebar">
@@ -1907,7 +1918,7 @@
               </div>
             </div>
           </div>
-          <div class="mat-messages" id="mat-panel-chat" style="display:none;flex-direction:column"></div>
+          <div class="mat-messages" id="mat-panel-chat" style="display:none"></div>
           <!-- Geriye uyumluluk için alias -->
           <div id="mat-messages" style="display:none"></div>
           <div class="mat-input-bar" id="mat-input-bar" style="display:none">
@@ -4204,13 +4215,14 @@ async function viewFile(idx){
   modal.classList.add('open');
   revokeBlobURLs();
 
-  const fileUrl = m.fileUrl || m.url;
-  if(!fileUrl){ content.innerHTML = '<div style="padding:40px;text-align:center;color:var(--red)">❌ Dosya URL bulunamadı.</div>'; return; }
+  const rawFileUrl = m.fileUrl || m.url;
+  if(!rawFileUrl){ content.innerHTML = '<div style="padding:40px;text-align:center;color:var(--red)">❌ Dosya URL bulunamadı.</div>'; return; }
 
   try {
+    const fileUrl = await getSignedFileUrl(rawFileUrl); // private bucket için signed URL
     const ext = (m.fileName || '').split('.').pop().toLowerCase();
     document.getElementById('fv-newtab-btn').style.display = 'flex';
-    currentBlobURL = fileUrl;
+    currentBlobURL = fileUrl; // signed URL (kısa ömürlü ama yeni sekme için yeterli)
 
     if(ext === 'pdf'){
       content.style.height='100%'; content.style.display='flex'; content.style.flexDirection='column';
@@ -4244,13 +4256,19 @@ async function viewFile(idx){
 
 
 function openInNewTab(){
-  const m = currentViewFileIdx !== null ? materials[currentViewFileIdx] : null;
-  if(m && m.fileUrl) {
-    const url = safeUrl(m.fileUrl);
-    if(url !== '#') window.open(url, '_blank', 'noopener,noreferrer');
-  } else if(currentBlobURL) {
-    window.open(currentBlobURL, '_blank');
+  // Önce blob URL dene — viewFile zaten signed URL'den blob oluşturdu
+  if(currentBlobURL){
+    window.open(currentBlobURL, '_blank', 'noopener,noreferrer');
+    return;
   }
+  // Blob yoksa signed URL al, private bucket için zorunlu
+  const m = currentViewFileIdx !== null ? materials[currentViewFileIdx] : null;
+  const rawUrl = m && (m.fileUrl || m.url);
+  if(!rawUrl){ showToast('❌ Dosya URL bulunamadı.'); return; }
+  getSignedFileUrl(rawUrl).then(signedUrl => {
+    const u = safeUrl(signedUrl);
+    if(u !== '#') window.open(u, '_blank', 'noopener,noreferrer');
+  }).catch(() => showToast('❌ Dosya açılamadı.'));
 }
 
 function toggleViewerFullscreen(){
@@ -4347,6 +4365,25 @@ let currentMatMode = 'summary';
 // Race condition guard: selectMat her çağrıldığında artar.
 // Async fonksiyonlar başlarken kopyalar, bitmeden materyal değiştiyse UI'a yazmaz.
 let _matGen = 0;
+
+// ── AI Kullanım Sayacı (günlük, localStorage) ───────────────────────────────
+const AI_DAILY_LIMIT = 150;
+function _aiUsageKey(){ return 'aiUsage_' + new Date().toISOString().slice(0,10); }
+function getAiUsage(){ return parseInt(localStorage.getItem(_aiUsageKey()) || '0'); }
+function incrementAiUsage(){
+  const k = _aiUsageKey();
+  localStorage.setItem(k, String(getAiUsage() + 1));
+  updateAiUsageBadge();
+}
+function updateAiUsageBadge(){
+  const badge = document.getElementById('ai-usage-badge');
+  if(!badge) return;
+  const used = getAiUsage();
+  const remaining = Math.max(0, AI_DAILY_LIMIT - used);
+  if(used === 0){ badge.textContent = ''; return; }
+  badge.textContent = '⚡ ' + remaining + ' istek kaldı';
+  badge.style.color = remaining <= 10 ? 'var(--red)' : remaining <= 30 ? '#f59e0b' : 'var(--muted)';
+}
 let matChatHistory = [];
 let matFileData = null;
 
@@ -4914,7 +4951,7 @@ function getPanel(mode){
 function showPanel(mode){
   ['summary','quiz','chat'].forEach(m => {
     const p = getPanel(m);
-    if(p) p.style.display = m === mode ? 'flex' : 'none';
+    if(p) p.style.display = m === mode ? 'block' : 'none';
   });
   // RAG kendi layout'unu yönetiyor
   const ragP = document.getElementById('mat-panel-rag');
@@ -5097,7 +5134,7 @@ async function loadSummaryVariant(variant){
       renderExamFromMarkdown(saved.content, panel, m);
     } else {
       // paged: bubble + thumbnail + action bar
-      const msgEl = matAddMsgToPanel('summary', 'ai', matMd(saved.content));
+      const msgEl = matAddMsgToPanel('summary', 'ai', matMd(stripPagedDiagrams(saved.content)));
       setTimeout(() => {
         const bubble = panel.querySelector('.mat-msg-bubble');
         if(bubble) attachPageThumbnails(bubble);
@@ -5361,11 +5398,12 @@ function buildExamCard(cfg, content){
 // Kayıtlı sınav modu markdown'ından kart UI'ını yeniden oluştur (sayfa yenileme sonrası)
 function renderExamFromMarkdown(resultMd, panel, material){
   if(!panel) return;
+  panel.innerHTML = ''; // Önceki baloncukları (yükleniyor / Oluştur) temizle
   const sections = parseExamSections(resultMd);
 
   const examContainer = document.createElement('div');
   examContainer.className = 'exam-cards-container';
-  examContainer.style.cssText = 'display:flex;flex-direction:column;gap:14px;margin-top:8px;';
+  examContainer.style.cssText = 'display:block;margin-top:8px;';
 
   // Üst bilgi
   const glossaryCount = (sections.glossary.match(/\*\*[^*]+\*\*/g) || []).length;
@@ -5437,7 +5475,7 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
     }
   }
 
-  matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;font-size:13px;color:var(--muted)">⚡ <strong>Sınav Referans Kartı</strong> hazırlanıyor...</div>');
+  const examLoadingBubble = matAddMsgToPanel(mode, 'ai', '<div style="padding:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;font-size:13px;color:var(--muted)">⚡ <strong>Sınav Referans Kartı</strong> hazırlanıyor...</div>');
 
   try {
     const prompt = MAT_PROMPTS.summary.exam_ref(fullContent || m.title);
@@ -5448,8 +5486,10 @@ async function matRunExamRefMode(m, fullContent, CHUNK_SIZE){
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || 'Server error');
+    incrementAiUsage();
     const text = (data.content || []).map(c => c.text || '').join('');
     if(_matGen !== myGen) return;
+    if(examLoadingBubble && examLoadingBubble.parentNode) examLoadingBubble.remove();
     renderExamFromMarkdown(text, panel, m);
     matModeReady[mode] = true;
     if(m._sbId || m.id) sbSaveAiOutput(m._sbId || m.id, mode, text, { variant: 'exam_ref' });
@@ -5572,6 +5612,7 @@ ${combinedText}`;
     });
     const data = await resp.json();
     if(!resp.ok) throw new Error(data.error || 'Server error: ' + resp.status);
+    incrementAiUsage();
     resultMd = (data.content || []).map(function(c){ return c.text || ''; }).join('');
   } catch(e){
     if(progressEl && progressEl.parentNode) progressEl.remove();
@@ -5638,10 +5679,11 @@ function buildStudyCard(topic, idx, total){
 // Konuları kart olarak render et + aksiyon butonları
 function renderStudyTopics(topics, panel, material){
   if(!panel) return;
+  panel.innerHTML = ''; // Önceki baloncukları (yükleniyor / Oluştur) temizle
 
   const studyContainer = document.createElement('div');
   studyContainer.className = 'study-cards-container';
-  studyContainer.style.cssText = 'display:flex;flex-direction:column;gap:14px;margin-top:8px;';
+  studyContainer.style.cssText = 'display:block;margin-top:8px;';
 
   // Üst bilgi şeridi
   const totalPages = new Set();
@@ -5789,6 +5831,7 @@ async function callAiWithRetry(sessionId, requestBody, opts = {}){
       });
       const data = await resp.json();
       if(!resp.ok) throw new Error(data.error || `Server error: ${resp.status}`);
+      incrementAiUsage(); // kullanım sayacını artır
       const result = data.content?.map(c=>c.text||'').join('')||'';
 
       // Body içinde rate limit mesajı var mı (Gemini fallback bu şekilde dönebiliyor)
@@ -5901,7 +5944,7 @@ async function matRunPagedSummary(m, pages){
   // Sayfaları 4'erli batch'lere böl — TEXT sayfaları için
   // VISION sayfaları AYRI işlenecek (her batch'te 2 sayfa, payload büyük)
   // HYBRID sayfaları = metin var AMA grafik referansı geçiyor → resim+metin birlikte gönder
-  const PAGES_PER_BATCH_TEXT   = 50; // Metin sayfaları büyük batch: 70 sayfa → 1-2 call (eskiden 14-23)
+  const PAGES_PER_BATCH_TEXT   = 20; // 20/batch: thinking aktif (20K token), dikkat tutarlı, 70 sayfa → ~4 call
   const PAGES_PER_BATCH_VISION = 2;  // Vision: resim payload büyük, 2'de kal
   const PAGES_PER_BATCH_HYBRID = 2;  // Hybrid: aynı sebep
 
@@ -5979,7 +6022,7 @@ Slayt resmini görebiliyorsan (resim veya hibrit modda):
     > Y ekseni: [ne gösteriyor + birimi]
     > [Eğrinin davranışı, önemli nokta/bölge/sıçrama, mühendislik yorumu — 2-3 cümle]
   - Tablo varsa: Markdown tablo formatına dönüştür (| Başlık | Değer |)
-  - Akış şeması / blok diyagram varsa: \`\`\`mermaid bloğu ile yeniden çiz (graph TD)
+  - Akış şeması / blok diyagram varsa: diyagram ÇIZME — ne gösterdiğini 2-3 cümle Türkçe metin olarak açıkla
   - Fotoğraf / teknik çizim varsa: 2-3 cümle Türkçe açıklama
 Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi referans geçiyorsa:
   - Bağlamdan ne gösterdiğini tahmin et: > 📊 **Grafik:** [2 cümle bağlama dayalı açıklama]
@@ -6136,7 +6179,7 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
     // ---------- AI ÇAĞRISI (RETRY İLE) ----------
     // Büyük metin batch'leri için yüksek token limiti: 50 sayfa → ~35-45K output token gerekebilir
     // Vision/hybrid 2 sayfada kalır — 20K yeterli
-    const batchMaxTokens = (batch.kind === 'text' && batch.pages.length > 10) ? 65000 : 20000;
+    const batchMaxTokens = batch.kind === 'text' ? 40000 : 20000; // text: 40K sabit (thinking kapalı, 20 sayfa için 2K/sayfa marj), vision/hybrid: 20K
     try {
       const result = await callAiWithRetry(sessionId, {
         mode: 'paged',
@@ -6257,9 +6300,9 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
 
   // Sayfa numarasına göre sırala
   allPageSummaries.sort((a, b) => a.page - b.page);
-  const finalContent = allPageSummaries.map(p =>
-    `## 📄 Sayfa ${p.page}\n\n${p.summary}`
-  ).join('\n\n---\n\n');
+  const finalContent = stripPagedDiagrams(
+    allPageSummaries.map(p => `## 📄 Sayfa ${p.page}\n\n${p.summary}`).join('\n\n---\n\n')
+  );
 
   if(_matGen !== myGen) return; // Materyal değişti — bu sonucu gösterme
 
@@ -6299,6 +6342,17 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
  * Paged summary için ortak prompt builder.
  * Hem text hem vision modunda kullanılır.
  */
+
+/**
+ * Paged özet çıktısından mermaid/kod diyagramlarını temizler.
+ * AI prompt'a rağmen diyagram üretirse veya eski cache içeriğinde varsa kaldırır.
+ */
+function stripPagedDiagrams(text){
+  if(!text) return text;
+  // ```mermaid ... ``` bloklarını kaldır
+  return text.replace(/```mermaid[\s\S]*?```/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function buildPagedPrompt(batchText, pageCount, firstPage, isVision = false, isHybrid = false){
   const sourceClause = isHybrid
     ? 'Her sayfa için hem slayt RESMİ (görsel içerik) hem PDF METIN KATMANI (formüller için referans) verilmiştir. İKİSİNİ BİRLİKTE değerlendir: görseli formüller/grafikler için, metin katmanını kesin yazım için kullan.'
@@ -6361,7 +6415,7 @@ ${(isVision || isHybrid) ? `- Grafiği/eğriyi görüyorsan MUTLAKA şu formatta
   > X ekseni: [ne, birimi]  |  Y ekseni: [ne, birimi]
   > [Eğrinin davranışı, tepe/dip/dönüm noktaları, önemli bölgeler, mühendislik yorumu — 2-3 cümle]
 - Tablo varsa: Markdown tablo formatına dönüştür (| Başlık | Değer |)
-- Akış şeması / blok diyagram varsa: \`\`\`mermaid bloğu ile yeniden çiz (graph TD)
+- Akış şeması / blok diyagram / hiyerarşi şeması varsa: diyagram ÇIZME — ne gösterdiğini ve nasıl işlediğini 2-4 cümle TÜRKÇE metin olarak açıkla
 - Fotoğraf / teknik resim / devre şeması varsa: 2-3 cümle Türkçe açıklama` : `- Metinde "Abbildung X", "Abb. X", "Figure X", "Fig. X", "Grafik X" referansı varsa:
   > 📊 **Grafik:** [bağlamdan 2 cümle — eksenler, değerler veya içeriği tahmin et]
   Tahmin edemiyorsan: > 📊 **Grafik:** *(Bu sayfada görsel içerik var.)*`}
@@ -6369,8 +6423,7 @@ ${(isVision || isHybrid) ? `- Grafiği/eğriyi görüyorsan MUTLAKA şu formatta
 DİĞER:
 - BAŞLIK KALINTILARI: Sayfanın başında ders kodu ("INF204"), üniversite adı, hoca adı, slayt numarası veya "Algoritmalar ve Veri Yapıları II" gibi tekrar eden başlık satırları varsa bunları ÇIKARMA — PDF header'ı, slayt içeriği değil.
 - "Açıklama:" başlığı kullanma — açıklama gerekiyorsa doğrudan bir sonraki cümle olarak yaz.
-- Diyagramı SADECE gerçekten yardımcı olduğunda çiz (ağaç yapısı, akış şeması, durum makinesi). Düz tanım/liste için diyagram çizme.
-- Diyagram çiziyorsan \`\`\`mermaid bloğu, graph TD formatı kullan, etiketlerde tek tırnak / iç parantez / ; YASAK.
+- KESİNLİKLE diyagram veya kod bloğu ÇIZME/YAZMA — mermaid, graphviz, ASCII art, kod snippet YOK.
 - Boş veya çok az içerikli sayfalarda bile "## 📄 Sayfa X" başlığı yaz, ardından kısa not düş ("Bu sayfa kapak/içindekiler tablosu" gibi).
 
 Format örneği (FORMÜLLER LATEX İÇİNDE — bu örneği aynen takip et):
@@ -6550,22 +6603,7 @@ function matMd(text){
   if(!text) return '';
   let s = escHtml(text);
 
-  // LaTeX bloklarını koru — markdown işlemleri içlerine müdahale etmesin
-  // ($$...$$ display, $...$ inline, \[...\] display, \(...\) inline)
-  const latexBlocks = [];
-  const stash = function(match){
-    const idx = latexBlocks.length;
-    latexBlocks.push(match);
-    return '\u0000LATEX' + idx + '\u0000';
-  };
-  // Önce display ($$...$$ ve \[...\]) — açgözlü olmasın
-  s = s.replace(/\$\$([\s\S]+?)\$\$/g, stash);
-  s = s.replace(/\\\[([\s\S]+?)\\\]/g, stash);
-  // Sonra inline ($...$ ve \(...\)) — tek satırda kalsın
-  s = s.replace(/\$([^\$\n]+?)\$/g, stash);
-  s = s.replace(/\\\(([\s\S]+?)\\\)/g, stash);
-
-  // HTML bloklarını \n→<br> geçişinden koru — SVG içindeki <br> SVG parser'ı kırar,
+  // ── AŞAMA 1: Kod/SVG/Mermaid bloklarını ÖNCE sakla (LaTeX stash'inden önce!) ─ — SVG içindeki <br> SVG parser'ı kırar,
   // mermaid <pre> içindeki <br> ise textContent okumada newline'ları siler.
   // LaTeX stash ile aynı mantık: üretilen HTML'i placeholder ile sakla, sonda geri koy.
   const blockStash = [];
@@ -6626,7 +6664,22 @@ function matMd(text){
     return stashBlock(`<div class="md-code-block"><div class="md-code-lang">${lang||'code'}</div><pre><code>${trimmed}</code></pre></div>`);
   });
   // Inline kod
-  s = s.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+  s = s.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');  // ── AŞAMA 2: LaTeX bloklarını sakla (kod blokları zaten kaldırıldı) ────
+  // ($$...$$ display, $...$ inline, \[...\] display, \(...\) inline)
+  const latexBlocks = [];
+  const stash = function(match){
+    const idx = latexBlocks.length;
+    latexBlocks.push(match);
+    return '\u0000LATEX' + idx + '\u0000';
+  };
+  // Önce display ($$...$$ ve \[...\]) — açgözlü olmasın
+  s = s.replace(/\$\$([\s\S]+?)\$\$/g, stash);
+  s = s.replace(/\\\[([\s\S]+?)\\\]/g, stash);
+  // Sonra inline ($...$ ve \(...\)) — tek satırda kalsın
+  s = s.replace(/\$([^\$\n]+?)\$/g, stash);
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, stash);
+
+
 
   // Markdown tablolar — | col | col | formatını HTML'e çevir
   // Separator satırları |:---|---:| şeklinde, header'dan sonra gelir
@@ -8210,6 +8263,7 @@ function initRailTooltips(){
   } catch(e){}
   // Tooltip listener'larını her durumda bağla (enabled flag kontrol eder)
   document.addEventListener('DOMContentLoaded', initRailTooltips);
+  document.addEventListener('DOMContentLoaded', updateAiUsageBadge);
   if(document.readyState !== 'loading') initRailTooltips();
 })();
 
