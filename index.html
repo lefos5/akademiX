@@ -4890,7 +4890,7 @@ async function loadMatHistory(materialId){
 
       // Yeniden Oluştur + (paged için) indirme butonları
       const resetBar = document.createElement('div');
-      resetBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;align-items:center;';
+      resetBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;margin-top:8px;padding-bottom:16px;align-items:center;';
 
       // Sadece paged variant için indirme butonları (study/exam kendi kart akışlarında zaten ekleniyor)
       if(mode === 'summary' && variant === 'paged'){
@@ -6314,7 +6314,7 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
 
   // Aksiyon barı
   const resetBar = document.createElement('div');
-  resetBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;align-items:center;';
+  resetBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;margin-top:8px;padding-bottom:16px;align-items:center;';
   const dlBtns = buildDownloadButtons(
     (m.title || 'sayfa-sayfa') + ' - Sayfa Sayfa Türkçe',
     function(){ return finalContent; },
@@ -6566,7 +6566,7 @@ ${chunks[i]}`).replace('10 ', `${qCount} `);
 
   // Yeniden Oluştur butonu
   const resetBar = document.createElement('div');
-  resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;';
+  resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;';
   const resetBtn = document.createElement('button');
   resetBtn.className = 'mat-ws-action';
   resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
@@ -7569,7 +7569,7 @@ Kuralların:
     // Yeniden Oluştur butonu — tüm AI modlarında (forcePrompt olanlar)
     if(opts.forcePrompt){
       const resetBar = document.createElement('div');
-      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;position:sticky;bottom:0;background:transparent;z-index:10;';
+      resetBar.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:16px;';
       const resetBtn = document.createElement('button');
       resetBtn.className = 'mat-ws-action';
       resetBtn.style.cssText = 'font-size:11px;padding:4px 12px;color:var(--muted);';
