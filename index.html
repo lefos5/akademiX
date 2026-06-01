@@ -4366,23 +4366,44 @@ let currentMatMode = 'summary';
 // Async fonksiyonlar başlarken kopyalar, bitmeden materyal değiştiyse UI'a yazmaz.
 let _matGen = 0;
 
-// ── AI Kullanım Sayacı (günlük, localStorage) ───────────────────────────────
+// ── AI Kullanım Sayacı ───────────────────────────────────────────────────────
+// Sunucudan gerçek sayıyı çeker; localStorage sadece çağrılar arası optimistik güncelleme için
 const AI_DAILY_LIMIT = 150;
-function _aiUsageKey(){ return 'aiUsage_' + new Date().toISOString().slice(0,10); }
-function getAiUsage(){ return parseInt(localStorage.getItem(_aiUsageKey()) || '0'); }
-function incrementAiUsage(){
-  const k = _aiUsageKey();
-  localStorage.setItem(k, String(getAiUsage() + 1));
-  updateAiUsageBadge();
-}
-function updateAiUsageBadge(){
+let _aiRemainingServer = null; // sunucudan gelen gerçek değer
+
+function _setBadge(remaining){
   const badge = document.getElementById('ai-usage-badge');
   if(!badge) return;
-  const used = getAiUsage();
-  const remaining = Math.max(0, AI_DAILY_LIMIT - used);
-  if(used === 0){ badge.textContent = ''; return; }
+  if(remaining === null){ badge.textContent = ''; return; }
   badge.textContent = '⚡ ' + remaining + ' istek kaldı';
   badge.style.color = remaining <= 10 ? 'var(--red)' : remaining <= 30 ? '#f59e0b' : 'var(--muted)';
+}
+
+async function fetchAiUsage(){
+  const sessionId = localStorage.getItem('akademix_session');
+  if(!sessionId) return;
+  try{
+    const resp = await fetch(BACKEND_URL + '/api/usage', {
+      headers: { 'x-session-id': sessionId }
+    });
+    if(!resp.ok) return;
+    const data = await resp.json();
+    _aiRemainingServer = data.remaining ?? null;
+    _setBadge(_aiRemainingServer);
+  } catch(e){ /* sessizce geç */ }
+}
+
+function incrementAiUsage(){
+  // Sunucu sayısı biliniyorsa optimistik olarak 1 azalt
+  if(_aiRemainingServer !== null){
+    _aiRemainingServer = Math.max(0, _aiRemainingServer - 1);
+    _setBadge(_aiRemainingServer);
+  }
+}
+
+function updateAiUsageBadge(){
+  // Sayfa yüklenince sunucudan çek
+  fetchAiUsage();
 }
 let matChatHistory = [];
 let matFileData = null;
