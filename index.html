@@ -3097,6 +3097,8 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const page = document.getElementById('page-'+id);
   if(page) page.classList.add('active');
+  // Materyal sayfasında sayfa scroll'u kilitle (içerik .mat-messages içinde scroll eder)
+  document.body.style.overflow = (id === 'materials') ? 'hidden' : '';
   // Nav active state — onclick'teki parametreyle eşleştir
   document.querySelectorAll('.nav-item').forEach(n=>{
     n.classList.remove('active');
@@ -6322,7 +6324,7 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
   // Sayfa numarasına göre sırala
   allPageSummaries.sort((a, b) => a.page - b.page);
   const finalContent = stripPagedDiagrams(
-    allPageSummaries.map(p => `## 📄 Sayfa ${p.page}\n\n${p.summary}`).join('\n\n---\n\n')
+    allPageSummaries.map(p => `## 📄 Sayfa ${p.page}\n\n${p.summary}`).join('\n\n')
   );
 
   if(_matGen !== myGen) return; // Materyal değişti — bu sonucu gösterme
@@ -6373,6 +6375,9 @@ function stripPagedDiagrams(text){
 
   // 1. Mermaid bloklarını kaldır
   text = text.replace(/```mermaid[\s\S]*?```/gi, '');
+
+  // 2. Sayfa başlıkları arasındaki --- ayraçlarını kaldır (kart içinde blank alan yaratıyor)
+  text = text.replace(/\n\n---\n\n(?=##\s*📄)/g, '\n\n');
 
   // 2. Ardışık bullet maddeleri arasındaki boş satırları kaldır
   //    "- madde\n\n- madde" → "- madde\n- madde"
