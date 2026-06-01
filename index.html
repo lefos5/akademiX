@@ -5944,7 +5944,7 @@ async function matRunPagedSummary(m, pages){
   // Sayfaları 4'erli batch'lere böl — TEXT sayfaları için
   // VISION sayfaları AYRI işlenecek (her batch'te 2 sayfa, payload büyük)
   // HYBRID sayfaları = metin var AMA grafik referansı geçiyor → resim+metin birlikte gönder
-  const PAGES_PER_BATCH_TEXT   = 20; // 20/batch: thinking aktif (20K token), dikkat tutarlı, 70 sayfa → ~4 call
+  const PAGES_PER_BATCH_TEXT   = 10; // 10/batch: 2 çağrıya böl, sayfa başı dikkat artar, 70 sayfa → ~7 call
   const PAGES_PER_BATCH_VISION = 2;  // Vision: resim payload büyük, 2'de kal
   const PAGES_PER_BATCH_HYBRID = 2;  // Hybrid: aynı sebep
 
@@ -6349,8 +6349,23 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
  */
 function stripPagedDiagrams(text){
   if(!text) return text;
-  // ```mermaid ... ``` bloklarını kaldır
-  return text.replace(/```mermaid[\s\S]*?```/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+
+  // 1. Mermaid bloklarını kaldır
+  text = text.replace(/```mermaid[\s\S]*?```/gi, '');
+
+  // 2. Ardışık bullet maddeleri arasındaki boş satırları kaldır
+  //    "- madde\n\n- madde" → "- madde\n- madde"
+  //    Döngü: birden fazla ardışık boşluk için tekrarla
+  let prev;
+  do {
+    prev = text;
+    text = text.replace(/(^[ \t]*- [^\n]+)\n\n([ \t]*- )/gm, '$1\n$2');
+  } while(text !== prev);
+
+  // 3. Üçten fazla art arda boş satırı ikiye indir
+  text = text.replace(/\n{3,}/g, '\n\n');
+
+  return text.trim();
 }
 
 function buildPagedPrompt(batchText, pageCount, firstPage, isVision = false, isHybrid = false){
@@ -6366,8 +6381,17 @@ function buildPagedPrompt(batchText, pageCount, firstPage, isVision = false, isH
 - Çıktı baştan sona TÜRKÇE olsun. Almanca/İngilizce CÜMLELER yazma.
 - Sadece **TEKNİK TERİMLER** çift dilli verilir, o da TEK BİR FORMATTA: **OrijinalDil** (Türkçe karşılığı)
 - ÖRNEK DOĞRU: "**Wahrscheinlichkeitsfunktion** (olasılık fonksiyonu), bir ayrık rastgele değişkenin her değerine atanan olasılığı verir."
-- ÖRNEK YANLIŞ: "**Wahrscheinlichkeitsfunktion** (Olasılık Fonksiyonu) → Sei X = (X₁,...) eine d-dimensionale diskrete Zufallsvariable, so ist die Wahrscheinlichkeitsfunktion fX definiert durch (X = (X₁,...) d-boyutlu ayrık bir rastgele değişken olsun, bu durumda olasılık fonksiyonu fX şu şekilde tanımlanır:)"
-- AÇIKLAMALAR TEK DİLDE TÜRKÇE — Almanca cümleyi yazıp parantez içinde tekrar çevirme. Almancayı bir kez bile yazma, doğrudan Türkçesini ver.
+- ÖRNEK YANLIŞ: "**Wahrscheinlichkeitsfunktion** (Olasılık Fonksiyonu) → Sei X = ..."
+- AÇIKLAMALAR TEK DİLDE TÜRKÇE — Almanca cümleyi yazıp parantez içinde tekrar çevirme.
+
+⚠️ FORMAT KİLİDİ — TEKNİK TERİM YAZIM KURALI:
+Teknik terim yazarken SADECE şu format geçerli: **AlmancaTerm** (türkçe karşılık)
+YASAK formatlar — bunları ASLA kullanma:
+- AlmancaTerm → Türkçe  (ok kullanma)
+- AlmancaTerm / AlmancaTerm2  (slash ile ayırma)
+- AlmancaTerm – Türkçe  (tire ile ayırma)
+- (AlmancaTerm = Türkçe)  (eşittir ile ayırma)
+Birden fazla eş anlamlı terim varsa: **Term1** (Türkçe1) / **Term2** (Türkçe2) yaz.
 
 YAPI KURALI:
 - Her sayfa MUTLAKA "## 📄 Sayfa [numara]" başlığıyla başlasın
@@ -6375,7 +6399,8 @@ YAPI KURALI:
 - Slaytın yapısını koru: bullet'lar bullet, başlıklar başlık, formüller blok
 - Slaytta 5 madde varsa Türkçesinde de 5 madde olsun
 - Madde içinde madde içinde açıklama gibi karmaşık yapı yapma — düz akış tercih et
-- BULLET FORMATI: madde işareti için yıldız ( * ) KULLANMA — markdown parser bunu güvenilir parse edemez. Tire ( - ) veya numara ( 1. ) kullan. Slayttaki yıldız işaretlerini tireye çevir.
+- BULLET FORMATI: madde işareti için yıldız ( * ) KULLANMA — tire ( - ) veya numara ( 1. ) kullan.
+- BOŞLUK KURALI: Madde işaretleri ( - ile başlayan satırlar) arasına KESİNLİKLE boş satır bırakma. Maddeler arka arkaya gelsin. Boş satır sadece farklı bölümler arasında kullan.
 
 FORMÜL KURALI (ZORUNLU — LaTeX kullan, istisna yok):
 İçinde ŞUNLARDAN HERHANGI BİRİ olan TÜM ifadeler LaTeX delimiter'larıyla sarılmalı:
