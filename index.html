@@ -4531,6 +4531,8 @@ Format:
 ## 📄 Sayfa [N]
 [Slaytın Türkçe versiyonu — yapısı korunarak, temiz Türkçe akışla]
 
+> 💡 **Açıklama:** [Bu sayfada geçen formüller, semboller veya kavramlar neden önemli, ne anlama geliyor — 2-4 cümle, sade Türkçe. Sayfa tamamen basit/tanımsal ise bu bloğu YAZMA.]
+
 Materyal:
 ${t}`,
   },
@@ -5967,9 +5969,9 @@ async function matRunPagedSummary(m, pages){
   // Sayfaları 4'erli batch'lere böl — TEXT sayfaları için
   // VISION sayfaları AYRI işlenecek (her batch'te 2 sayfa, payload büyük)
   // HYBRID sayfaları = metin var AMA grafik referansı geçiyor → resim+metin birlikte gönder
-  const PAGES_PER_BATCH_TEXT   = 10; // 10/batch: 2 çağrıya böl, sayfa başı dikkat artar, 70 sayfa → ~7 call
-  const PAGES_PER_BATCH_VISION = 2;  // Vision: resim payload büyük, 2'de kal
-  const PAGES_PER_BATCH_HYBRID = 2;  // Hybrid: aynı sebep
+  const PAGES_PER_BATCH_TEXT   = 10; // 10/batch: 2 çağrıye böl, sayfa başı dikkat artar, 70 sayfa → ~7 call
+  const PAGES_PER_BATCH_VISION = 3;  // Vision: 3/batch — kalite/hız dengesi; 2'de çok yavaştı
+  const PAGES_PER_BATCH_HYBRID = 3;  // Hybrid: 3/batch — resim+metin kombinasyonu
 
   // Grafik/diyagram referansı içeren metin sayfalarını tespit et.
   // Bu sayfalar Vision modunda hem resim hem metin olarak gönderilir.
@@ -6081,7 +6083,7 @@ Sadece metin görüyorsan ama metinde "Abbildung X", "Figure X", "Grafik X" gibi
   // Gemini free tier ≈10 RPM → her 6sn'de 1 istek izni var.
   // Reaktif 60sn beklemeye düşmemek için batch'ler arası proaktif throttle uygula.
   // Her AI çağrısının tamamlanma süresini ölç; min interval geçmediyse kalan süre kadar bekle.
-  const MIN_REQUEST_INTERVAL_MS = 5000; // 5sn → ≈12 RPM, limit öncesinde güvenli marj
+  const MIN_REQUEST_INTERVAL_MS = 3000; // 3sn → ≈20 RPM, Gemini Flash free tier için yeterli marj
   let lastRequestFinishedAt = 0;
 
   for(let bi = 0; bi < allBatches.length; bi++){
