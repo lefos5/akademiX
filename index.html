@@ -995,38 +995,34 @@
   .orig-term {
     border-bottom: 1.5px dotted var(--accent);
     cursor: pointer;
-    position: relative;
     color: inherit;
     white-space: nowrap;
   }
-  .orig-term-tip {
+  /* Global tooltip — body'e mount edilir, overflow:hidden sorununu önler */
+  #orig-term-global-tip {
     display: none;
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface2);
-    border: 1px solid var(--accent);
-    color: var(--text);
-    font-size: 11px;
+    position: fixed;
+    background: var(--surface2, #1e293b);
+    border: 1px solid var(--accent, #3b82f6);
+    color: var(--text, #f1f5f9);
+    font-size: 12px;
     font-style: italic;
-    padding: 3px 9px;
-    border-radius: 6px;
+    padding: 4px 10px;
+    border-radius: 7px;
     white-space: nowrap;
-    z-index: 99;
+    z-index: 9999;
     pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    transform: translateX(-50%);
   }
-  .orig-term-tip::after {
+  #orig-term-global-tip::after {
     content: '';
     position: absolute;
     top: 100%; left: 50%;
     transform: translateX(-50%);
     border: 5px solid transparent;
-    border-top-color: var(--accent);
+    border-top-color: var(--accent, #3b82f6);
   }
-  .orig-term:hover .orig-term-tip,
-  .orig-term.open .orig-term-tip { display: block; }
 
   /* SVG Diagram Container */
   .md-svg-container {
@@ -6753,7 +6749,7 @@ function matMd(text){
   s = s.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');  // ── Orijinal terim tooltip: [Türkçe]{Orijinal} → tıklanabilir span ────
   // Markdown link [text](url) ile çakışmaması için önce url'li patern, sonra bizimki
   s = s.replace(/\[([^\]]+)\]\{([^}]+)\}/g, (_, tr, orig) =>
-    `<span class="orig-term" onclick="this.classList.toggle('open')">${tr}<span class="orig-term-tip">${escHtml(orig)}</span></span>`
+    `<span class="orig-term" data-orig="${orig.replace(/"/g,'&quot;')}">${tr}</span>`
   );
 
   // ── AŞAMA 2: LaTeX bloklarını sakla (kod blokları zaten kaldırıldı) ────
@@ -8494,6 +8490,51 @@ window.addEventListener('load',()=>{
     </div>
   </div>
 
+  <!-- Global orijinal terim tooltip — overflow:hidden sorununu önlemek için body'de -->
+  <div id="orig-term-global-tip"></div>
+
+  <script>
+  (function(){
+    const tip = document.getElementById('orig-term-global-tip');
+    let hideTimer = null;
+
+    function showTip(el){
+      clearTimeout(hideTimer);
+      const orig = el.dataset.orig;
+      if(!orig) return;
+      tip.textContent = orig;
+      const r = el.getBoundingClientRect();
+      tip.style.display = 'block';
+      // Önce display block yap, sonra genişliği ölç
+      const tipW = tip.offsetWidth;
+      let left = r.left + r.width / 2;
+      // Ekran sınırlarına taşma kontrolü
+      left = Math.max(tipW / 2 + 8, Math.min(left, window.innerWidth - tipW / 2 - 8));
+      tip.style.left = left + 'px';
+      tip.style.top  = (r.top - tip.offsetHeight - 10 + window.scrollY) + 'px';
+      // fixed pozisyon — scrollY gerekmez
+      tip.style.top  = (r.top - tip.offsetHeight - 10) + 'px';
+    }
+
+    function hideTip(){
+      hideTimer = setTimeout(() => { tip.style.display = 'none'; }, 120);
+    }
+
+    document.addEventListener('mouseover', e => {
+      const el = e.target.closest('.orig-term');
+      if(el) showTip(el);
+    });
+    document.addEventListener('mouseout', e => {
+      if(e.target.closest('.orig-term')) hideTip();
+    });
+    document.addEventListener('click', e => {
+      const el = e.target.closest('.orig-term');
+      if(!el){ tip.style.display = 'none'; return; }
+      if(tip.style.display === 'block'){ tip.style.display = 'none'; }
+      else showTip(el);
+    });
+  })();
+  </script>
 
 </body>
 </html>
