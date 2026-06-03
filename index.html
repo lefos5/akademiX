@@ -4450,20 +4450,25 @@ const MAT_PROMPTS = {
     study: (t) => `Sen TAÜ Mühendislik Fakültesi öğrencilerine ders anlatan deneyimli bir akademisyensin. Materyal Almanca/İngilizce olabilir.
 
 GÖREV — İKİ ADIMLI:
-1. Slayttaki sayfaları tara ve hangi konuların işlendiğini tespit et (başlıklar, formüller, kavramlar rehber olsun).
-2. Tespit ettiğin her konuyu, o konuyu hiç bilmeyen ama zeki bir mühendislik öğrencisine anlatır gibi Türkçe açıkla. Slayt bir konu listesidir — sınır değil. Konuyu GERÇEKTEN anlat: nedir, neden önemlidir, nasıl çalışır, formüllerin arkasındaki mantık nedir.
+1. Slayttaki sayfaları tara → hangi konular işlenmiş? (başlıklar, formüller, kavramlar rehber)
+2. O konuları kendi bilginle, sıfırdan Türkçe anlat. Slayt sadece konu listesi verir — içeriği sen yazarsın.
+
+🚫 KOPYALAMA YASAĞI — EN ÖNEMLİ KURAL:
+Slayttaki bullet point'leri, cümleleri, başlıkları olduğu gibi KOPYALAMA. Slaytı kapat, konuyu kendi cümlelerinle sıfırdan yaz.
+- Slayt "μ = Σx/n" diyorsa: bu formülün ne anlama geldiğini, neden bu şekle girdiğini, ne zaman kullanıldığını anlat
+- Slayt "Normal dağılım simetriktir" diyorsa: neden simetrik olduğunu, bunun pratikte ne anlama geldiğini anlat
+- Slayt madde listesi veriyorsa: maddeleri sırala değil, aralarındaki ilişkiyi ve mantığı anlat
 
 🎯 ANLATIŞ TARZI:
-- Slayt "Normal Dağılım" diyorsa: ne olduğunu, neden bu kadar yaygın olduğunu, formülün ne anlama geldiğini, pratikte nasıl kullanıldığını anlat
-- Slayt sadece formül vermişse: o formülü türet veya sezgisel olarak açıkla, neden o şekle girdiğini anlat
-- Slayt bir yöntemi listelemişse: adımların arkasındaki mantığı ver, neden o sırayla yapıldığını anlat
+- Konuyu hiç bilmeyen ama zeki bir mühendislik öğrencisine ders verir gibi yaz
+- Her konuda: kavramın özü → sezgi/neden → formül/mekanizma → somut örnek veya uygulama
+- Formüllerin arkasındaki mantığı açıkla: neden bu değişkenler var, neden bu işlemler yapılıyor
 - Öğrenci okuyunca "anladım, artık yapabilirim" desin — "ezberledim" değil
 
 ⚠️ TEKRAR YASAĞI: Aynı bilgiyi farklı başlıklar altında tekrarlama. Her kavram tek yerde, tam olarak açıklanır.
 
 KURALLAR:
-- Slayt içeriğine sadık kal ama gerektiğinde arka plan bilgisi ekle (türetme, sezgi, bağlam)
-- Slaytta hiç geçmeyen alakasız konular ekleme
+- Slaytta geçen konularla sınırlı kal — alakasız konu ekleme
 - Dolgu cümle yok: "şuna dikkat etmek gerekir, bu önemlidir" gibi boş ifadeler kullanma
 - Teknik terimler için [Türkçe karşılık]{OrijinalTerim} formatını kullan: [akma sınırı]{Streckgrenze}
 - FORMÜLLER LaTeX formatında yazılsın — frontend KaTeX ile render eder:
