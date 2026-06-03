@@ -4410,12 +4410,14 @@ let _matGen = 0;
 const AI_DAILY_LIMIT = 150;
 let _aiRemainingServer = null; // sunucudan gelen gerçek değer
 
-function _setBadge(remaining){
+function _setBadge(remaining, warning){
   const badge = document.getElementById('ai-usage-badge');
   if(!badge) return;
   if(remaining === null){ badge.textContent = ''; return; }
+  if(warning){ badge.textContent = '⚡ ? istek kaldı'; badge.style.color = '#f59e0b'; badge.title = warning; return; }
   badge.textContent = '⚡ ' + remaining + ' istek kaldı';
   badge.style.color = remaining <= 10 ? 'var(--red)' : remaining <= 30 ? '#f59e0b' : 'var(--muted)';
+  badge.title = '';
 }
 
 async function fetchAiUsage(){
@@ -4428,8 +4430,8 @@ async function fetchAiUsage(){
     if(!resp.ok) return;
     const data = await resp.json();
     _aiRemainingServer = data.remaining ?? null;
-    _setBadge(_aiRemainingServer);
-  } catch(e){ /* sessizce geç */ }
+    _setBadge(_aiRemainingServer, data.warning);
+  } catch(e){ console.warn('[usage]', e.message); }
 }
 
 function incrementAiUsage(){
