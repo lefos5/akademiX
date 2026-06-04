@@ -5599,39 +5599,32 @@ async function matRunStudyMode(m, pages){
     return '===== SAYFA ' + p.page + ' =====\n' + (p.text || '');
   }).join('\n\n');
 
-  const prompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine ders anlatan deneyimli bir akademisyensin. Aşağıda bir ders materyalinin sayfaları verilmiştir.
+  const prompt = `Sen TAÜ Mühendislik Fakültesi öğrencilerine yardım eden deneyimli bir akademisyensin. Aşağıda Almanca/İngilizce bir ders materyalinin sayfaları verilmiştir.
 
-GÖREV — İKİ ADIMLI:
-1. Sayfaları tara → hangi konular işlenmiş? Başlıklar, formüller, kavramlar rehber olsun. Kapak/içindekiler/kaynakça sayfaları konu sayma.
-2. Tespit ettiğin her konuyu kendi bilginle, sıfırdan Türkçe olarak anlat. Slayt sadece konu listesi verir — içeriği sen yazarsın.
+GÖREV — ÜÇ ADIMLI:
+1. Sayfaları tara → ana konuları ve alt konuları tespit et (başlıklar, bölümler rehber). Kapak/içindekiler/kaynakça sayfaları konu sayma.
+2. Her konu için o konuya ait slayt içeriğini topla: formüller, tanımlar, listeler, örnekler.
+3. Toplanan içeriği Türkçe olarak açıkla ve netleştir — slaytın yapısını koru, ama ham metin değil anlaşılır anlatım yaz.
 
-🚫 KOPYALAMA YASAĞI — EN ÖNEMLİ KURAL:
-Slayttaki bullet point'leri, cümleleri, başlıkları olduğu gibi KOPYALAMA ve SIRALI LISTELEME. Slaytı kapat, her konuyu kendi cümlelerinle sıfırdan yaz.
-- Slayt "μ = Σx/n" yazıyorsa: bu formülün ne anlama geldiğini, neden bu şekle girdiğini, ne zaman kullanıldığını anlat
-- Slayt madde listesi veriyorsa: maddeleri kopyalama, aralarındaki ilişkiyi ve mantığı anlat
-- Slayt formül sıralıyorsa: formüllerin türetilişini ve sezgisini anlat
+📌 TEMEL İLKE — SLAYTA SADIK KAL:
+Bu not slaytın Türkçe açıklamasıdır. Slayta yabancı bilgi EKLEME.
+- Slaytta olmayan kavram, formül veya örnek uydurma
+- Slayt bir konuyu yüzeysel bırakmışsa sen de yüzeysel bırak — ama ne söylediğini net anlat
+- Slaytta geçen her önemli içerik (formül, tanım, liste, örnek) mutlaka notta yer alsın
 
-🎯 ANLATIŞ TARZI:
-- Konuyu hiç bilmeyen ama zeki bir mühendislik öğrencisine ders verir gibi yaz
-- Her konuda: kavramın özü → neden/sezgi → formül → somut sayısal örnek
-- Öğrenci okuyunca "anladım" desin — "ezberledim" değil
-- Konu sayısı 5-15 arası, her konu 2-4 paragraf
-
-📐 FORMÜL ZORUNLULUĞU:
-- Slaytta formül geçiyorsa mutlaka yaz ve her sembolü açıkla: "$\sigma$: standart sapma, $\mu$: ortalama" gibi
-- Formülün ne hesapladığını ve neden o yapıda olduğunu açıkla
-- Türetme veya adım adım açıklama ekle — sadece formülü yapıştırıp geçme
-
-🔢 ÖRNEK ZORUNLULUĞU:
-- Her konuya mutlaka somut sayısal örnek ekle: "Örneğin n=10 ölçümde μ=5, σ=2 ise..."
-- Soyut kalan her kavramı bir örnekle somutlaştır
-- Örnek slaytta yoksa kendin üret — mühendislik/istatistik bağlamında gerçekçi sayılar kullan
+🔍 AÇIKLAMA TARZI:
+- Slayttaki formülleri yaz, her sembolü Türkçe açıkla: "$\\mu$: ortalama, $\\sigma$: standart sapma"
+- Slayttaki tanımları sadece tekrar etme — ne anlama geldiğini bir-iki cümleyle netleştir
+- Slayttaki madde listelerini sıralamayla değil bağlantılarıyla anlat: aralarındaki ilişki, neden bu sıra
+- Slaytta sayısal örnek varsa onu kullan ve adım adım göster — yoksa örnek EKLEME
 
 ⚠️ TEKRAR YASAĞI: Aynı bilgiyi farklı başlıklar altında tekrarlama. Her kavram tek yerde açıklanır.
+Konu sayısı 5-15 arası, her konu 2-4 paragraf.
 
 DİL:
 - Çıktı baştan sona TÜRKÇE. Almanca/İngilizce cümle yazma.
-- Önemli teknik terimler için: [Türkçe karşılık]{Almanca Terim} — MUTLAKA ALMANCA yaz, İngilizce değil. Örnek: [tanımlayıcı istatistik]{Deskriptive Statistik}, [standart sapma]{Standardabweichung}
+- Önemli teknik terimler için: [Türkçe karşılık]{Almanca Terim} — ALMANCA yaz, İngilizce değil.
+  Örnek: [tanımlayıcı istatistik]{Deskriptive Statistik}, [standart sapma]{Standardabweichung}
 - Dolgu cümle yok: "şuna dikkat etmek gerekir, bu önemlidir" gibi boş ifadeler kullanma
 
 FORMÜLLER (ZORUNLU — LaTeX, istisna yok):
@@ -5641,12 +5634,12 @@ FORMÜLLER (ZORUNLU — LaTeX, istisna yok):
 - Alt-indeks bile varsa (x_1, f_X) → $...$ içine. PDF parse bozuksa bağlamdan tahmin et.
 - Madde işareti: tire ( - ) veya numara ( 1. ) — yıldız ( * ) KULLANMA
 
-DİYAGRAM (opsiyonel): Sadece gerçekten yardımcı oluyorsa \`\`\`mermaid bloğu kullan. Etiketlerde ( ) ve ; YASAK.
+DİYAGRAM (opsiyonel): Slaytta diyagram/akış varsa \`\`\`mermaid bloğuyla yansıt. Yoksa çizme. Etiketlerde ( ) ve ; YASAK.
 
 ÇIKTI FORMATI:
 
 ## 📚 [Konu başlığı] (Sayfa X, Y)
-[Konunun öğretici anlatımı — paragraflar halinde, alt-başlık açma]
+[Slayt içeriğinin Türkçe açıklaması — paragraflar halinde, alt-başlık açma]
 
 Materyal sayfaları:
 ${combinedText}`;
@@ -5658,7 +5651,7 @@ ${combinedText}`;
       headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
       body: JSON.stringify({
         mode: 'study',
-        max_tokens: 16000,
+        max_tokens: 24000,
         messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
       })
     });
