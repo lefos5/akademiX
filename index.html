@@ -4572,34 +4572,43 @@ Materyal:
 ${t}`,
   },
   quiz: {
-    mixed: (t) => `Sen TAÜ mühendislik sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca olabilir — içeriği anlayıp Türkçe karışık sınav oluştur.
+    mixed: (t) => `Sen TAÜ mühendislik sınavı hazırlayan deneyimli bir hocasın. Materyal Almanca/İngilizce olabilir — içeriği anlayıp Türkçe karışık sınav oluştur.
 
 5 çoktan seçmeli + 3 doğru/yanlış + 3 açık uçlu soru oluştur.
 
-ÖNEMLİ FORMAT KURALLARI:
-- HER ALAN AYRI SATIRDA olmalı — şıkları, CEVAP'ı, AÇIKLAMA'yı tek satıra sıkıştırma
-- Her şık (A, B, C, D) AYRI SATIRDA olacak
-- Sorular arası ayraç olarak --- kullan
+📌 SORU KALİTESİ — EN ÖNEMLİ:
+- Sorular materyaldeki KAVRAMLARI test etsin — slaytın cümlelerini kopyalama
+- Slayt "X, Y, Z özelliklerine sahiptir" diyorsa: o özellikleri sormak yerine, o özellikleri anlayan birinin çözebileceği senaryo/uygulama sorusu sor
+- Yanlış şıklar mantıklı ve ayırt edici olsun — "hiçbiri", "hepsi" gibi kaçak şıklar koyma
+- Açık uçlu sorular hesaplama veya kıyaslama gerektirsin
 
-Çoktan seçmeli format:
-SORU: [soru]
+📌 DİL KURALI:
+- Tüm sorular ve açıklamalar TAMAMEN TÜRKÇE
+- Açıklamalarda Almanca/İngilizce alıntı YAZMA — kavramı Türkçe açıkla
+- Teknik terimler Türkçe kullanılsın, gerekirse parantez içinde Almancası: olasılık yoğunluğu (Wahrscheinlichkeitsdichte)
+
+📌 FORMAT — KESİNLİKLE UYULACAK:
+Her alan MUTLAKA ayrı satırda. Şıkları, CEVAP'ı, AÇIKLAMA'yı ASLA aynı satıra sıkıştırma.
+
+Çoktan seçmeli:
+SORU: [soru metni]
 A) [seçenek]
 B) [seçenek]
 C) [seçenek]
 D) [seçenek]
-CEVAP: [harf]
-AÇIKLAMA: [açıklama]
+CEVAP: [A/B/C/D]
+AÇIKLAMA: [Türkçe açıklama — Almanca alıntı yok]
 ---
 
-Doğru/Yanlış format:
+Doğru/Yanlış:
 SORU: [ifade]
 CEVAP: Doğru
-AÇIKLAMA: [açıklama]
+AÇIKLAMA: [Türkçe açıklama]
 ---
 
-Açık uçlu format:
+Açık uçlu:
 SORU: [soru]
-MODEL_CEVAP: [kapsamlı cevap]
+MODEL_CEVAP: [Türkçe kapsamlı cevap]
 ---
 
 Materyal:
@@ -7280,12 +7289,13 @@ function matBuildQuiz(text){
   // Örnek: "A) foo B) bar C) baz D) qux" → her şık ayrı satıra
   // Örnek: "CEVAP: C AÇIKLAMA: ..." → CEVAP ve AÇIKLAMA ayrı satıra
   text = text
-    // Şıklar arasına newline koy: " B)", " C)", " D)" (aynı satır içinde)
-    .replace(/\s+(?=[B-D]\)\s)/g, '\n')
-    // CEVAP:'tan sonra AÇIKLAMA: gelirse araya newline koy
-    .replace(/\s+(?=AÇIKLAMA:\s)/gi, '\n')
-    // MODEL_CEVAP: aynı satırda gelirse ayır
-    .replace(/\s+(?=MODEL_CEVAP:\s)/gi, '\n');
+    // Şık harfinden önce newline: boşluklu veya boşluksuz A) B) C) D) hepsini yakala
+    .replace(/([^\n])([A-D]\))/g, '$1\n$2')
+    // CEVAP: AÇIKLAMA: MODEL_CEVAP: her biri ayrı satırda
+    .replace(/([^\n])(?=CEVAP:\s)/gi,    '$1\n')
+    .replace(/([^\n])(?=AÇIKLAMA:\s)/gi, '$1\n')
+    .replace(/([^\n])(?=MODEL_CEVAP:\s)/gi, '$1\n')
+    .replace(/([^\n])(?=SORU:\s)/gi,     '$1\n');
 
   const blocks = text.split(/\n---\n|\n-{3,}\n/).filter(b => b.trim());
   const questions = [];
