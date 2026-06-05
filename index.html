@@ -2377,10 +2377,15 @@ async function checkSharedCache(fileHash, mode, variant){
   if(!fileHash) return null;
 
   // "Yeniden Oluştur" sonrası summary variant'ı için tek seferlik bypass
-  // (Sadece summary mode'unda aktif, başka mod'ları etkilemez)
   if(mode === 'summary' && variant && matSummaryBypass[variant]){
     delete matSummaryBypass[variant];
     matSummaryOverwrite[variant] = true;
+    return null;
+  }
+
+  // "Yeniden Oluştur" sonrası quiz için tek seferlik bypass
+  if(mode === 'quiz' && matQuizBypass){
+    matQuizBypass = false;
     return null;
   }
 
@@ -5140,6 +5145,8 @@ async function matResetMode(mode){
       matSummaryBypass[matSummaryVariant] = true;
     } else {
       await sbDeleteAiOutputsByType(matId, mode);
+      // Quiz için shared cache bypass'ı set et
+      if(mode === 'quiz') matQuizBypass = true;
     }
   }
 
@@ -5161,6 +5168,7 @@ let matSummaryVariant = 'paged';
 // "Yeniden Oluştur" basılınca o variant için tek seferlik cache bypass
 // Key: variant (ör. 'paged'). True ise bir sonraki checkSharedCache null döner.
 const matSummaryBypass = {};
+let matQuizBypass = false; // Yeniden Oluştur sonrası quiz shared cache'i atla
 // Bypass tetiklendiğinde, üretim sonrası saveSharedCache eski kaydı silip yenisini yazsın
 const matSummaryOverwrite = {};
 
