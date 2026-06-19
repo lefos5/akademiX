@@ -4623,7 +4623,7 @@ AÇIKLAMA: [Türkçe açıklama]
 
 Açık uçlu:
 SORU: [soru]
-MODEL_CEVAP: [adım adım Türkçe çözüm]
+ÇÖZÜM: [adım adım Türkçe çözüm]
 ---
 
 Materyal:
@@ -7303,13 +7303,17 @@ function matBuildQuiz(text){
   // AI bazen kuralları ihlal edip şıkları/etiketleri aynı satıra sıkıştırıyor — normalize et
   // Örnek: "A) foo B) bar C) baz D) qux" → her şık ayrı satıra
   // Örnek: "CEVAP: C AÇIKLAMA: ..." → CEVAP ve AÇIKLAMA ayrı satıra
+  // MODEL_CEVAP: satır ortasında kırılmışsa ("MODEL_\nCEVAP:") birleştir — önce diğer replace'lerden
+  text = text.replace(/MODEL_[ \t]*\n[ \t]*CEVAP:/gi, 'MODEL_CEVAP:');
+
   text = text
     // Şık harfinden önce newline: boşluklu veya boşluksuz A) B) C) D) hepsini yakala
     .replace(/([^\n(])([A-D]\))/g, '$1\n$2')
-    // CEVAP: AÇIKLAMA: MODEL_CEVAP: her biri ayrı satırda
+    // CEVAP: AÇIKLAMA: MODEL_CEVAP: ÇÖZÜM: her biri ayrı satırda
     .replace(/([^\n])(?=CEVAP:\s)/gi,    '$1\n')
     .replace(/([^\n])(?=AÇIKLAMA:\s)/gi, '$1\n')
     .replace(/([^\n])(?=MODEL_CEVAP:\s)/gi, '$1\n')
+    .replace(/([^\n])(?=ÇÖZÜM:\s)/gi, '$1\n')
     .replace(/([^\n])(?=SORU:\s)/gi,     '$1\n');
 
   const blocks = text.split(/\n---\n|\n-{3,}\n/).filter(b => b.trim());
@@ -7342,8 +7346,8 @@ function matBuildQuiz(text){
         q.explanation = l.replace(/^AÇIKLAMA:\s*/i,'');
         currentField = 'explanation';
       }
-      else if(/^MODEL_CEVAP:\s*/i.test(l)){
-        q.modelAnswer = l.replace(/^MODEL_CEVAP:\s*/i,'');
+      else if(/^(ÇÖZÜM|MODEL_CEVAP):\s*/i.test(l)){
+        q.modelAnswer = l.replace(/^(ÇÖZÜM|MODEL_CEVAP):\s*/i,'');
         currentField = 'modelAnswer';
       }
       else if(l && currentField === 'question') q.question += ' ' + l;
