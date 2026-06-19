@@ -6454,19 +6454,16 @@ function buildPagedPrompt(batchText, pageCount, firstPage, isVision = false, isH
 
 ⚠️ DİL KURALI — EN ÖNEMLİSİ:
 - Çıktı baştan sona TÜRKÇE olsun. Almanca/İngilizce CÜMLELER yazma.
-- Sadece **TEKNİK TERİMLER** çift dilli verilir, o da TEK BİR FORMATTA: **OrijinalDil** (Türkçe karşılığı)
-- ÖRNEK DOĞRU: "**Wahrscheinlichkeitsfunktion** (olasılık fonksiyonu), bir ayrık rastgele değişkenin her değerine atanan olasılığı verir."
-- ÖRNEK YANLIŞ: "**Wahrscheinlichkeitsfunktion** (Olasılık Fonksiyonu) → Sei X = ..."
-- AÇIKLAMALAR TEK DİLDE TÜRKÇE — Almanca cümleyi yazıp parantez içinde tekrar çevirme.
+- AÇIKLAMALAR TEK DİLDE TÜRKÇE — Almanca cümleyi yazıp tekrar çevirme.
 
-⚠️ FORMAT KİLİDİ — TEKNİK TERİM YAZIM KURALI:
-Teknik terim yazarken SADECE şu format geçerli: **AlmancaTerm** (türkçe karşılık)
-YASAK formatlar — bunları ASLA kullanma:
-- AlmancaTerm → Türkçe  (ok kullanma)
-- AlmancaTerm / AlmancaTerm2  (slash ile ayırma)
-- AlmancaTerm – Türkçe  (tire ile ayırma)
-- (AlmancaTerm = Türkçe)  (eşittir ile ayırma)
-Birden fazla eş anlamlı terim varsa: **Term1** (Türkçe1) / **Term2** (Türkçe2) yaz.
+⚠️ TEKNİK TERİM YAZIM KURALI — SADECE BU FORMAT:
+[Türkçe karşılık]{AlmancaTerm}
+ÖRNEKLER:
+- DOĞRU: "[olasılık fonksiyonu]{Wahrscheinlichkeitsfunktion}, bir ayrık rastgele değişkenin her değerine atanan olasılığı verir."
+- DOĞRU: "[akma sınırı]{Streckgrenze}, kalıcı deformasyonun başladığı gerilim değeridir."
+- YANLIŞ: "**Wahrscheinlichkeitsfunktion** (olasılık fonksiyonu)" — eski format, KULLANMA
+- YANLIŞ: "Streckgrenze (akma sınırı)" — eski format, KULLANMA
+Her sayfada 3-6 kritik terim yeterli — sıradan kelimeleri işaretleme, sadece anahtar kavramları.
 
 YAPI KURALI:
 - Her sayfa MUTLAKA "## 📄 Sayfa [numara]" başlığıyla başlasın
