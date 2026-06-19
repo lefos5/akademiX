@@ -7305,7 +7305,7 @@ function matBuildQuiz(text){
   // Örnek: "CEVAP: C AÇIKLAMA: ..." → CEVAP ve AÇIKLAMA ayrı satıra
   text = text
     // Şık harfinden önce newline: boşluklu veya boşluksuz A) B) C) D) hepsini yakala
-    .replace(/([^\n])([A-D]\))/g, '$1\n$2')
+    .replace(/([^\n(])([A-D]\))/g, '$1\n$2')
     // CEVAP: AÇIKLAMA: MODEL_CEVAP: her biri ayrı satırda
     .replace(/([^\n])(?=CEVAP:\s)/gi,    '$1\n')
     .replace(/([^\n])(?=AÇIKLAMA:\s)/gi, '$1\n')
