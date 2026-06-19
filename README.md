@@ -1,52 +1,66 @@
-# AkademiX Dashboard
+# AkademiX
 
-> Academic management platform for Türk-Alman Üniversitesi (TAÜ) students
+> TAÜ öğrencileri için AI destekli akademik asistan
 
----
-
-## 🎓 What is it?
-
-AkademiX is a web application that allows TAÜ students to manage their academic life from a single place. With Google Classroom integration, assignments, announcements, and course materials can be tracked in real time.
-
-## ✨ Features
-
-- **📅 Weekly Schedule** — Color-coded weekly view of 219 courses
-- **📚 My Courses** — Filterable card view of enrolled courses
-- **🔗 Google Classroom** — Real-time sync of assignments, announcements, and grades
-- **📁 Materials** — File upload, link and note management
-- **🤖 AI Summarization** — Automatic AI-powered summarization of PDFs and documents
-- **📝 Notebook** — Course-specific note taking and editing
-- **📆 Calendar** — Event and assignment tracking
-- **🌙 Light / Dark Theme** — Eye-friendly theme toggle
-
-## 🚀 Usage
-
-1. Go to [lefos5.github.io/akademiX](https://lefos5.github.io/akademiX)
-2. Sign in with your **TAÜ institutional Google account** (`@stud.tau.edu.tr`)
-3. Select your courses and start using
-
-> ⚠️ This application is only available for TAÜ institutional Google accounts.
-
-## 🛠️ Tech Stack
-
-- Vanilla HTML / CSS / JavaScript
-- Google Classroom API v1
-- Google OAuth 2.0
-- Supabase (cloud database)
-- Claude AI API (Anthropic)
-- PDF.js — PDF text extraction
-- Mammoth.js — Word document support
-- IndexedDB — Local file storage
-
-## 🔒 Privacy
-
-This application stores user data both locally (browser storage) and in the cloud (Supabase). No data is shared with third parties. See the full [Privacy Policy](https://lefos5.github.io/akademiX/privacy.html).
-
-## 👤 Developer
-
-**lefos5** — TAÜ student  
-For questions or feedback: [GitHub Issues](https://github.com/lefos5/akademiX/issues)
+**[➜ Uygulamayı Aç](https://lefos5.github.io/akademiX)**
 
 ---
 
-<p align="center">Made with ❤️ for TAÜ students</p>
+## Nedir?
+
+AkademiX, Türk-Alman Üniversitesi (TAÜ) öğrencilerinin akademik yaşamını tek bir yerden yönetmesini sağlayan web uygulamasıdır. Google Classroom entegrasyonu, ders materyali yönetimi ve yapay zeka araçlarını bir araya getirir.
+
+## Özellikler
+
+### 📅 Ders Yönetimi
+- **Haftalık Program** — Renk kodlu ders takvimi görünümü
+- **Derslerim** — Kayıtlı derslerin filtrelenebilir kart görünümü
+- **Google Classroom** — Ödev, duyuru ve not takibi (gerçek zamanlı senkronizasyon)
+
+### 📁 Materyal & Notlar
+- **Materyaller** — PDF, PPTX, DOCX yükleme ve yönetim
+- **Defter** — Derse özel not alma ve düzenleme
+- **Takvim** — Etkinlik ve ödev takibi
+
+### 🤖 AI Araçları
+- **Sayfa Sayfa Çeviri** — Almanca/İngilizce slaytları Türkçeye çevirir; teknik terimler tıklanabilir tooltip ile orijinal dilde gösterilir
+- **Çalışma Notu** — Slayttaki konuları tespit edip her birini açıklayan defter formatında not
+- **Sınav Referans Kartı** — Formüller, kavram sözlüğü ve kritik bilgilerin özeti
+- **Sınav Oluştur** — Çoktan seçmeli, doğru/yanlış ve açık uçlu karışık sınav
+- **RAG Sorgulama** — Yüklenen materyaller üzerinde doğal dil ile arama ve soru cevaplama
+- **Sohbet** — Materyal içeriği hakkında AI ile serbest sohbet
+- **Akıl Haritası** — Materyalden otomatik kavram haritası
+
+## Teknik Yığın
+
+| Katman | Teknoloji |
+|---|---|
+| Frontend | Vanilla HTML / CSS / JavaScript (tek dosya) |
+| Backend | Vercel Serverless Functions (Node.js) |
+| Veritabanı | Supabase (PostgreSQL + Storage) |
+| AI | Google Gemini 2.5 Flash (metin + görsel) |
+| Embedding | Hugging Face — multilingual MiniLM |
+| Auth | Google OAuth 2.0 |
+| PDF | PDF.js |
+| Belgeler | Mammoth.js (DOCX), SheetJS (XLSX) |
+
+## Kullanım
+
+1. [lefos5.github.io/akademiX](https://lefos5.github.io/akademiX) adresine git
+2. **TAÜ kurumsal Google hesabınla** (`@stud.tau.edu.tr` veya `@tau.edu.tr`) giriş yap
+3. Derslerini seç, materyal yükle ve AI araçlarını kullan
+
+> ⚠️ Uygulama yalnızca TAÜ kurumsal Google hesaplarına açıktır.
+
+## Gizlilik
+
+Kullanıcı verileri yerel depolama (browser) ve bulut (Supabase) üzerinde saklanır. Üçüncü taraflarla paylaşım yapılmaz. [Gizlilik Politikası](https://lefos5.github.io/akademiX/privacy.html)
+
+## Geliştirici
+
+**lefos5** — TAÜ öğrencisi  
+Soru ve geri bildirim: [GitHub Issues](https://github.com/lefos5/akademiX/issues)
+
+---
+
+<p align="center">TAÜ öğrencileri için ❤️ ile yapıldı</p>
